@@ -1,0 +1,134 @@
+object Form1: TForm1
+  Left = 182
+  Height = 441
+  Top = 99
+  Width = 674
+  BorderStyle = bsNone
+  Caption = 'Chaves'
+  ClientHeight = 441
+  ClientWidth = 674
+  Color = clBtnFace
+  Font.Color = clWindowText
+  Font.Height = -11
+  Font.Name = 'MS Sans Serif'
+  Position = poDesktopCenter
+  LCLVersion = '4.8.0.0'
+  OnClose = FormClose
+  OnCreate = FormCreate
+  OnKeyDown = FormKeyDown
+  object ImageLutador: TImage
+    Left = 0
+    Height = 80
+    Top = 152
+    Width = 80
+    AutoSize = True
+    Visible = False
+  end
+  object ImageRetrato: TImage
+    Left = 0
+    Height = 80
+    Top = 240
+    Width = 80
+    AutoSize = True
+    Visible = False
+  end
+  object ImageRetratoInvert: TImage
+    Left = 88
+    Height = 80
+    Top = 240
+    Width = 80
+    Visible = False
+  end
+  object ImageLutadorFrame: TImage
+    Left = 88
+    Height = 80
+    Top = 152
+    Width = 80
+    Visible = False
+  end
+  object MemoNomes: TMemo
+    Left = 280
+    Height = 50
+    Top = 8
+    Width = 380
+    Lines.Strings = (
+      'Nomes'
+    )
+    TabOrder = 0
+    Visible = False
+  end
+  object MemoTexto: TMemo
+    Left = 280
+    Height = 50
+    Top = 64
+    Width = 380
+    Lines.Strings = (
+      'Texto'
+    )
+    TabOrder = 1
+    Visible = False
+  end
+  object MemoConfig: TMemo
+    Left = 280
+    Height = 50
+    Top = 120
+    Width = 380
+    Lines.Strings = (
+      'Configurações'
+    )
+    TabOrder = 2
+    Visible = False
+  end
+  object MemoFrases: TMemo
+    Left = 280
+    Height = 50
+    Top = 176
+    Width = 380
+    Lines.Strings = (
+      'Frases'
+    )
+    TabOrder = 3
+    Visible = False
+  end
+  object MemoDialogo: TMemo
+    Left = 278
+    Height = 50
+    Top = 232
+    Width = 380
+    Lines.Strings = (
+      'Dialogo'
+    )
+    TabOrder = 4
+    Visible = False
+  end
+  object MemoFinais: TMemo
+    Left = 278
+    Height = 50
+    Top = 288
+    Width = 380
+    Lines.Strings = (
+      'Finais'
+    )
+    TabOrder = 5
+    Visible = False
+  end
+  object MemoCenarios: TMemo
+    Left = 278
+    Height = 50
+    Top = 344
+    Width = 380
+    Lines.Strings = (
+      'Cenarios'
+    )
+    TabOrder = 7
+    Visible = False
+  end
+  object MemoConfigSalvo: TMemo
+    Left = 176
+    Height = 57
+    Top = 176
+    Width = 81
+    TabOrder = 6
+    Visible = False
+  end
+end
