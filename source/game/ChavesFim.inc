@@ -46,7 +46,7 @@ begin
   if CameraY < -320 then CameraY := -320;
   if TempoEstado > 280 then
   begin
-    Estado := 1;
+    Estado := CHS_ABERTURA;
     ContPisca := 0;
     TempoEstado := 0;
     CameraY := 0;
@@ -86,7 +86,7 @@ begin
     Inc(ContPisca);
     if ContPisca > 150 then
     begin
-      Estado := 8;
+      Estado := CHS_RECORDES;
       CameraY := 0;
       ContPisca := 0;
       TempoEstado := 0;
@@ -532,7 +532,7 @@ begin
   begin
     ContPisca := 0;
     TempoEstado := 0;
-    Estado := 11;
+    Estado := CHS_AVISO;
   end;
 
   // qualquer botao ativo pula para o fim do trecho atual
@@ -562,7 +562,7 @@ begin
   Inc(TempoEstado);
   if TempoEstado > 200 then
   begin
-    Estado := 9;
+    Estado := CHS_CONTINUAR;
     ContPisca := 0;
     TempoEstado := 0;
     ContagemSeg := 0;
@@ -612,7 +612,7 @@ begin
     begin
       if P.Ativo = 0 then
       begin
-        Estado := 9;
+        Estado := CHS_CONTINUAR;
         ContPisca := 0;
         TempoEstado := 0;
         ContagemSeg := 9;
@@ -622,7 +622,7 @@ begin
       end
       else
       begin
-        Estado := 10;
+        Estado := CHS_FINAL;
         ContPisca := 0;
         TempoEstado := 0;
         criarecorde(10, P.Iniciais, P.Personagem, P.Pontos);

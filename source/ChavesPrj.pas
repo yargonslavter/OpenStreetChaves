@@ -695,7 +695,7 @@ begin
   Indef_448C := 0;
   Indef_4490 := 0;
   LogoMeiaAltura := 0;
-  Estado := 0;
+  Estado := CHS_RESOLUCAO;
   ContPisca := 0;
   TempoEstado := 0;
   CameraX := 0;
@@ -930,7 +930,7 @@ begin
     end;
   end;
   { G = pausa quadro a quadro durante a luta }
-  if (Key = Ord('G')) and (Estado = 7) then
+  if (Key = Ord('G')) and (Estado = CHS_LUTA) then
   begin
     if Pausado = 0 then
     begin
@@ -945,16 +945,16 @@ begin
     end;
   end;
   { F1 = configuracoes }
-  if (Key = VK_F1) and (Estado = 1) then
+  if (Key = VK_F1) and (Estado = CHS_ABERTURA) then
   begin
-    Estado := 2;
+    Estado := CHS_CONFIG;
     CursorMenu := 1;
     SomPendente := 1;
     MusicaAtual := 1;
   end
-  else if (Key = VK_F1) and (Estado = 2) then
+  else if (Key = VK_F1) and (Estado = CHS_CONFIG) then
   begin
-    Estado := 1;
+    Estado := CHS_ABERTURA;
     SalvarConfiguracao;
     if DXWaveListSnd.Items.Count > SomPendente then DXWaveListSnd.Items[SomPendente].Stop;
     if DXWaveListMusica.Items.Count > 0 then DXWaveListMusica.Items[0].Stop;
@@ -962,15 +962,15 @@ begin
     MusicaAtual := 0;
   end;
   { F2 = configuracao de teclas }
-  if (Key = VK_F2) and (Estado = 1) then
+  if (Key = VK_F2) and (Estado = CHS_ABERTURA) then
   begin
-    Estado := 3;
+    Estado := CHS_TECLAS;
     CursorMenu := 1;
   end
-  else if (Key = VK_F2) and (Estado = 3) then
-    Estado := 1;
+  else if (Key = VK_F2) and (Estado = CHS_TECLAS) then
+    Estado := CHS_ABERTURA;
   { estado 3: captura a tecla para a acao CursorMenu (1..8) }
-  if Estado = 3 then
+  if Estado = CHS_TECLAS then
   begin
     if ((Key >= 65) and (Key <= 90)) or ((Key >= 48) and (Key <= 57)) or
        ((Key >= 37) and (Key <= 40)) or ((Key >= 96) and (Key <= 105)) then
@@ -981,7 +981,7 @@ begin
     end;
   end;
   { tecla 1 = ficha/entrada do jogador 1; tecla 2 = jogador 2 }
-  if (Estado = 1) and (Fichas > 0) then
+  if (Estado = CHS_ABERTURA) and (Fichas > 0) then
   begin
     if (Tk = Ord('1')) and (Lutador[1].Ativo = 0) then
     begin
@@ -991,7 +991,7 @@ begin
       Lutador[1].RoundsVencidos := 0;
       Lutador[1].Personagem := 1;
       Dec(Fichas);
-      Estado := 4;
+      Estado := CHS_SELECAO;
       FaseSelecao := 1;
       Fase := 1;
       if CheatGentalha = 1 then Fase := 8;
@@ -1007,7 +1007,7 @@ begin
       Lutador[2].RoundsVencidos := 0;
       Lutador[2].Personagem := 2;
       Dec(Fichas);
-      Estado := 4;
+      Estado := CHS_SELECAO;
       FaseSelecao := 1;
       Fase := 1;
       if CheatGentalha = 1 then Fase := 8;
@@ -1016,7 +1016,7 @@ begin
       TempoEstado := 0;
     end;
   end;
-  if (Estado = 4) and (Fichas > 0) and (RelogioParado = 0) then
+  if (Estado = CHS_SELECAO) and (Fichas > 0) and (RelogioParado = 0) then
   begin
     if (Tk = Ord('1')) and (Lutador[1].Ativo = 0) then
     begin
@@ -1039,7 +1039,7 @@ begin
       ContagemTick := 25;
     end;
   end;
-  if (Estado = 7) and (Fichas > 0) and (RelogioParado = 0) then
+  if (Estado = CHS_LUTA) and (Fichas > 0) and (RelogioParado = 0) then
   begin
     if (Tk = Ord('1')) and (Lutador[1].Ativo = 0) then
     begin
@@ -1060,7 +1060,7 @@ begin
       AvisoEntrada := 100;
     end;
   end;
-  if (Estado = 9) and (Fichas > 0) and (ContagemSeg > 0) and (ContagemTick > 0) then
+  if (Estado = CHS_CONTINUAR) and (Fichas > 0) and (ContagemSeg > 0) and (ContagemTick > 0) then
   begin
     if (Tk = Ord('1')) and (Lutador[1].Ativo = 0) then
     begin
@@ -1069,7 +1069,7 @@ begin
       Lutador[1].Pontos := 0;
       Lutador[1].RoundsVencidos := 0;
       Dec(Fichas);
-      if Lutador[1].Adversarios[1] = 0 then Estado := 4 else Estado := 5;
+      if Lutador[1].Adversarios[1] = 0 then Estado := CHS_SELECAO else Estado := CHS_ADVERSARIOS;
       ContagemSeg := 30;
       ContagemTick := 25;
       ContPisca := 0;
@@ -1082,7 +1082,7 @@ begin
       Lutador[2].Pontos := 0;
       Lutador[2].RoundsVencidos := 0;
       Dec(Fichas);
-      if Lutador[2].Adversarios[1] = 0 then Estado := 4 else Estado := 5;
+      if Lutador[2].Adversarios[1] = 0 then Estado := CHS_SELECAO else Estado := CHS_ADVERSARIOS;
       ContagemSeg := 30;
       ContagemTick := 25;
       ContPisca := 0;
@@ -1096,10 +1096,10 @@ begin
     begin
       Inc(Fichas);
       TocarSom(0);
-      if (TempoDemo > 0) or (Estado = 8) then
+      if (TempoDemo > 0) or (Estado = CHS_RECORDES) then
         if Fichas > 0 then
         begin
-          Estado := 1;
+          Estado := CHS_ABERTURA;
           TempoEstado := 500;
           ContPisca := 0;
           CameraY := -200;
@@ -1167,7 +1167,7 @@ begin
   if isButton1 in DXInput1.States then
   begin
     AplicarResolucao(CursorMenu);
-    Estado := 1;
+    Estado := CHS_ABERTURA;
     CameraY := 0;
     ContPisca := 0;
     TempoEstado := 0;
@@ -1308,7 +1308,7 @@ begin
   { fim da abertura: luta de demonstracao com 2 lutadores aleatorios }
   if TempoEstado > 650 then
   begin
-    Estado := 7;
+    Estado := CHS_LUTA;
     FTick7 := 0;
     TempoDemo := 600;
     RelogioParado := 0;
@@ -1802,13 +1802,13 @@ begin
     end;
     if (Lutador[1].Escolheu = 1) and (Lutador[2].Escolheu = 1) then
     begin
-      Estado := 5;
+      Estado := CHS_ADVERSARIOS;
       ContPisca := 0;
       TempoEstado := 0;
       Lutador[1].RoundsVencidos := 0;
       Lutador[2].RoundsVencidos := 0;
       RoundAtual := 1;
-      if (Lutador[1].Ativo = 1) and (Lutador[2].Ativo = 1) then Estado := 6;
+      if (Lutador[1].Ativo = 1) and (Lutador[2].Ativo = 1) then Estado := CHS_PREPARALUTA;
     end;
   end;
   E1 := 0;
@@ -1927,11 +1927,11 @@ begin
   begin
     for C := 0 to 15 do
       barra(0, C * 20, 400, C * 20 + (TempoEstado - 120), Preto);
-    if TempoEstado > 150 then Estado := 6;
+    if TempoEstado > 150 then Estado := CHS_PREPARALUTA;
   end;
   if CheatFadiga = 1 then
   begin
-    Estado := 10;
+    Estado := CHS_FINAL;
     ContPisca := 0;
     TempoEstado := 0;
   end;
@@ -1942,7 +1942,7 @@ procedure TForm1.Estado6_PreparaLuta;
 var
   J, L: Integer;
 begin
-  Estado := 7;
+  Estado := CHS_LUTA;
   FTick7 := 0;
   ContPisca := 0;
   TempoEstado := 0;
@@ -2059,7 +2059,7 @@ procedure TForm1.RodapeDoQuadro;
 var
   L: Integer;
 begin
-  if (Estado <> 2) and (Estado <> 3) then
+  if (Estado <> CHS_CONFIG) and (Estado <> CHS_TECLAS) then
   begin
     if AvisoVelocidade > 0 then
     begin
@@ -2077,7 +2077,7 @@ begin
       texto(395, 285, IntToStr(Fichas), ADir, 10, Branco);
     end;
     { aviso "alguem entrou no combate" durante a demonstracao }
-    if (AvisoEntrada > 0) and (Estado = 7) then
+    if (AvisoEntrada > 0) and (Estado = CHS_LUTA) then
     begin
       barraredonda(80, 100, 320, 170, 10, Branco, Preto);
       texto(200, 100, Linha(MemoTexto, 10), ACentro, 15, RosaClaro);
@@ -2087,7 +2087,7 @@ begin
       Dec(AvisoEntrada);
       if AvisoEntrada = 0 then
       begin
-        Estado := 4;
+        Estado := CHS_SELECAO;
         FaseSelecao := 1;
         ContagemSeg := 20;
         ContagemTick := 25;
@@ -2111,19 +2111,19 @@ begin
   DXTimer1.Interval := IntervaloTimer;
 
   { cada estado e testado em sequencia: uma transicao ja executa o proximo no mesmo quadro }
-  if Estado = 0 then Estado0_Resolucao;
-  if Estado = 1 then Estado1_Abertura;
-  if Estado = 2 then Estado2_Config;
-  if Estado = 3 then Estado3_Teclas;
-  if Estado = 4 then Estado4_Selecao;
-  if Estado = 5 then Estado5_Adversarios;
-  if Estado = 6 then Estado6_PreparaLuta;
-  if Estado = 7 then Estado7_Luta;
-  if Estado = 8 then Estado8_Recordes;
-  if Estado = 9 then Estado9_Continuar;
-  if Estado = 10 then Estado10_Final;
-  if Estado = 11 then Estado11_Aviso;
-  if Estado = 12 then Estado12_Iniciais;
+  if Estado = CHS_RESOLUCAO then Estado0_Resolucao;
+  if Estado = CHS_ABERTURA then Estado1_Abertura;
+  if Estado = CHS_CONFIG then Estado2_Config;
+  if Estado = CHS_TECLAS then Estado3_Teclas;
+  if Estado = CHS_SELECAO then Estado4_Selecao;
+  if Estado = CHS_ADVERSARIOS then Estado5_Adversarios;
+  if Estado = CHS_PREPARALUTA then Estado6_PreparaLuta;
+  if Estado = CHS_LUTA then Estado7_Luta;
+  if Estado = CHS_RECORDES then Estado8_Recordes;
+  if Estado = CHS_CONTINUAR then Estado9_Continuar;
+  if Estado = CHS_FINAL then Estado10_Final;
+  if Estado = CHS_AVISO then Estado11_Aviso;
+  if Estado = CHS_INICIAIS then Estado12_Iniciais;
   RodapeDoQuadro;
 end;
 

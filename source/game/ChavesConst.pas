@@ -12,7 +12,23 @@ uses
   Graphics;
 
 const
-  { ---- cores ---- }
+  { ---- Estados do jogo ---- }
+  { CHS -> CHAVES STATE }
+  CHS_RESOLUCAO = 0;
+  CHS_ABERTURA = 1;
+  CHS_CONFIG = 2;
+  CHS_TECLAS = 3;
+  CHS_SELECAO = 4;
+  CHS_ADVERSARIOS = 5;
+  CHS_PREPARALUTA = 6;
+  CHS_LUTA = 7;
+  CHS_RECORDES = 8;
+  CHS_CONTINUAR = 9;
+  CHS_FINAL = 10;
+  CHS_AVISO = 11;
+  CHS_INICIAIS = 12;
+
+  { ---- Cores comuns ---- }
   Branco = TColor($FFFFFF);          // branco puro: texto e molduras (255, 255, 255)
   Preto = TColor($000000);           // preto: fundos e cortinas (0, 0, 0)
   CinzaClaro = TColor($AAAAAA);      // moldura das barras (170, 170, 170)

@@ -1684,7 +1684,7 @@ begin
   // fim da luta: segue para a proxima etapa (adversarios / recordes / continue)
   if FaseFim > 220 then
   begin
-    Estado := 5;
+    Estado := CHS_ADVERSARIOS;
     SomPendente := 0;
     FaseSelecao := 1;
     Lutador[1].Escolheu := 0;
@@ -1701,14 +1701,14 @@ begin
         TempoEstado := 0;
         if (Recordes[10].Pontos < Cardinal(Lutador[1].Pontos)) or (Recordes[10].Pontos < Cardinal(Lutador[2].Pontos)) then
         begin
-          Estado := 12;
+          Estado := CHS_INICIAIS;
           Lutador[1].Iniciais := 'AAA';
           Lutador[1].CursorIni := 1;
           Lutador[2].Iniciais := 'AAA';
           Lutador[2].CursorIni := 1;
         end
         else
-          Estado := 10;
+          Estado := CHS_FINAL;
       end;
     end;
     if (Lutador[1].Ativo = 0) and (Lutador[2].Ativo = 0) then
@@ -1721,14 +1721,14 @@ begin
       ContagemTick := 25;
       if (Recordes[10].Pontos < Cardinal(Lutador[1].Pontos)) or (Recordes[10].Pontos < Cardinal(Lutador[2].Pontos)) then
       begin
-        Estado := 12;
+        Estado := CHS_INICIAIS;
         Lutador[1].Iniciais := 'AAA';
         Lutador[1].CursorIni := 1;
         Lutador[2].Iniciais := 'AAA';
         Lutador[2].CursorIni := 1;
       end
       else
-        Estado := 9;
+        Estado := CHS_CONTINUAR;
     end;
   end;
 end;
@@ -2192,7 +2192,7 @@ begin
   end;
   if TempoDemo <= 5 then
   begin
-    Estado := 8;
+    Estado := CHS_RECORDES;
     SomPendente := 0;
     CameraY := 0;
     ContPisca := 0;
@@ -2263,5 +2263,5 @@ begin
     if ContPisca mod 2 = 0 then barra(0, 0, LarguraTela, AlturaTela, Vermelho);
     Dec(FlashVermelho);
   end;
-  if (Estado = 7) and (PassoAPasso = 1) then mostragolpe;
+  if (Estado = CHS_LUTA) and (PassoAPasso = 1) then mostragolpe;
 end;
