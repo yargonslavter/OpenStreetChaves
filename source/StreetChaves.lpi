@@ -12,6 +12,7 @@
       <Title Value="StreetChaves"/>
       <UseAppBundle Value="False"/>
       <ResourceType Value="res"/>
+      <Icon Value="0"/>
     </General>
     <BuildModes>
       <Item Name="Default" Default="True"/>
@@ -75,14 +76,14 @@
   </ProjectOptions>
   <CompilerOptions>
     <Version Value="11"/>
+    <Target>
+      <Filename Value="../StreetChaves"/>
+    </Target>
     <SearchPaths>
       <IncludeFiles Value="game;$(ProjOutDir)"/>
       <OtherUnitFiles Value="game;legacy;3party"/>
       <UnitOutputDirectory Value="build/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
-    <Target>
-      <Filename Value="../StreetChaves"/>
-    </Target>
     <Parsing>
       <SyntaxOptions>
         <SyntaxMode Value="Delphi"/>
@@ -92,6 +93,11 @@
       <Debugging>
         <DebugInfoType Value="dsDwarf3"/>
       </Debugging>
+      <Options>
+        <Win32>
+          <GraphicApplication Value="True"/>
+        </Win32>
+      </Options>
     </Linking>
   </CompilerOptions>
 </CONFIG>

@@ -5,14 +5,7 @@ unit ChavesPrj;
   Portado a partir do executavel original (Delphi 5 + DelphiX) usando a camada de
   compatibilidade DelphiX (pasta DelphiXShim). Os nomes dos metodos e os das
   variaveis globais (ChavesTipos) seguem o original.
-
-  ESTADO DO PORTE (variavel global Estado = estado do jogo):
-    0  selecao de resolucao            PORTADO
-    1  abertura / modo "attract"       PORTADO
-    2  configuracoes                   pendente
-    3  configuracao de teclas          pendente
-    4  selecao de lutador              pendente
-    5..12  luta, vitoria, recordes...  pendente }
+}
 
 {$mode delphi}{$H+}
 
@@ -23,9 +16,7 @@ uses
   DXClass, DXDraws, DXInput, DXSounds, ChavesConst, ChavesTipos, ChavesTextos, ChavesGolpes;
 
 type
-
   { TForm1 }
-
   TForm1 = class(TForm)
     ImageLutador: TImage;
     ImageRetrato: TImage;
@@ -629,8 +620,8 @@ begin
   begin
     BorderStyle := bsNone;
     WindowState := wsNormal;
-    ClientWidth := 400;
-    ClientHeight := 300;
+    ClientWidth := LarguraTela;
+    ClientHeight := AlturaTela;
     DXDraw1.SetBounds(0, 0, LarguraTela, AlturaTela);
     Position := poScreenCenter;
     Exit;
@@ -830,10 +821,10 @@ begin
 
   { janela e superficie de desenho 400x300 }
   Color := clBlack;
-  DXDraw1.SurfaceWidth := 400;
-  DXDraw1.SurfaceHeight := 300;
-  DXDraw1.Display.Width := 400;
-  DXDraw1.Display.Height := 300;
+  DXDraw1.SurfaceWidth := LarguraTela;
+  DXDraw1.SurfaceHeight := AlturaTela;
+  DXDraw1.Display.Width := LarguraTela;
+  DXDraw1.Display.Height := AlturaTela;
   if not DXDraw1.Initialized then DXDraw1.Initialize;
   AplicarResolucao(1);
 
@@ -1190,10 +1181,10 @@ procedure TForm1.Estado1_Abertura;
 var
   Ab: TDXImageList;
   Sup: TDirectDrawSurface;
-  I, J, L, L14, Y0: Integer;
+  I, J, L, L14: Integer;
   R: TRect;
   N: Integer;
-  Cor: TColor;
+  //Cor: TColor;
   S: string;
 begin
   Ab := DXImageListAbertura;
@@ -1358,8 +1349,8 @@ begin
     texto(200, 235, Linha(MemoTexto, 6), ACentro, 10, Branco);
   if (ContPisca < 12) and (Fichas > 0) then
     texto(200, 235, Linha(MemoTexto, 7), ACentro, 10, Branco);
-  Cor := 0;
-  if Cor = 1 then Y0 := 0;
+  //Cor := 0;
+  //if Cor = 1 then Y0 := 0;
 end;
 
 { bits que acabaram de ser pressionados (P1 ou P2) neste quadro }
