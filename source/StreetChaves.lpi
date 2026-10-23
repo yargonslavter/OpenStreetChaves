@@ -34,11 +34,12 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="ChavesPrj.pas"/>
+        <Filename Value="ChavesJogo.pas"/>
         <IsPartOfProject Value="True"/>
-        <ComponentName Value="Form1"/>
-        <HasResources Value="True"/>
-        <ResourceBaseClass Value="Form"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ChavesSDL.pas"/>
+        <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="game/ChavesConst.pas"/>
@@ -57,19 +58,27 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
+        <Filename Value="legacy/DXTipos.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy/DXBmp.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy/DXFonte.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
         <Filename Value="legacy/DXClass.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="legacy/DXInput.pas"/>
+        <Filename Value="game/ChavesGfx.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="legacy/DXDraws.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy/DXSounds.pas"/>
+        <Filename Value="game/ChavesSom.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
     </Units>
@@ -81,7 +90,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="game;$(ProjOutDir)"/>
-      <OtherUnitFiles Value="game;legacy;3party"/>
+      <OtherUnitFiles Value="game;legacy;3party;3party/SDL2"/>
       <UnitOutputDirectory Value="build/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

@@ -4,14 +4,10 @@ program StreetChaves;
 
 uses
   {$IFDEF UNIX}cthreads,{$ENDIF}
-  Interfaces, Forms, ChavesPrj, ChavesConst, ChavesTipos, ChavesTextos;
+  Interfaces, Forms, SysUtils, ChavesJogo, ChavesConst, ChavesTipos, ChavesTextos, ChavesSDL;
 
 {$R *.res}
 
 begin
-  RequireDerivedFormResource := False;
-  Application.Scaled := True;
-  Application.Initialize;
-  Application.CreateForm(TForm1, Form1);
-  Application.Run;
+  ExecutarModoSDL;                      // jogo em SDL2 (--demo = quadro de teste da infraestrutura)
 end.

@@ -9,7 +9,7 @@ unit ChavesConst;
 interface
 
 uses
-  Graphics;
+  DXTipos;
 
 const
   { ---- Estados do jogo ---- }

@@ -84,3 +84,5 @@ modules/
 *.db
 Chaves.dat
 source/StreetChaves.lps
+/source/game/backup
+/source/game/backup

@@ -1,0 +1,369 @@
+unit ChavesSom;
+
+{ ChavesSom.pas - audio do jogo, 100% SDL2 (sem LCL, sem MCI, sem SDL2_mixer).
+
+  Mixer proprio sobre um unico dispositivo de audio SDL (44100 Hz, 16 bits, estereo):
+    - os WAVs sao carregados com SDL_LoadWAV_RW (PCM, ADPCM...) e convertidos UMA vez para o
+      formato do mixer (SDL_AudioStream), ficando em memoria;
+    - cada Tocar ocupa uma "voz" do mixer; um mesmo som tocado de novo corta a voz anterior
+      dele (no original: MaxPlayingCount = 1);
+    - sons em loop (musica) repetem sem emenda;
+    - o callback de audio soma as vozes com saturacao.
+  Sem placa de som o jogo segue normalmente, apenas sem tocar.
+
+  Uso: um TBancoSom e uma lista numerada de sons. Adicionar devolve o numero do som (o espaco
+  e reservado mesmo se o arquivo nao existir, para manter a numeracao do jogo). }
+
+{$mode delphi}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, ctypes, sdl2, DXClass;
+
+type
+  TAmostra = class
+  private
+    FDados: PSmallInt;      // amostras estereo S16 a 44100 Hz (2 por quadro)
+    FQuadros: Integer;
+  public
+    destructor Destroy; override;
+    procedure Limpar;
+    procedure CarregarArquivo(const Arquivo: string);
+  end;
+
+  TBancoSom = class
+  private
+    FSons: TList;           // de TAmostra
+    FLoop: Boolean;
+    function Obter(Indice: Integer): TAmostra;
+    function GetCount: Integer;
+  public
+    constructor Create(ALoop: Boolean = False);
+    destructor Destroy; override;
+    function Adicionar(const Arquivo: string): Integer;   // novo som; '' ou arquivo inexistente = som vazio
+    procedure Carregar(Indice: Integer; const Arquivo: string);   // troca o conteudo de um som
+    procedure Tocar(Indice: Integer);
+    procedure Parar(Indice: Integer);
+    procedure PararTodos;
+    property Count: Integer read GetCount;
+  end;
+
+{ Abre o dispositivo de audio (chamado sozinho no primeiro Tocar; pode ser chamado antes). }
+function SomIniciar: Boolean;
+
+implementation
+
+const
+  TaxaMixer = 44100;
+  MaxVozes = 48;
+  MaxAmostras = 16384;     // capacidade do buffer de mistura (amostras, nao quadros)
+
+type
+  TVoz = record
+    Ativa: Boolean;
+    Loop: Boolean;
+    Dono: Pointer;         // TAmostra dona (para Parar / limite por som)
+    Dados: PSmallInt;
+    Quadros: Integer;
+    Pos: Integer;
+    Seq: Cardinal;
+  end;
+
+var
+  GVozes: array[0..MaxVozes - 1] of TVoz;
+  GDev: TSDL_AudioDeviceID = 0;
+  GTentou: Boolean = False;
+  GSeq: Cardinal = 0;
+  GAcc: array[0..MaxAmostras - 1] of LongInt;
+
+{ ---- mixer (roda na thread de audio do SDL, que ja segura o lock do dispositivo) ---- }
+
+procedure CallbackAudio(userdata: Pointer; stream: pcuint8; len: cint); cdecl;
+var
+  Total, I, V, N, K: Integer;
+  Vz: ^TVoz;
+  Src: PSmallInt;
+  Dst: PSmallInt;
+  S: LongInt;
+begin
+  Total := len div 2;                       // amostras S16
+  if Total > MaxAmostras then Total := MaxAmostras;
+  FillChar(stream^, len, 0);
+  if Total <= 0 then Exit;
+  FillChar(GAcc[0], Total * SizeOf(LongInt), 0);
+
+  for V := 0 to MaxVozes - 1 do
+  begin
+    Vz := @GVozes[V];
+    if not Vz^.Ativa then Continue;
+    K := 0;                                  // amostras ja produzidas neste bloco
+    while K < Total do
+    begin
+      N := (Vz^.Quadros - Vz^.Pos) * 2;      // amostras restantes
+      if N > Total - K then N := Total - K;
+      Src := Vz^.Dados + Vz^.Pos * 2;
+      for I := 0 to N - 1 do
+        GAcc[K + I] := GAcc[K + I] + Src[I];
+      Inc(K, N);
+      Inc(Vz^.Pos, N div 2);
+      if Vz^.Pos >= Vz^.Quadros then
+      begin
+        if Vz^.Loop and (Vz^.Quadros > 0) then
+          Vz^.Pos := 0
+        else
+        begin
+          Vz^.Ativa := False;
+          Break;
+        end;
+      end;
+    end;
+  end;
+
+  Dst := PSmallInt(stream);
+  for I := 0 to Total - 1 do
+  begin
+    S := GAcc[I];
+    if S > 32767 then S := 32767
+    else if S < -32768 then S := -32768;
+    Dst[I] := S;
+  end;
+end;
+
+function SomIniciar: Boolean;
+var
+  Pedido, Obtido: TSDL_AudioSpec;
+begin
+  if GDev <> 0 then Exit(True);
+  if GTentou then Exit(False);
+  GTentou := True;
+  if SDL_InitSubSystem(SDL_INIT_AUDIO) <> 0 then Exit(False);
+  FillChar(Pedido, SizeOf(Pedido), 0);
+  FillChar(Obtido, SizeOf(Obtido), 0);
+  Pedido.freq := TaxaMixer;
+  Pedido.format := AUDIO_S16SYS;
+  Pedido.channels := 2;
+  Pedido.samples := 1024;                    // ~23 ms por bloco
+  Pedido.callback := @CallbackAudio;
+  GDev := SDL_OpenAudioDevice(nil, 0, @Pedido, @Obtido, 0);   // 0: o SDL converte para o dispositivo
+  if GDev = 0 then Exit(False);
+  SDL_PauseAudioDevice(GDev, 0);
+  Result := True;
+end;
+
+procedure Travar;
+begin
+  if GDev <> 0 then SDL_LockAudioDevice(GDev);
+end;
+
+procedure Destravar;
+begin
+  if GDev <> 0 then SDL_UnlockAudioDevice(GDev);
+end;
+
+procedure CortarVozes(Dono: Pointer);
+var
+  V: Integer;
+begin
+  Travar;
+  try
+    for V := 0 to MaxVozes - 1 do
+      if GVozes[V].Ativa and (GVozes[V].Dono = Dono) then GVozes[V].Ativa := False;
+  finally
+    Destravar;
+  end;
+end;
+
+{ TAmostra }
+
+destructor TAmostra.Destroy;
+begin
+  Limpar;
+  inherited Destroy;
+end;
+
+procedure TAmostra.Limpar;
+begin
+  CortarVozes(Self);
+  if FDados <> nil then FreeMem(FDados);
+  FDados := nil;
+  FQuadros := 0;
+end;
+
+procedure TAmostra.CarregarArquivo(const Arquivo: string);
+var
+  Nome: string;
+  F: TFileStream;
+  Mem: TMemoryStream;
+  Rw: PSDL_RWops;
+  Spec: TSDL_AudioSpec;
+  Buf: pcuint8;
+  Len: cuint32;
+  Conv: PSDL_AudioStream;
+  Disp: Integer;
+begin
+  Limpar;
+  Nome := DXResolvePath(Arquivo);
+  if (Arquivo = '') or not FileExists(Nome) then Exit;
+  if SDL_InitSubSystem(SDL_INIT_AUDIO) <> 0 then Exit;
+  Mem := TMemoryStream.Create;
+  try
+    F := TFileStream.Create(Nome, fmOpenRead or fmShareDenyNone);
+    try
+      Mem.CopyFrom(F, 0);
+    finally
+      F.Free;
+    end;
+    if Mem.Size = 0 then Exit;
+    Rw := SDL_RWFromMem(Mem.Memory, Mem.Size);
+    if Rw = nil then Exit;
+    Buf := nil;
+    Len := 0;
+    FillChar(Spec, SizeOf(Spec), 0);
+    if SDL_LoadWAV_RW(Rw, 1, @Spec, @Buf, @Len) = nil then Exit;   // freesrc=1 fecha o Rw
+    try
+      Conv := SDL_NewAudioStream(Spec.format, Spec.channels, Spec.freq, AUDIO_S16SYS, 2, TaxaMixer);
+      if Conv = nil then Exit;
+      try
+        if SDL_AudioStreamPut(Conv, Buf, Len) <> 0 then Exit;
+        SDL_AudioStreamFlush(Conv);
+        Disp := SDL_AudioStreamAvailable(Conv);
+        Disp := Disp - (Disp mod 4);
+        if Disp <= 0 then Exit;
+        GetMem(FDados, Disp);
+        if SDL_AudioStreamGet(Conv, FDados, Disp) < 0 then
+        begin
+          FreeMem(FDados);
+          FDados := nil;
+          Exit;
+        end;
+        FQuadros := Disp div 4;
+      finally
+        SDL_FreeAudioStream(Conv);
+      end;
+    finally
+      SDL_FreeWAV(Buf);
+    end;
+  finally
+    Mem.Free;
+  end;
+end;
+
+{ TBancoSom }
+
+constructor TBancoSom.Create(ALoop: Boolean);
+begin
+  inherited Create;
+  FSons := TList.Create;
+  FLoop := ALoop;
+end;
+
+destructor TBancoSom.Destroy;
+var
+  I: Integer;
+begin
+  for I := 0 to FSons.Count - 1 do TAmostra(FSons[I]).Free;
+  FSons.Free;
+  inherited Destroy;
+end;
+
+function TBancoSom.GetCount: Integer;
+begin
+  Result := FSons.Count;
+end;
+
+function TBancoSom.Obter(Indice: Integer): TAmostra;
+begin
+  if (Indice >= 0) and (Indice < FSons.Count) then Result := TAmostra(FSons[Indice]) else Result := nil;
+end;
+
+function TBancoSom.Adicionar(const Arquivo: string): Integer;
+var
+  A: TAmostra;
+begin
+  A := TAmostra.Create;
+  if Arquivo <> '' then A.CarregarArquivo(Arquivo);
+  Result := FSons.Add(A);
+end;
+
+procedure TBancoSom.Carregar(Indice: Integer; const Arquivo: string);
+var
+  A: TAmostra;
+begin
+  A := Obter(Indice);
+  if A <> nil then A.CarregarArquivo(Arquivo);
+end;
+
+procedure TBancoSom.Tocar(Indice: Integer);
+var
+  A: TAmostra;
+  V, Livre, Antiga, AntigaSom: Integer;
+begin
+  A := Obter(Indice);
+  if (A = nil) or (A.FDados = nil) then Exit;
+  if not SomIniciar then Exit;
+  Travar;
+  try
+    { um som tocado de novo corta a voz anterior dele }
+    repeat
+      AntigaSom := -1;
+      for V := 0 to MaxVozes - 1 do
+        if GVozes[V].Ativa and (GVozes[V].Dono = Pointer(A)) then
+        begin
+          AntigaSom := V;
+          Break;
+        end;
+      if AntigaSom >= 0 then GVozes[AntigaSom].Ativa := False;
+    until AntigaSom < 0;
+
+    { voz livre; se nao houver, rouba a mais antiga de todas }
+    Livre := -1;
+    Antiga := 0;
+    for V := 0 to MaxVozes - 1 do
+    begin
+      if (Livre < 0) and (not GVozes[V].Ativa) then Livre := V;
+      if Integer(GVozes[V].Seq - GVozes[Antiga].Seq) < 0 then Antiga := V;
+    end;
+    if Livre < 0 then Livre := Antiga;
+
+    Inc(GSeq);
+    with GVozes[Livre] do
+    begin
+      Dono := Pointer(A);
+      Dados := A.FDados;
+      Quadros := A.FQuadros;
+      Pos := 0;
+      Loop := FLoop;
+      Seq := GSeq;
+      Ativa := True;
+    end;
+  finally
+    Destravar;
+  end;
+end;
+
+procedure TBancoSom.Parar(Indice: Integer);
+var
+  A: TAmostra;
+begin
+  A := Obter(Indice);
+  if A <> nil then CortarVozes(A);
+end;
+
+procedure TBancoSom.PararTodos;
+var
+  I: Integer;
+begin
+  for I := 0 to FSons.Count - 1 do Parar(I);
+end;
+
+initialization
+
+finalization
+  if GDev <> 0 then
+  begin
+    if SDL_WasInit(SDL_INIT_AUDIO) <> 0 then SDL_CloseAudioDevice(GDev);
+    GDev := 0;
+  end;
+
+end.
