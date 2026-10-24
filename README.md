@@ -34,7 +34,9 @@ O que ainda falta para ser "SDL puro" em todas as plataformas está em [`source/
    atlas e confere o resultado contra todos os textos do jogo (log em `GeraFonte.log`).
    Atenção: a Comic Sans MS é uma fonte da Microsoft; decida se o atlas pode ser distribuído ou se vale
    trocá-la por uma fonte livre (por exemplo, Comic Neue, licença OFL).
-4. Abra `source/StreetChaves.lpi` e use o menu Executar -> Construir (Ctrl+F9).
+4. **Pasta `Dados/`** na raiz (já vem no repositório): `Jogo.ini` (valores do jogo e padrões), `Recursos.ini`
+   (lista de imagens e sons) e `Textos/` (textos em português e espanhol). Sem o `Recursos.ini` o jogo avisa ao abrir e fecha.
+5. Abra `source/StreetChaves.lpi` e use o menu Executar -> Construir (Ctrl+F9).
 
 Pronto! O executável `StreetChaves.exe` aparece na raiz do projeto (ao lado das pastas `Cenarios`, `Lutadores`,
 `Sons`, etc.) e é só abrir.

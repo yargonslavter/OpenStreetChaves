@@ -34,8 +34,8 @@ begin
       CameraY := 0;
       ContPisca := 0;
       TempoEstado := 0;
-      Lutador[1].Ativo := 0;
-      Lutador[2].Ativo := 0;
+      Lutador[1].Ativo := False;
+      Lutador[2].Ativo := False;
     end;
   end;
 end;
@@ -45,10 +45,10 @@ procedure TJogo.Teclado_Continuar(Tk: Integer);
 begin
   if (Estado = CHS_CONTINUAR) and (Fichas > 0) and (ContagemSeg > 0) and (ContagemTick > 0) then
   begin
-    if (Tk = Integer(SDL_SCANCODE_1)) and (Lutador[1].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_1)) and not Lutador[1].Ativo then
     begin
-      Lutador[1].Ativo := 1;
-      Lutador[1].Escolheu := 0;
+      Lutador[1].Ativo := True;
+      Lutador[1].Escolheu := False;
       Lutador[1].Pontos := 0;
       Lutador[1].RoundsVencidos := 0;
       Dec(Fichas);
@@ -58,10 +58,10 @@ begin
       ContPisca := 0;
       TempoEstado := 0;
     end;
-    if (Tk = Integer(SDL_SCANCODE_2)) and (Lutador[2].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_2)) and not Lutador[2].Ativo then
     begin
-      Lutador[2].Ativo := 1;
-      Lutador[2].Escolheu := 0;
+      Lutador[2].Ativo := True;
+      Lutador[2].Escolheu := False;
       Lutador[2].Pontos := 0;
       Lutador[2].RoundsVencidos := 0;
       Dec(Fichas);

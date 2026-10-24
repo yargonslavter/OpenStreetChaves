@@ -18,7 +18,7 @@ begin
   if TempoEstado < 100 then
   begin
     barra(0, 0, LarguraTela, AlturaTela, RGB(120, 120, 250));
-    Ab[14].Draw(Sup, 110, 10, 0);
+    Ab.PorNome('Vencedores').Draw(Sup, 110, 10, 0);
     texto(200, 210, Linha(MemoTexto, 13), ACentro, 16, RGB(250, 200, 0));
   end;
 
@@ -30,49 +30,49 @@ begin
       barra(0, I * 15, 400, I * 15 + 15, RGB(I * 2 + 120, I * 2 + 120, 200));
     { nuvens e folhagens }
     N := Round(CameraY / 2);
-    Ab[2].Draw(Sup, 50, 50 - N, 0);
-    Ab[2].Draw(Sup, 350, 150 - N, 0);
-    Ab[2].Draw(Sup, 300, 180 - N, 0);
+    Ab.PorNome('Predio-02-a').Draw(Sup, 50, 50 - N, 0);
+    Ab.PorNome('Predio-02-a').Draw(Sup, 350, 150 - N, 0);
+    Ab.PorNome('Predio-02-a').Draw(Sup, 300, 180 - N, 0);
     for J := 0 to 4 do
     begin
-      Ab[3].Draw(Sup, 50, J * 47 + 73 - N, 0);
-      Ab[3].Draw(Sup, 350, J * 47 + 173 - N, 0);
-      Ab[3].Draw(Sup, 300, J * 47 + 203 - N, 0);
+      Ab.PorNome('Predio-02-b').Draw(Sup, 50, J * 47 + 73 - N, 0);
+      Ab.PorNome('Predio-02-b').Draw(Sup, 350, J * 47 + 173 - N, 0);
+      Ab.PorNome('Predio-02-b').Draw(Sup, 300, J * 47 + 203 - N, 0);
     end;
     { predio (esquerda e direita) }
     for J := 0 to 6 do
     begin
-      Ab[0].Draw(Sup, 100, J * 80 - 200 - CameraY, 0);
-      Ab[0].Draw(Sup, 305, J * 80 - 200 - CameraY, 0);
+      Ab.PorNome('Predio-01-a').Draw(Sup, 100, J * 80 - 200 - CameraY, 0);
+      Ab.PorNome('Predio-01-a').Draw(Sup, 305, J * 80 - 200 - CameraY, 0);
     end;
     for L := 0 to 4 do
       for J := 0 to 15 do
-        Ab[1].Draw(Sup, L * 39 + 113, J * 32 - 200 - CameraY, 0);
+        Ab.PorNome('Predio-01-b').Draw(Sup, L * 39 + 113, J * 32 - 200 - CameraY, 0);
     barra(147, -155 - CameraY, 270, -48 - CameraY, Preto);
     retangulo(149, -153 - CameraY, 268, -50 - CameraY, Branco);
     for L := 0 to 7 do
-      Ab[4].Draw(Sup, L * 50, 220 - CameraY, 0);
+      Ab.PorNome('Folhagem').Draw(Sup, L * 50, 220 - CameraY, 0);
     for L := 0 to 8 do
     begin
       L14 := 0;
       if ContPisca < 10 then L14 := 4;
-      Ab[7].Draw(Sup, L * 50, 245 - CameraY + L14, 0);
-      Ab[5].Draw(Sup, L * 50 - 15, 245 - CameraY + L14, 0);
-      Ab[6].Draw(Sup, L * 50 + 15, 245 - CameraY + L14, 0);
+      Ab.PorNome('Pessoa-03').Draw(Sup, L * 50, 245 - CameraY + L14, 0);
+      Ab.PorNome('Pessoa-01').Draw(Sup, L * 50 - 15, 245 - CameraY + L14, 0);
+      Ab.PorNome('Pessoa-02').Draw(Sup, L * 50 + 15, 245 - CameraY + L14, 0);
     end;
     L14 := 0;
     if ContPisca > 10 then L14 := 5;
     if TempoEstado < 200 then
     begin
-      Ab[8].Draw(Sup, 210, L14 + 185 - CameraY, 0);
-      Ab[9].Draw(Sup, 50, L14 + 178 - CameraY, 0);
+      Ab.PorNome('Chaves').Draw(Sup, 210, L14 + 185 - CameraY, 0);
+      Ab.PorNome('SeuMadruga').Draw(Sup, 50, L14 + 178 - CameraY, 0);
     end;
     if TempoEstado = 200 then TocarSom(9);
     if TempoEstado >= 200 then
     begin
-      Ab[11].Draw(Sup, 60 - ((TempoEstado - 200) shl 2),
+      Ab.PorNome('SeuMadrugaCaindo').Draw(Sup, 60 - ((TempoEstado - 200) shl 2),
         (TempoEstado - 200) * 2 + 180 - CameraY, 0);
-      Ab[10].Draw(Sup, 100, 190 - CameraY, 0);
+      Ab.PorNome('ChavesSoco').Draw(Sup, 100, 190 - CameraY, 0);
     end;
   end;
 
@@ -88,16 +88,8 @@ begin
     L14 := Round(223 / L);
     LogoMeiaAltura := Round(117 / L);
   end;
-  if Idioma = 1 then
-  begin
-    R := Rect(205 - L14, (-100 - CameraY) - LogoMeiaAltura, L14 + 205, (-100 - CameraY) + LogoMeiaAltura);
-    Ab[12].DrawAlpha(Sup, R, 0, 255);
-  end;
-  if Idioma = 2 then
-  begin
-    R := Rect(205 - L14, (-100 - CameraY) - LogoMeiaAltura, L14 + 205, (-100 - CameraY) + LogoMeiaAltura);
-    Ab[13].DrawAlpha(Sup, R, 0, 255);
-  end;
+  R := Rect(205 - L14, (-100 - CameraY) - LogoMeiaAltura, L14 + 205, (-100 - CameraY) + LogoMeiaAltura);
+  Ab.PorNome('Logo' + SufixoIdioma).DrawAlpha(Sup, R, 0, 255);
 
   if TempoEstado > 440 then
     texto(320, 140, Versao, AEsq, 8, Branco);
@@ -113,7 +105,7 @@ begin
     end;
     if TempoEstado >= 500 then
       texto(200, 170, S, ACentro, 12, AzulTitulo);
-    Ab[15].Draw(Sup, 5, 280, 0);
+    Ab.PorNome('Cybergamba').Draw(Sup, 5, 280, 0);
     texto(200, 253, Linha(MemoTexto, 26), ACentro, 8, Branco);
     texto(200, 267, Linha(MemoTexto, 31), ACentro, 8, Branco);
   end;
@@ -135,14 +127,14 @@ begin
     Estado := CHS_LUTA;
     FTick7 := 0;
     TempoDemo := 600;
-    RelogioParado := 0;
+    RelogioParado := False;
     ContagemSeg := 99;
     ContagemTick := 25;
     FaseIntro := 72;
     FaseFim := 0;
-    Lutador[1].Ativo := 0;
+    Lutador[1].Ativo := False;
     Lutador[1].Acao := 1;
-    Lutador[2].Ativo := 0;
+    Lutador[2].Ativo := False;
     Lutador[2].Acao := 1;
     zerardados(1);
     zerardados(2);
@@ -153,19 +145,19 @@ begin
     DeslocHudTopo := -120;
     DeslocHudBase := 60;
     CameraX := 100;
-    PrimeiroAtaque := 1;
-    L := Round(Random(120) / 10) + 1;
+    PrimeiroAtaque := True;
+    L := Round(Random(FQtdCenarios * 10) / 10) + 1;
     if L < 1 then L := 1;
-    if L > 12 then L := 12;
+    if L > FQtdCenarios then L := FQtdCenarios;
     CenarioAtual := L;
-    carregarcenario(NomeNN('Cenarios/Cenario-', '.bmp', CenarioAtual));
+    carregarcenario(CenarioAtual);
     for L := 1 to 2 do
     begin
-      I := Round(Random(150) / 10) + 1;
+      I := Round(Random(FQtdLutadores * 10) / 10) + 1;
       if I < 1 then I := 1;
-      if I > 15 then I := 15;
+      if I > FQtdLutadores then I := FQtdLutadores;
       Lutador[L].Personagem := I;
-      carregarlutador(NomeNN('Lutadores/C', '.bmp', I), I, L);
+      carregarlutador(ArqLutador(I), I, L);
     end;
   end;
 
@@ -194,10 +186,10 @@ begin
   end;
   if (Estado = CHS_ABERTURA) and (Fichas > 0) then
   begin
-    if (Tk = Integer(SDL_SCANCODE_1)) and (Lutador[1].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_1)) and not Lutador[1].Ativo then
     begin
-      Lutador[1].Ativo := 1;
-      Lutador[1].Escolheu := 0;
+      Lutador[1].Ativo := True;
+      Lutador[1].Escolheu := False;
       Lutador[1].Pontos := 0;
       Lutador[1].RoundsVencidos := 0;
       Lutador[1].Personagem := 1;
@@ -205,15 +197,15 @@ begin
       Estado := CHS_SELECAO;
       FaseSelecao := 1;
       Fase := 1;
-      if CheatGentalha = 1 then Fase := 8;
+      if CheatGentalha then Fase := 8;
       ContagemSeg := 30;
       ContagemTick := 25;
       TempoEstado := 0;
     end;
-    if (Tk = Integer(SDL_SCANCODE_2)) and (Lutador[2].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_2)) and not Lutador[2].Ativo then
     begin
-      Lutador[2].Ativo := 1;
-      Lutador[2].Escolheu := 0;
+      Lutador[2].Ativo := True;
+      Lutador[2].Escolheu := False;
       Lutador[2].Pontos := 0;
       Lutador[2].RoundsVencidos := 0;
       Lutador[2].Personagem := 2;
@@ -221,7 +213,7 @@ begin
       Estado := CHS_SELECAO;
       FaseSelecao := 1;
       Fase := 1;
-      if CheatGentalha = 1 then Fase := 8;
+      if CheatGentalha then Fase := 8;
       ContagemSeg := 30;
       ContagemTick := 25;
       TempoEstado := 0;

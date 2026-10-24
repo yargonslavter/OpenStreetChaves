@@ -15,16 +15,16 @@ begin
   begin
     C := Seq[I];
     case C of
-      'C': A_Desenha(ImgIcone, 0, X + DX, Y + 3);
-      'B': A_Desenha(ImgIcone, 1, X + DX, Y + 3);
-      'D': A_Desenha(ImgIcone, 2, X + DX, Y + 3);
-      'E': A_Desenha(ImgIcone, 3, X + DX, Y + 3);
-      'Y': A_Desenha(ImgIcone, 4, X + DX, Y + 3);
-      'Z': A_Desenha(ImgIcone, 5, X + DX, Y + 3);
-      'P': texto(X + DX, Y, '+S', AEsq, 9, Branco);
-      'K': texto(X + DX, Y, '+C', AEsq, 9, Branco);
-      'R': texto(X + DX, Y, ' (rápido)', AEsq, 9, Branco);
-      '?': texto(X + DX, Y, '+S/C', AEsq, 9, Branco);
+      'C': ImgIcone.PorNome('Cima').Draw(Tela, X + DX, Y + 3, 0);
+      'B': ImgIcone.PorNome('Baixo').Draw(Tela, X + DX, Y + 3, 0);
+      'D': ImgIcone.PorNome('Direita').Draw(Tela, X + DX, Y + 3, 0);
+      'E': ImgIcone.PorNome('Esquerda').Draw(Tela, X + DX, Y + 3, 0);
+      'Y': ImgIcone.PorNome('Diagonal1').Draw(Tela, X + DX, Y + 3, 0);
+      'Z': ImgIcone.PorNome('Diagonal2').Draw(Tela, X + DX, Y + 3, 0);
+      'P': texto(X + DX, Y, TextoInterface('GolpeSoco'), AEsq, 9, Branco);
+      'K': texto(X + DX, Y, TextoInterface('GolpeChute'), AEsq, 9, Branco);
+      'R': texto(X + DX, Y, TextoInterface('GolpeRapido'), AEsq, 9, Branco);
+      '?': texto(X + DX, Y, TextoInterface('GolpeSocoOuChute'), AEsq, 9, Branco);
     end;
     Inc(DX, 12);
   end;
@@ -43,9 +43,9 @@ begin
     barra(X + 3, Y - 5, X + 197, Y + 80, RGB(20, 40, 60));
     retangulo(X + 3, Y - 5, X + 197, Y + 80, Branco);
     Pers := Lutador[J].Personagem;
-    if (Pers >= 1) and (Pers <= 15) then
-      for K := 1 to 5 do
-        mostrasequencia(X + 6, Y + (K - 1) * 15, GolpesDoPersonagem[Pers, K].N, GolpesDoPersonagem[Pers, K].S);
+    if (Pers >= 1) and (Pers <= FQtdLutadores) then
+      for K := 1 to High(FLutadores[Pers].Golpes) do
+        mostrasequencia(X + 6, Y + (K - 1) * 15, FLutadores[Pers].Golpes[K].N, FLutadores[Pers].Golpes[K].S);
   end;
 end;
 
@@ -64,19 +64,19 @@ begin
     for I := 1 to 2 do
     begin
       Lutador[I].Y := ChaoY;
-      Lutador[I].NoAr := 1;
+      Lutador[I].NoAr := True;
       Lutador[I].VelY := -25;
       Lutador[I].Quadro := 21;
       Lutador[I].Acao := 12;
       Lutador[I].QuadroAcao := 0;
       Lutador[I].DuracaoAcao := 99;
     end;
-    RelogioParado := 1;
+    RelogioParado := True;
     CameraY := Round((Lutador[1].Y + Lutador[2].Y) / 8) - 55;
   end;
   // chefe (fase 8): dialogo antes da luta quando ha um computador
   if (Fase = 8) and (RoundAtual = 1) and (FaseIntro = 1) and
-     ((Lutador[1].Ativo = 0) or (Lutador[2].Ativo = 0)) then
+     (not Lutador[1].Ativo or not Lutador[2].Ativo) then
   begin
     TempoDialogo := 600;
     FaseIntro := 2;
@@ -93,10 +93,10 @@ var
   Desloc, C, L: Integer;
 begin
   Sup := Tela;
-  if (MusicaAtual <> 0) and (MusicaPendente = 1) and (SomMusica.Count > 0) then
+  if (MusicaAtual <> 0) and MusicaPendente and (SomMusica.Count > 0) then
   begin
     SomMusica.Tocar(0);
-    MusicaPendente := 0;
+    MusicaPendente := False;
   end;
   if SomPendente <> 0 then
     if SomEfeitos.Count > SomPendente then
@@ -115,10 +115,10 @@ begin
     if FlashTela mod 5 = 0 then Desloc := 80;
     for C := 0 to 5 do
       for L := 0 to 4 do
-        ImgIcone[7].Draw(Sup, C * 100 - 80 + Desloc, L * 100, 0);
+        ImgIcone.PorNome('Especial').Draw(Sup, C * 100 - 80 + Desloc, L * 100, 0);
   end;
 
-  if RelogioParado = 0 then
+  if not RelogioParado then
   begin
     CameraX := Round((Lutador[1].X + Lutador[2].X) / 2) - 200;
     CameraY := Round((Lutador[1].Y + Lutador[2].Y) / 8) - 55;
@@ -130,9 +130,9 @@ begin
     CameraY := Random(20) + (CameraY - 10);
   end;
   if CameraX < 0 then CameraX := 0;
-  if CameraX > 200 then CameraX := 200;
+  if CameraX > FCameraXMax then CameraX := FCameraXMax;
   if CameraY < 0 then CameraY := 0;
-  if CameraY > 20 then CameraY := 20;
+  if CameraY > FCameraYMax then CameraY := FCameraYMax;
 
   if FlashTela = 0 then
   begin
@@ -165,7 +165,7 @@ begin
     if ContagemSeg < 10 then texto(200, T + 10, '0' + IntToStr(ContagemSeg), ACentro, 25, Cor);
     if (ContagemSeg < 10) and (ContagemTick mod 2 = 0) then
       texto(200, T + 10, '0' + IntToStr(ContagemSeg), ACentro, 25, RosaPalido);
-    if (FlashTela = 0) and (PausaImpacto = 0) and (RelogioParado = 0) then Dec(ContagemTick);
+    if (FlashTela = 0) and (PausaImpacto = 0) and not RelogioParado then Dec(ContagemTick);
     if ContagemTick = 0 then
     begin
       ContagemTick := 25;
@@ -274,11 +274,11 @@ begin
   end;
 
   // jogador ausente: convite para entrar
-  if (P.Ativo = 0) and (TempoDemo = 0) then
+  if not P.Ativo and (TempoDemo = 0) then
   begin
     if (ContPisca < 15) and (Fichas = 0) then
       texto(Mult * 100 + 200, 0, Linha(MemoTexto, 6), ACentro, 10, Branco);
-    if (ContPisca < 15) and (Fichas > 0) and (RelogioParado = 0) then
+    if (ContPisca < 15) and (Fichas > 0) and not RelogioParado then
       texto(Mult * 100 + 200, 0, Linha(MemoTexto, 7), ACentro, 10, Branco);
   end;
 
@@ -287,7 +287,7 @@ begin
   else
     texto(Mult * 145 + 200, T + 45, Linha(MemoNomes, P.Personagem), ADir, 12, RGB(255, 110, 110));
 
-  if P.Ativo = 1 then
+  if P.Ativo then
   begin
     Tmp4494 := Round(Cos(ContPisca / 4.75) * 20);
     if Jog = 1 then
@@ -319,14 +319,14 @@ begin
 
   // pulo
   if ((K and 1) <> 0) and ((P.Acao = 1) or (P.Acao = 2) or (P.Acao = 21) or (P.Acao = 22)) and
-     (P.VelY = 0) and (P.NoAr = 0) then
+     (P.VelY = 0) and not P.NoAr then
   begin
     P.VelY := -32;
-    P.NoAr := 1;
+    P.NoAr := True;
     P.Acao := 12;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 99;
-    P.Defendendo := 0;
+    P.Defendendo := False;
     P.DirPulo := 1;
     if (K and 4) <> 0 then P.DirPulo := 2;
     if (K and 8) <> 0 then P.DirPulo := 3;
@@ -338,14 +338,14 @@ begin
   end;
 
   // golpes especiais (sequencias) e golpes normais
-  if ((K and 16) <> 0) and (P.AntSocoFraco = 0) then golpe(Jog, 1);
-  if ((K and 32) <> 0) and (P.AntChuteFraco = 0) then golpe(Jog, 2);
-  if ((K and 64) <> 0) and (P.AntSocoForte = 0) then golpe(Jog, 3);
-  if ((K and 128) <> 0) and (P.AntChuteForte = 0) then golpe(Jog, 4);
-  if ((K and 16) <> 0) and (P.AntSocoFraco = 0) then AcaoJogador(Jog, 3);
-  if ((K and 32) <> 0) and (P.AntChuteFraco = 0) then AcaoJogador(Jog, 4);
-  if ((K and 64) <> 0) and (P.AntSocoForte = 0) then AcaoJogador(Jog, 5);
-  if ((K and 128) <> 0) and (P.AntChuteForte = 0) then AcaoJogador(Jog, 6);
+  if ((K and 16) <> 0) and not P.AntSocoFraco then golpe(Jog, 1);
+  if ((K and 32) <> 0) and not P.AntChuteFraco then golpe(Jog, 2);
+  if ((K and 64) <> 0) and not P.AntSocoForte then golpe(Jog, 3);
+  if ((K and 128) <> 0) and not P.AntChuteForte then golpe(Jog, 4);
+  if ((K and 16) <> 0) and not P.AntSocoFraco then AcaoJogador(Jog, 3);
+  if ((K and 32) <> 0) and not P.AntChuteFraco then AcaoJogador(Jog, 4);
+  if ((K and 64) <> 0) and not P.AntSocoForte then AcaoJogador(Jog, 5);
+  if ((K and 128) <> 0) and not P.AntChuteForte then AcaoJogador(Jog, 6);
 end;
 
 { Passaro/aviao que cruza o cenario e solta objetos. }
@@ -354,23 +354,23 @@ var
   Sup: TSuperficie;
 begin
   Sup := Tela;
-  if ((CenarioAtual = 1) or ((CenarioAtual = 2) and (RelogioParado = 0))) and (Voador.Ativo = 0) and
+  if ((FVoadorModo = 1) or ((FVoadorModo = 2) and not RelogioParado)) and not Voador.Ativo and
      (CameraX > 40) and (CameraX < 160) and (Random(Voador.Alcance) = 0) then
   begin
     Voador.X := CameraX - 80;
-    Voador.Y := 146;
+    Voador.Y := FVoadorY;
     Voador.Vel := 7;
     Voador.Tipo := Random(2) + 1;
-    Voador.Ativo := 1;
+    Voador.Ativo := True;
   end;
-  if Voador.Ativo = 1 then
+  if Voador.Ativo then
   begin
-    ImgEfeitos[0].Draw(Sup, Voador.X + 10 - CameraX, Voador.Y + 132 - CameraY, 0);
-    ImgEfeitos[9].Draw(Sup, Voador.X - CameraX, Voador.Y - CameraY, 0);
+    ImgEfeitos.PorNome('Sombra').Draw(Sup, Voador.X + 10 - CameraX, Voador.Y + 132 - CameraY, 0);
+    ImgEfeitos.PorNome('Voador').Draw(Sup, Voador.X - CameraX, Voador.Y - CameraY, 0);
     if (FlashTela = 0) and (PausaImpacto = 0) then Voador.X := Voador.X + Voador.Vel;
-    if Voador.X > CameraX + 420 then Voador.Ativo := 0;
+    if Voador.X > CameraX + 420 then Voador.Ativo := False;
     if (Voador.Tipo <> 0) and (Voador.X > CameraX + 150) and (Voador.X < CameraX + 250) and
-       (Random(5) = 0) and (FlashTela = 0) and (PausaImpacto = 0) and (RelogioParado = 0) then
+       (Random(5) = 0) and (FlashTela = 0) and (PausaImpacto = 0) and not RelogioParado then
     begin
       if Voador.Tipo = 1 then CriaEfeito(3, '', 0, Voador.X + 13, Voador.Y - 5);
       if Voador.Tipo = 2 then CriaEfeito(4, '', 0, Voador.X + 13, Voador.Y - 5);
@@ -425,7 +425,7 @@ begin
   if P.TempoMsgBonus > 0 then
   begin
     texto(Mult * 100 + 200, 80, Linha(MemoTexto, P.MsgBonus), ACentro, 15, VerdeBonus);
-    if (P.MsgBonus = 1) and (P.Ativo = 1) then
+    if (P.MsgBonus = 1) and P.Ativo then
       texto(Mult * 80 + 200, 110, Linha(MemoTexto, 2), ACentro, 10, Branco);
     Dec(P.TempoMsgBonus);
   end;
@@ -511,7 +511,7 @@ begin
     texto(200, 40, Linha(MemoTexto, 27), ACentro, 28, RGB(255, Pisca, Pisca));
   if DeslocHudTopo > -120 then DeslocHudTopo := DeslocHudTopo - 10;
   if DeslocHudBase < 490 then DeslocHudBase := DeslocHudBase + 10;
-  RelogioParado := 1;
+  RelogioParado := True;
   if Lutador[1].Vida < Lutador[2].Vida then Lutador[1].Vida := 0;
   if Lutador[2].Vida < Lutador[1].Vida then Lutador[2].Vida := 0;
   if Lutador[1].Vida = Lutador[2].Vida then
@@ -530,7 +530,7 @@ var
 begin
   if (FaseIntro > 70) or (TempoDialogo <> 0) then Exit;
   Inc(FaseIntro);
-  if FaseIntro < 10 then RelogioParado := 1;
+  if FaseIntro < 10 then RelogioParado := True;
   DeslocHudTopo := 0;
   DeslocHudBase := 0;
   if FaseIntro < 5 then
@@ -560,7 +560,7 @@ begin
   end;
   if FaseIntro = 55 then
   begin
-    RelogioParado := 0;
+    RelogioParado := False;
     Lutador[1].Vida := VidaMax;
     Lutador[2].Vida := VidaMax;
   end;
@@ -578,16 +578,16 @@ begin
   if not ((Lutador[1].Vida <= 0) or ((Lutador[2].Vida <= 0) and (FaseFim < 230))) then Exit;
 
   if (PausaImpacto = 0) and (FlashTela = 0) then Inc(FaseFim);
-  if FaseFim > 40 then RelogioParado := 1;
+  if FaseFim > 40 then RelogioParado := True;
   if FaseFim = 1 then
   begin
     PausaImpacto := 30;
     FaseFim := 2;
   end;
-  if Lutador[1].Vida <= 0 then Lutador[2].Vencedor := 1;
-  if Lutador[1].Vida <= 0 then Lutador[1].Vencedor := 0;
-  if Lutador[2].Vida <= 0 then Lutador[1].Vencedor := 1;
-  if Lutador[2].Vida <= 0 then Lutador[2].Vencedor := 0;
+  if Lutador[1].Vida <= 0 then Lutador[2].Vencedor := True;
+  if Lutador[1].Vida <= 0 then Lutador[1].Vencedor := False;
+  if Lutador[2].Vida <= 0 then Lutador[1].Vencedor := True;
+  if Lutador[2].Vida <= 0 then Lutador[2].Vencedor := False;
 
   if (FaseFim > 0) and (FaseFim < 30) then
   begin
@@ -606,12 +606,12 @@ begin
       O := @Lutador[3 - J];
       if P.Vida > 0 then
       begin
-        if RelogioParado = 1 then AcaoJogador(J, 14);
+        if RelogioParado then AcaoJogador(J, 14);
         Pisca := 0;
         if ContPisca mod 2 = 0 then Pisca := 80;
         texto(200, 110, Linha(MemoNomes, P.Personagem), ACentro, 20, RGB(255, Pisca, Pisca));
         texto(200, 140, Linha(MemoTexto, 14), ACentro, 14, Branco);
-        if (P.Ativo = 1) and (P.Vida < VidaMax) then
+        if P.Ativo and (P.Vida < VidaMax) then
         begin
           texto(200, 210, Linha(MemoTexto, 5) + 'x5=' + IntToStr(Int64(Round(P.Vida)) * 5) + ' PTS.',
             ACentro, 12, Branco);
@@ -625,7 +625,7 @@ begin
         if ContPisca mod 2 = 0 then Pisca := 120;
         if (P.Vida = VidaMax) and (FaseFim > 35) then
           texto(200, 170, Linha(MemoTexto, 30), ACentro, 28, RGB(255, Pisca + 120, Pisca + 30));
-        if (P.Ativo = 1) and (P.Vida = VidaMax) then
+        if P.Ativo and (P.Vida = VidaMax) then
         begin
           texto(200, 210, 'BONUS ' + IntToStr(1000) + ' PTS.', ACentro, 15, Branco);
           if (FaseFim = 45) and (FlashTela = 0) and (PausaImpacto = 0) then
@@ -634,7 +634,7 @@ begin
             Inc(FaseFim);
           end;
         end;
-        if (P.Ativo = 1) and (NumRounds = P.RoundsVencidos) and (O.RoundsVencidos = 0) then
+        if P.Ativo and (NumRounds = P.RoundsVencidos) and (O.RoundsVencidos = 0) then
         begin
           Pisca := 0;
           if ContPisca mod 2 = 0 then Pisca := 20;
@@ -671,11 +671,11 @@ begin
     begin
       Pisca := 0;
       if ContPisca mod 2 = 0 then Pisca := 30;
-      if RelogioParado = 1 then AcaoJogador(J, 14);
+      if RelogioParado then AcaoJogador(J, 14);
       if FaseFim = 100 then
       begin
-        if O.Ativo = 0 then Inc(Fase);
-        O.Ativo := 0;
+        if not O.Ativo then Inc(Fase);
+        O.Ativo := False;
       end;
       if (((TecP1 and 16) <> 0) and (J = 1)) or (((TecP2 and 16) <> 0) and (J = 2)) then
         if (FaseFim < 90) or (FaseFim > 100) then FaseFim := FaseFim + 2;
@@ -706,7 +706,7 @@ begin
           ImgRetrato[I].DrawAlpha(Sup, R, 0, 255);
         end;
       end;
-      if P.Ativo = 1 then
+      if P.Ativo then
       begin
         texto(10, 20, Linha(MemoTexto, 16), AEsq, 12, RGB(Pisca + 30, Pisca + 220, Pisca + 30));
         texto(10, 35, IntToStr(P.MaxAcertos), AEsq, 14, RGB(255 - Pisca, 255 - Pisca, 255 - Pisca));
@@ -752,7 +752,7 @@ begin
   begin
     FaseIntro := 0;
     FaseFim := 0;
-    Voador.Ativo := 0;
+    Voador.Ativo := False;
     zerardados(1);
     zerardados(2);
     if TempoRound = 1 then ContagemSeg := 30;
@@ -769,12 +769,12 @@ begin
     Estado := CHS_ADVERSARIOS;
     SomPendente := 0;
     FaseSelecao := 1;
-    Lutador[1].Escolheu := 0;
-    Lutador[2].Escolheu := 0;
+    Lutador[1].Escolheu := False;
+    Lutador[2].Escolheu := False;
     RoundAtual := 1;
     ContagemSeg := 20;
     ContagemTick := 25;
-    if (Lutador[1].Ativo = 1) or (Lutador[2].Ativo = 1) then
+    if Lutador[1].Ativo or Lutador[2].Ativo then
     begin
       if Fase > 8 then
       begin
@@ -793,7 +793,7 @@ begin
           Estado := CHS_FINAL;
       end;
     end;
-    if (Lutador[1].Ativo = 0) and (Lutador[2].Ativo = 0) then
+    if not Lutador[1].Ativo and not Lutador[2].Ativo then
     begin
       if (MusicaAtual <> 0) and (SomMusica.Count > 0) then SomMusica.Parar(0);
       SomPendente := 0;
@@ -851,7 +851,7 @@ begin
   AlvoX2 := Round(O.X) + O.CorpoX2;
   AlvoY2 := (Round(O.Y) - O.AlturaSprite) + O.CorpoY2;
 
-  if (P.GolpeAtivo = 1) and (O.Vencedor = 0) and
+  if P.GolpeAtivo and not O.Vencedor and
      (AtqX1 < AlvoX2) and (AtqX2 > AlvoX1) and (AtqY1 < AlvoY2) and (AtqY2 > AlvoY1) and
      (PausaImpacto = 0) and (FlashTela = 0) then
   begin
@@ -860,10 +860,10 @@ begin
     MY := Round((P.AtaqueY1 + P.AtaqueY2) / 2);
 
     // golpe alto/baixo vence a guarda errada
-    if ((P.Acao = 9) or (P.Acao = 11)) and (O.Acao = 21) then O.Defendendo := 0;
-    if ((P.Acao = 13) or (P.Acao = 14) or (P.Acao = 15) or (P.Acao = 16)) and (O.Acao = 22) then O.Defendendo := 0;
+    if ((P.Acao = 9) or (P.Acao = 11)) and (O.Acao = 21) then O.Defendendo := False;
+    if ((P.Acao = 13) or (P.Acao = 14) or (P.Acao = 15) or (P.Acao = 16)) and (O.Acao = 22) then O.Defendendo := False;
 
-    if O.Defendendo = 1 then
+    if O.Defendendo then
     begin
       // ---- defendido ----
       O.QuadroAcao := 1;
@@ -871,7 +871,7 @@ begin
       CriaEfeito(14, '', 0, MX + P.X, MY + (P.Y - P.AlturaSprite));
       if O.Lado = 1 then Empurra(O_Jog, -10);
       if O.Lado = 2 then Empurra(O_Jog, 10);
-      if (AvisoEntrada = 0) and (RelogioParado = 0) then
+      if (AvisoEntrada = 0) and not RelogioParado then
       begin
         O.Vida := O.Vida - P.DanoDefesa * NivelDano;
         O.AtrasoBarra := 20;
@@ -881,7 +881,7 @@ begin
         SomPendente := 9;
         AcaoJogador(O_Jog, 10);
       end;
-      P.GolpeAtivo := 0;
+      P.GolpeAtivo := False;
       if O.Vida > 0 then
       begin
         if P.ForcaGolpe = 1 then PausaImpacto := Random(4) + 2;
@@ -889,12 +889,12 @@ begin
       end;
     end;
 
-    if O.Defendendo = 0 then
+    if not O.Defendendo then
     begin
       // ---- acertou ----
       if O.X < P.X then O.Lado := 1;
       if O.X >= P.X then O.Lado := 2;
-      if (P.Ativo = 1) and (O.Vida > 0) and (PausaImpacto = 0) and (FlashTela = 0) then
+      if P.Ativo and (O.Vida > 0) and (PausaImpacto = 0) and (FlashTela = 0) then
         P.Pontos := P.Pontos + 5;
       if P.CargaPoder < CargaMax then P.CargaPoder := P.CargaPoder + 2 * GanhoCarga;
       if O.CargaPoder < CargaMax then O.CargaPoder := O.CargaPoder + 1 * GanhoCarga;
@@ -907,12 +907,12 @@ begin
       if (P.Personagem = 4) and (P.Acao = 27) then P.TempoAcertos := 47;
       if (P.Personagem = 6) and (P.Acao = 29) then P.TempoAcertos := 50;
       if (P.Personagem = 15) and (P.Acao = 27) then P.TempoAcertos := 50;
-      if (AvisoEntrada = 0) and (RelogioParado = 0) then
+      if (AvisoEntrada = 0) and not RelogioParado then
       begin
         O.Vida := O.Vida - P.DanoGolpe * NivelDano;
         O.AtrasoBarra := 20;
       end;
-      if Flash = 1 then
+      if Flash then
       begin
         if (P.ForcaGolpe = 1) and (Random(5) = 0) then FlashVermelho := 6;
         if (P.ForcaGolpe = 2) and (Random(2) = 0) then FlashVermelho := 6;
@@ -937,14 +937,14 @@ begin
       end;
       CriaEfeito(1, '', 0, MX + P.X, MY + (P.Y - P.AlturaSprite));
       // sangue
-      if ((Sangue = 1) and (P.ForcaGolpe = 2) and (Random(5) = 0)) or (CheatSatanas = 1) then
+      if (Sangue and (P.ForcaGolpe = 2) and (Random(5) = 0)) or CheatSatanas then
         CriaEfeito(10, '', 0, O.X, O.Y - (O.AlturaSprite - 40));
       // reacao do oponente
       if (P.Acao = 4) or (P.Acao = 6) or (P.Acao = 8) or (P.Acao = 9) or (P.Acao = 10) then
         AcaoJogador(O_Jog, 9)
       else
         AcaoJogador(O_Jog, 8);
-      if (P.EhChute = 1) or (O.VelY <> 0) or (ChaoY > O.Y) then AcaoJogador(O_Jog, 10);
+      if P.EhChute or (O.VelY <> 0) or (ChaoY > O.Y) then AcaoJogador(O_Jog, 10);
       // recuo (empurrao) do oponente
       O.Recuo := 4;
       if (P.Personagem = 1) and (P.Acao = 26) and (P.ForcaGolpe = 2) then O.Recuo := 20;
@@ -963,24 +963,24 @@ begin
       if P.ForcaGolpe = 2 then SomPendente := 8;
       if P.ForcaGolpe = 3 then SomPendente := 9;
       // primeiro ataque do round
-      if PrimeiroAtaque = 0 then
+      if not PrimeiroAtaque then
       begin
         P.MsgBonus := 1;
         P.TempoMsgBonus := 50;
-        if (P.Ativo = 1) and (PausaImpacto = 0) and (FlashTela = 0) then P.Pontos := P.Pontos + 300;
-        PrimeiroAtaque := 1;
+        if P.Ativo and (PausaImpacto = 0) and (FlashTela = 0) then P.Pontos := P.Pontos + 300;
+        PrimeiroAtaque := True;
       end;
-      P.DesenhaPorCima := 1;
-      O.DesenhaPorCima := 0;
-      P.GolpeAtivo := 0;
-      O.GolpeAtivo := 0;
+      P.DesenhaPorCima := True;
+      O.DesenhaPorCima := False;
+      P.GolpeAtivo := False;
+      O.GolpeAtivo := False;
       // golpes encadeados (continuam em outra acao)
       if (P.Personagem = 2) and (P.Acao = 28) then
       begin
         P.Acao := 29;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 30;
-        O.GolpeAtivo := 0;
+        O.GolpeAtivo := False;
       end;
       if (P.Personagem = 2) and (P.Acao = 30) then
       begin
@@ -988,21 +988,21 @@ begin
         P.QuadroAcao := 0;
         P.DuracaoAcao := 40;
         Inc(P.Acertos);
-        O.GolpeAtivo := 0;
+        O.GolpeAtivo := False;
       end;
       if (P.Personagem = 3) and (P.Acao = 29) then
       begin
         P.Acao := 30;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 30;
-        O.GolpeAtivo := 0;
+        O.GolpeAtivo := False;
       end;
       if (P.Personagem = 7) and (P.Acao = 29) then
       begin
         P.Acao := 30;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 15;
-        O.GolpeAtivo := 0;
+        O.GolpeAtivo := False;
       end;
       if O.Vida > 0 then
       begin
@@ -1013,7 +1013,7 @@ begin
     end;
 
     // oponente encostado na borda da tela: o atacante recua
-    if RelogioParado = 0 then
+    if not RelogioParado then
     begin
       if CameraX + 370 <= O.X then Empurra(Jog, -12);
       if CameraX + 30 >= O.X then Empurra(Jog, 12);
@@ -1036,16 +1036,16 @@ begin
     if P.QuadroAcao >= P.DuracaoAcao then
     begin
       P.Acao := 1;
-      P.GolpeAtivo := 0;
+      P.GolpeAtivo := False;
       P.DanoGolpe := 0;
       P.QuadroAcao := 0;
-      P.Vencedor := 0;
-      P.Defendendo := 0;
-      P.EhChute := 0;
+      P.Vencedor := False;
+      P.Defendendo := False;
+      P.EhChute := False;
       P.ForcaGolpe := 0;
       if ChaoY > P.Y then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
         P.Acao := 12;
       end;
       if P.X < O.X then P.Lado := 1;
@@ -1065,11 +1065,11 @@ begin
       P.Angulo := 0;
       P.VelAngular := 0;
       P.VelY := 0;
-      P.NoAr := 0;
+      P.NoAr := False;
       P.Acao := 1;
       P.QuadroAcao := 0;
-      P.GolpeAtivo := 0;
-      P.EhChute := 0;
+      P.GolpeAtivo := False;
+      P.EhChute := False;
     end;
   end;
 
@@ -1078,7 +1078,7 @@ begin
   begin
     P := @Lutador[J];
     O := @Lutador[3 - J];
-    if (P.NoAr = 1) and (FlashTela = 0) and (PausaImpacto = 0) then
+    if P.NoAr and (FlashTela = 0) and (PausaImpacto = 0) then
     begin
       P.Y := P.Y + P.VelY;
       P.VelY := P.VelY + Gravidade;
@@ -1119,7 +1119,7 @@ begin
       begin
         if P.Lado = 1 then Empurra(J, -P.Recuo);
         if P.Lado = 2 then Empurra(J, P.Recuo);
-        if ((Sangue = 1) and (Random(4) = 0)) or (CheatSatanas = 1) then
+        if (Sangue and (Random(4) = 0)) or CheatSatanas then
           if P.QuadroAcao = 5 then
           begin
             if P.Lado = 1 then CriaEfeito(10, '', 0, P.X - 30, P.Y - 50);
@@ -1128,7 +1128,7 @@ begin
         if ChaoY < P.Y then
         begin
           P.Y := ChaoY;
-          P.NoAr := 0;
+          P.NoAr := False;
           P.Angulo := 0;
           P.VelAngular := 0;
           P.VelY := 0;
@@ -1139,15 +1139,15 @@ begin
       if ChaoY < P.Y then
       begin
         P.VelY := 0;
-        P.NoAr := 0;
+        P.NoAr := False;
         P.Y := ChaoY;
         P.Angulo := 0;
         P.VelAngular := 0;
         P.Acao := 1;
         P.QuadroAcao := 0;
-        P.GolpeAtivo := 0;
+        P.GolpeAtivo := False;
         P.DanoGolpe := 0;
-        P.EhChute := 0;
+        P.EhChute := False;
         P.DirPulo := 0;
         if P.X < O.X then P.Lado := 1;
         if P.X >= O.X then P.Lado := 2;
@@ -1178,11 +1178,11 @@ begin
   if TempoDialogo = 0 then Exit;
   Sup := Tela;
   Jh := 1;
-  if Lutador[1].Ativo = 1 then Jh := 1;
-  if Lutador[2].Ativo = 1 then Jh := 2;
+  if Lutador[1].Ativo then Jh := 1;
+  if Lutador[2].Ativo then Jh := 2;
   Jc := 2;
-  if Lutador[1].Ativo = 0 then Jc := 1;
-  if Lutador[2].Ativo = 0 then Jc := 2;
+  if not Lutador[1].Ativo then Jc := 1;
+  if not Lutador[2].Ativo then Jc := 2;
 
   barraredonda(5, 165, 290, 215, 20, Branco, Preto);
   I := (Lutador[Jh].Personagem - 1) * 5 + 4;
@@ -1237,7 +1237,7 @@ begin
     texto(120, 237, Linha(MemoDialogo, I + 1), AEsq, 10, Branco);
     texto(120, 251, Linha(MemoDialogo, I + 2), AEsq, 10, Branco);
   end;
-  if (((TecP1 and 16) <> 0) and (Lutador[1].Ativo = 1)) or (((TecP2 and 16) <> 0) and (Lutador[2].Ativo = 1)) then
+  if (((TecP1 and 16) <> 0) and Lutador[1].Ativo) or (((TecP2 and 16) <> 0) and Lutador[2].Ativo) then
     if TempoDialogo > 10 then TempoDialogo := TempoDialogo - 5;
 end;
 
@@ -1245,8 +1245,9 @@ end;
 procedure TJogo.L7_Demo;
 var
   Sup: TSuperficie;
-  K, W, H, Idx: Integer;
+  K, W, H: Integer;
   R: TRect;
+  Logo: TImagem;
 begin
   if TempoDemo <= 0 then Exit;
   Sup := Tela;
@@ -1260,16 +1261,11 @@ begin
     texto(200, 240, Linha(MemoTexto, 6), ACentro, 10, Branco);
   if TempoDemo < 500 then
   begin
-    Idx := -1;
-    if Idioma = 1 then Idx := 12;
-    if Idioma = 2 then Idx := 13;
-    if (Idx >= 0) and (ImgAbertura.Count > Idx) then
-    begin
-      W := Round(ImgAbertura[Idx].Width / 2);
-      H := Round(ImgAbertura[Idx].Height / 2);
-      R := Rect(390 - W, 280 - H, 390, 280);
-      ImgAbertura[Idx].DrawAlpha(Sup, R, 0, 255);
-    end;
+    Logo := ImgAbertura.PorNome('Logo' + SufixoIdioma);
+    W := Round(Logo.Width / 2);
+    H := Round(Logo.Height / 2);
+    R := Rect(390 - W, 280 - H, 390, 280);
+    Logo.DrawAlpha(Sup, R, 0, 255);
   end;
   if TempoDemo <= 5 then
   begin
@@ -1291,33 +1287,33 @@ begin
   L7_Relogio;
   for J := 1 to 2 do L7_HudCima(J);
 
-  if (FlashTela = 0) and (PausaImpacto = 0) and (AvisoEntrada = 0) and (RelogioParado = 0) then
+  if (FlashTela = 0) and (PausaImpacto = 0) and (AvisoEntrada = 0) and not RelogioParado then
   begin
-    if Lutador[1].Ativo = 1 then L7_Entrada(1, TecP1);
-    if Lutador[2].Ativo = 1 then L7_Entrada(2, TecP2);
+    if Lutador[1].Ativo then L7_Entrada(1, TecP1);
+    if Lutador[2].Ativo then L7_Entrada(2, TecP2);
   end;
   sequenciagolpe(1);
   sequenciagolpe(2);
   if (FlashTela = 0) and (PausaImpacto = 0) and (AvisoEntrada = 0) then
     for J := 1 to 2 do
-      if (Lutador[J].Ativo = 0) and (RelogioParado = 0) then cpu(J);
+      if not Lutador[J].Ativo and not RelogioParado then cpu(J);
 
   L7_Voador;
   L7_ItemBonus;
 
   // lutadores (quem apanhou/atacou por ultimo e desenhado por cima)
-  if Lutador[1].DesenhaPorCima = 1 then
+  if Lutador[1].DesenhaPorCima then
   begin
     desenhalutador(2, Round(Lutador[2].X), Round(Lutador[2].Y), Lutador[2].Acao, Byte(Lutador[2].QuadroAcao));
     desenhalutador(1, Round(Lutador[1].X), Round(Lutador[1].Y), Lutador[1].Acao, Byte(Lutador[1].QuadroAcao));
   end;
-  if Lutador[2].DesenhaPorCima = 1 then
+  if Lutador[2].DesenhaPorCima then
   begin
     desenhalutador(1, Round(Lutador[1].X), Round(Lutador[1].Y), Lutador[1].Acao, Byte(Lutador[1].QuadroAcao));
     desenhalutador(2, Round(Lutador[2].X), Round(Lutador[2].Y), Lutador[2].Acao, Byte(Lutador[2].QuadroAcao));
   end;
 
-  if (FlashTela = 0) and (PausaImpacto = 0) and (AvisoEntrada = 0) and (RelogioParado = 0) then
+  if (FlashTela = 0) and (PausaImpacto = 0) and (AvisoEntrada = 0) and not RelogioParado then
   begin
     defendergolpe(1);
     defendergolpe(2);
@@ -1343,7 +1339,7 @@ begin
     if ContPisca mod 2 = 0 then barra(0, 0, LarguraTela, AlturaTela, Vermelho);
     Dec(FlashVermelho);
   end;
-  if (Estado = CHS_LUTA) and (PassoAPasso = 1) then mostragolpe;
+  if (Estado = CHS_LUTA) and PassoAPasso then mostragolpe;
 end;
 
 { Teclado do estado LUTA: G = pausa quadro a quadro, 1/2 = entrada do jogador }
@@ -1352,33 +1348,33 @@ begin
   { G = pausa quadro a quadro durante a luta }
   if (Key = Integer(SDL_SCANCODE_G)) and (Estado = CHS_LUTA) then
   begin
-    if Pausado = 0 then
+    if not Pausado then
     begin
-      Pausado := 1;
-      PassoAPasso := 1;
+      Pausado := True;
+      PassoAPasso := True;
     end
     else
     begin
       QuadroAtivo := True;
-      Pausado := 0;
-      PassoAPasso := 0;
+      Pausado := False;
+      PassoAPasso := False;
     end;
   end;
-  if (Estado = CHS_LUTA) and (Fichas > 0) and (RelogioParado = 0) then
+  if (Estado = CHS_LUTA) and (Fichas > 0) and not RelogioParado then
   begin
-    if (Tk = Integer(SDL_SCANCODE_1)) and (Lutador[1].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_1)) and not Lutador[1].Ativo then
     begin
-      Lutador[1].Ativo := 1;
-      Lutador[1].Escolheu := 0;
+      Lutador[1].Ativo := True;
+      Lutador[1].Escolheu := False;
       Lutador[1].Pontos := 0;
       Lutador[1].RoundsVencidos := 0;
       Dec(Fichas);
       AvisoEntrada := 100;
     end;
-    if (Tk = Integer(SDL_SCANCODE_2)) and (Lutador[2].Ativo = 0) then
+    if (Tk = Integer(SDL_SCANCODE_2)) and not Lutador[2].Ativo then
     begin
-      Lutador[2].Ativo := 1;
-      Lutador[2].Escolheu := 0;
+      Lutador[2].Ativo := True;
+      Lutador[2].Escolheu := False;
       Lutador[2].Pontos := 0;
       Lutador[2].RoundsVencidos := 0;
       Dec(Fichas);

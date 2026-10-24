@@ -21,13 +21,13 @@ begin
   { P = pausa }
   if Key = Integer(SDL_SCANCODE_P) then
   begin
-    if Pausado = 0 then
-      Pausado := 1
+    if not Pausado then
+      Pausado := True
     else
     begin
       QuadroAtivo := True;
-      Pausado := 0;
-      PassoAPasso := 0;
+      Pausado := False;
+      PassoAPasso := False;
     end;
   end;
   { o resto depende do estado em que o jogo esta }

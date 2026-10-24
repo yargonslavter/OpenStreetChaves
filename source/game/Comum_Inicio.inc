@@ -11,7 +11,7 @@ begin
   MemoDialogo := TTextoLista.Create;
   MemoFinais := TTextoLista.Create;
   MemoCenarios := TTextoLista.Create;
-  MemoConfigSalvo := TTextoLista.Create;
+  FVolumes := TStringList.Create;
   ModoTela := 1;
 end;
 
@@ -25,7 +25,7 @@ begin
   MemoDialogo.Free;
   MemoFinais.Free;
   MemoCenarios.Free;
-  MemoConfigSalvo.Free;
+  FVolumes.Free;
   ImgRetrato.Free;
   ImgEfeitos.Free;
   ImgCenario.Free;
@@ -43,46 +43,64 @@ begin
   inherited Destroy;
 end;
 
-{ Inicializacao do jogo (antes era o FormCreate): cria os componentes DelphiX, carrega
-  textos e recursos e deixa tudo pronto para o primeiro quadro. }
+{ Le a configuracao da tela F1 da secao Secao (valores ausentes ou invalidos mantem os atuais). }
+procedure TJogo.LerConfiguracao(Ini: TCustomIniFile; const Secao: string);
+
+  { liga/desliga gravado como 0 ou 1; outro valor mantem o atual }
+  function ZeroOuUm(const Chave: string; Atual: Boolean): Boolean;
+  var
+    V: Integer;
+  begin
+    V := Ini.ReadInteger(Secao, Chave, Ord(Atual));
+    if (V = 0) or (V = 1) then Result := V = 1 else Result := Atual;
+  end;
+
+begin
+  NivelJogo := Ini.ReadInteger(Secao, 'NivelJogo', NivelJogo);
+  TempoRound := Ini.ReadInteger(Secao, 'TempoRound', TempoRound);
+  ModoPoder := Ini.ReadInteger(Secao, 'ModoPoder', ModoPoder);
+  NivelDano := LerDecimal(Ini, Secao, 'NivelDano', NivelDano);
+  Sangue := ZeroOuUm('Sangue', Sangue);
+  NumRounds := Ini.ReadInteger(Secao, 'NumRounds', NumRounds);
+  Idioma := Ini.ReadInteger(Secao, 'Idioma', Idioma);
+  Flash := ZeroOuUm('Flash', Flash);
+  MostrarNivel := ZeroOuUm('MostrarNivel', MostrarNivel);
+  MostrarCreditos := ZeroOuUm('MostrarCreditos', MostrarCreditos);
+end;
+
+{ Inicializacao do jogo (antes era o FormCreate): cria os objetos, le Dados/Jogo.ini e a
+  configuracao salva, carrega textos e recursos e deixa tudo pronto para o primeiro quadro. }
 procedure TJogo.Iniciar;
 var
   I, K: Integer;
   Nome: string;
-  Ok: Boolean;
+  Ini: TMemIniFile;
+  Partes: TStringList;
 begin
-  CriaComponentesDX;
+  CriaComponentes;
   FFrameSheet := nil;
   { o original procurava os arquivos na pasta corrente: vamos para a pasta do jogo }
-  Nome := DXResolvePath('Cenarios/Cenario-01.bmp');
+  Nome := DXResolvePath(PastaDados + ArqRecursos);
   if FileExists(Nome) then SetCurrentDir(ExtractFilePath(ExtractFileDir(Nome)));
 
   Randomize;
-  CheatChurros := 0;
-  CheatGentalha := 0;
-  CheatSatanas := 0;
+  CheatChurros := False;
+  CheatGentalha := False;
+  CheatSatanas := False;
   BonusEnergeticos := 0;
-  CheatFadiga := 0;
-  CheatMentecapto := 0;
-  CheatBruxa := 0;
+  CheatFadiga := False;
+  CheatMentecapto := False;
+  CheatBruxa := False;
   CenarioSecreto := 0;
   { "truques" liberados pela simples existencia de arquivos .dat na pasta do jogo }
-  if FileExists('Churros.dat') then CheatChurros := 1;
-  if FileExists('Gentalha.dat') then CheatGentalha := 1;
+  if FileExists('Churros.dat') then CheatChurros := True;
+  if FileExists('Gentalha.dat') then CheatGentalha := True;
   if FileExists('Energeticos.dat') then BonusEnergeticos := 0.15;
-  if FileExists('Satanas.dat') then CheatSatanas := 1;
-  if FileExists('Fadiga.dat') then CheatFadiga := 1;
-  if FileExists('Mentecapto.dat') then CheatMentecapto := 1;
-  if FileExists('Bruxa.dat') then CheatBruxa := 1;
-  for I := 1 to 12 do
-  begin
-    if I < 10 then
-      if FileExists('SC0' + IntToStr(I) + '.dat') then CenarioSecreto := I;
-    if I >= 10 then
-      if FileExists('SC' + IntToStr(I) + '.dat') then CenarioSecreto := I;
-  end;
+  if FileExists('Satanas.dat') then CheatSatanas := True;
+  if FileExists('Fadiga.dat') then CheatFadiga := True;
+  if FileExists('Mentecapto.dat') then CheatMentecapto := True;
+  if FileExists('Bruxa.dat') then CheatBruxa := True;
 
-  Versao := 'V1.5A';
   Indef_4488 := 0;
   Indef_448C := 0;
   Indef_4490 := 0;
@@ -97,19 +115,17 @@ begin
   ContagemSeg := 30;
   ContagemTick := 25;
   TempoDialogo := 0;
-  Depurar := 0;
-  MostrarCaixas := 0;
-  PassoAPasso := 0;
-  Pausado := 0;
+  Depurar := False;
+  MostrarCaixas := False;
+  PassoAPasso := False;
+  Pausado := False;
   TempoDemo := 0;
-  Voador.Alcance := 330;
-  GanhoCarga := 2.0;
-  MusicaPendente := 0;
+  MusicaPendente := False;
   RoundAtual := 1;
   Fase := 1;
   FaseIntro := 0;
   FaseFim := 0;
-  RelogioParado := 1;
+  RelogioParado := True;
   for I := 1 to 2 do
     with Lutador[I] do
     begin
@@ -119,58 +135,48 @@ begin
       Pontos := 0;
       for K := 1 to 8 do Adversarios[K] := 1;
     end;
-  IntervaloTimer := 28;
-  Gravidade := 4;
-  ModoPoder := 1;
-  NivelJogo := 4;
-  NivelDano := 0.9;
-  Sangue := 1;
-  NumRounds := 2;
-  TempoRound := 3;
-  Idioma := 1;
-  Flash := 1;
-  MostrarNivel := 1;
-  MostrarCreditos := 1;
 
-  { configuracao salva (Chaves.dat) }
-  if FileExists('Chaves.dat') then
-  begin
-    MemoConfigSalvo.Lines.Clear;
-    MemoConfigSalvo.Lines.LoadFromFile('Chaves.dat');
-    with MemoConfigSalvo.Lines do
+  { valores do jogo e padroes da configuracao (Dados/Jogo.ini); o valor entre parenteses e o do
+    jogo original, usado se a chave faltar }
+  Partes := TStringList.Create;
+  Ini := AbrirDados(ArqJogo);
+  try
+    Versao := Ini.ReadString('Jogo', 'Versao', 'V1.5A');
+    IntervaloTimer := Ini.ReadInteger('Jogo', 'IntervaloTimer', 28);
+    Gravidade := Ini.ReadInteger('Jogo', 'Gravidade', 4);
+    GanhoCarga := LerDecimal(Ini, 'Jogo', 'GanhoCarga', 2.0);
+    Voador.Alcance := Ini.ReadInteger('Jogo', 'AlcanceVoador', 330);
+    NivelJogo := 4;
+    TempoRound := 3;
+    ModoPoder := 1;
+    NivelDano := 0.9;
+    Sangue := True;
+    NumRounds := 2;
+    Idioma := 1;
+    Flash := True;
+    MostrarNivel := True;
+    MostrarCreditos := True;
+    LerConfiguracao(Ini, 'Padroes');
+    { recordes iniciais: posicao=iniciais,personagem,pontos }
+    for I := 1 to 10 do
     begin
-      if Count >= 1 then NivelJogo := StrToIntDef(Strings[0], NivelJogo);
-      if Count >= 2 then
-      begin
-        if Strings[1] = '1' then TempoRound := 1;
-        if Strings[1] = '2' then TempoRound := 2;
-        if Strings[1] = '3' then TempoRound := 3;
-        if Strings[1] = '4' then TempoRound := 4;
-      end;
-      if Count >= 3 then ModoPoder := StrToIntDef(Strings[2], ModoPoder);
-      if Count >= 4 then NivelDano := StrToFloatDef(Strings[3], NivelDano);
-      if Count >= 5 then
-      begin
-        if Strings[4] = '0' then Sangue := 0;
-        if Strings[4] = '1' then Sangue := 1;
-      end;
-      if Count >= 6 then NumRounds := StrToIntDef(Strings[5], NumRounds);
-      if Count >= 7 then Idioma := StrToIntDef(Strings[6], Idioma);
-      if Count >= 8 then
-      begin
-        if Strings[7] = '0' then Flash := 0;
-        if Strings[7] = '1' then Flash := 1;
-      end;
-      if Count >= 9 then
-      begin
-        if Strings[8] = '0' then MostrarNivel := 0;
-        if Strings[8] = '1' then MostrarNivel := 1;
-      end;
-      if Count >= 10 then
-      begin
-        if Strings[9] = '0' then MostrarCreditos := 0;
-        if Strings[9] = '1' then MostrarCreditos := 1;
-      end;
+      SepararLista(Ini.ReadString('Recordes', IntToStr(I), ''), Partes);
+      if Partes.Count >= 3 then
+        criarecorde(I, Partes[0], StrToIntDef(Partes[1], 1), StrToIntDef(Partes[2], 0));
+    end;
+  finally
+    Ini.Free;
+    Partes.Free;
+  end;
+
+  { configuracao salva pelo jogador (Chaves.ini, gravada pela tela F1) }
+  if FileExists(ArqConfiguracao) then
+  begin
+    Ini := TMemIniFile.Create(ArqConfiguracao);
+    try
+      LerConfiguracao(Ini, 'Configuracao');
+    finally
+      Ini.Free;
     end;
   end;
   if NivelJogo < 1 then NivelJogo := 1;
@@ -193,83 +199,20 @@ begin
   Fichas := 0;                    // fichas (creditos)
   Lutador[1].Personagem := 1;
   Lutador[2].Personagem := 2;
-  Lutador[1].Ativo := 0;
-  Lutador[2].Ativo := 0;
-  Lutador[1].Escolheu := 0;
-  Lutador[2].Escolheu := 0;
+  Lutador[1].Ativo := False;
+  Lutador[2].Ativo := False;
+  Lutador[1].Escolheu := False;
+  Lutador[2].Escolheu := False;
   zerardados(1);
   zerardados(2);
-  criarecorde(1, 'CHV', 1, 10000);
-  criarecorde(2, 'SMD', 2, 8000);
-  criarecorde(3, 'CHQ', 3, 7500);
-  criarecorde(4, 'QUI', 4, 7000);
-  criarecorde(5, 'DFL', 5, 6500);
-  criarecorde(6, 'PGR', 6, 6000);
-  criarecorde(7, 'SBR', 7, 5500);
-  criarecorde(8, 'B71', 8, 5000);
-  criarecorde(9, 'PTY', 9, 4500);
-  criarecorde(10, 'NHO', 10, 4000);
   ordenarecordista;
 
   AplicarResolucao(1);
 
-  { recursos externos }
-  for I := 1 to 78 do
-    carregaranimacao(NomeNN('Animacoes/Anim-', '.bmp', I));
-  for I := 1 to 102 do
-  begin
-    if I < 10 then carregarefeitos('Efeitos/Efeito-00' + IntToStr(I) + '.bmp');
-    if (I >= 10) and (I < 100) then carregarefeitos('Efeitos/Efeito-0' + IntToStr(I) + '.bmp');
-    if I >= 100 then carregarefeitos('Efeitos/Efeito-' + IntToStr(I) + '.bmp');
-  end;
-
-  { efeitos sonoros: Som-01.wav, Som-02.wav ... (o original carrega ate o primeiro faltante) }
-  I := 1;
-  Nome := NomeNN('Sons/Som-', '.wav', I);
-  while FileExists(Nome) do
-  begin
-    Nome := NomeNN('Sons/Som-', '.wav', I);
-    carregareftsonoro(Nome);
-    Inc(I);
-  end;
-  QtdSons := I;
-  if QtdSons > 3 then QtdSons := QtdSons - 2;
-
-  { musicas: so conta quantas existem (Musica-01.wav ...) }
-  I := 1;
-  Nome := NomeNN('Musicas/Musica-', '.wav', I);
-  while FileExists(Nome) do
-  begin
-    Nome := NomeNN('Musicas/Musica-', '.wav', I);
-    Inc(I);
-  end;
-  QtdMusicas := I;
-  if QtdMusicas > 3 then QtdMusicas := QtdMusicas - 2;
-
-  for I := 1 to 15 do
-  begin
-    carregarfala(NomeNN('Falas/Fala-', '-a.wav', I));
-    carregarfala(NomeNN('Falas/Fala-', '-b.wav', I));
-  end;
-
-  { rostos: a, a(espelhado), b, b(espelhado), c }
-  for I := 1 to 15 do
-  begin
-    carregarosto(NomeNN('Rostos/R', '-a.bmp', I), 1);
-    carregarosto(NomeNN('Rostos/R', '-a.bmp', I), 2);
-    carregarosto(NomeNN('Rostos/R', '-b.bmp', I), 1);
-    carregarosto(NomeNN('Rostos/R', '-b.bmp', I), 2);
-    carregarosto(NomeNN('Rostos/R', '-c.bmp', I), 1);
-  end;
-
-  { quadros dos lutadores: 150 posicoes (2 jogadores x 75) em cada lista }
-  for I := 1 to 150 do
-  begin
-    ImgLutador.Adicionar;
-    ImgLutadorInvert.Adicionar;
-  end;
-
-  SomIniciar;
-  Ok := True;
-  if Ok then QuadroAtivo := True;
+  { imagens e sons listados em Dados/Recursos.ini }
+  CarregarRecursos;
+  { truque: SCnn.dat na pasta do jogo fixa o cenario nn }
+  for I := 1 to FQtdCenarios do
+    if FileExists(ArquivoNN('SC##.dat', I)) then CenarioSecreto := I;
+  QuadroAtivo := True;
 end;

@@ -9,8 +9,8 @@ begin
   FTick7 := 0;
   ContPisca := 0;
   TempoEstado := 0;
-  MusicaPendente := 1;
-  RelogioParado := 1;
+  MusicaPendente := True;
+  RelogioParado := True;
   TempoDialogo := 0;
   case TempoRound of
     1: ContagemSeg := 30;
@@ -25,7 +25,7 @@ begin
   TremorTela := 0;
   FlashTela := 0;
   PausaImpacto := 0;
-  PrimeiroAtaque := 0;
+  PrimeiroAtaque := False;
   zerardados(1);
   zerardados(2);
   Lutador[1].CargaPoder := 0;
@@ -35,34 +35,39 @@ begin
   for L := 1 to MaxEfeitos do Efeitos[L].Tipo := 0;
   QuadroAtivo := False;
   for J := 1 to 2 do
-    if (Lutador[J].Personagem >= 1) and (Lutador[J].Personagem <= 15) then
-      carregarlutador(NomeNN('Lutadores/C', '.bmp', Lutador[J].Personagem), Lutador[J].Personagem, J);
-  if (Lutador[1].Ativo = 1) and (Lutador[2].Ativo = 1) then
+    if (Lutador[J].Personagem >= 1) and (Lutador[J].Personagem <= FQtdLutadores) then
+      carregarlutador(ArqLutador(Lutador[J].Personagem), Lutador[J].Personagem, J);
+  if Lutador[1].Ativo and Lutador[2].Ativo then
   begin
-    L := Round(Random(120) / 10) + 1;
+    L := Round(Random(FQtdCenarios * 10) / 10) + 1;
     if L < 1 then L := 1;
-    if L > 12 then L := 12;
+    if L > FQtdCenarios then L := FQtdCenarios;
     CenarioAtual := L;
     if CenarioSecreto <> 0 then
     begin
       if CenarioSecreto < 1 then CenarioSecreto := 1;
-      if CenarioSecreto > 12 then CenarioSecreto := 12;
+      if CenarioSecreto > FQtdCenarios then CenarioSecreto := FQtdCenarios;
       CenarioAtual := CenarioSecreto;
     end;
-    carregarcenario(NomeNN('Cenarios/Cenario-', '.bmp', CenarioAtual));
+    carregarcenario(CenarioAtual);
   end;
   MusicaAtual := 0;
+  { musica: a do adversario controlado pelo computador; a do cenario, se ele tiver uma }
   for J := 1 to 2 do
   begin
-    if (Lutador[J].Personagem = 1) and (Lutador[J].Ativo = 0) then MusicaAtual := 4;
-    if (Lutador[J].Personagem = 4) and (Lutador[J].Ativo = 0) then MusicaAtual := 2;
-    if (Lutador[J].Personagem = 2) and (Lutador[J].Ativo = 0) then MusicaAtual := 3;
-    if CenarioAtual = 12 then MusicaAtual := 6;
+    L := Lutador[J].Personagem;
+    if (L >= 1) and (L <= FQtdLutadores) and not Lutador[J].Ativo and (FLutadores[L].MusicaCPU <> 0) then
+      MusicaAtual := FLutadores[L].MusicaCPU;
+    if (CenarioAtual >= 1) and (CenarioAtual <= FQtdCenarios) and (FMusicaCenario[CenarioAtual] <> 0) then
+      MusicaAtual := FMusicaCenario[CenarioAtual];
   end;
   if MusicaAtual = 0 then MusicaAtual := Round(Random(QtdMusicas * 10) / 10) + 1;
   if MusicaAtual < 1 then MusicaAtual := 1;
   if MusicaAtual > QtdMusicas then MusicaAtual := QtdMusicas;
-  if (MusicaAtual = 6) and (CenarioAtual <> 12) then MusicaAtual := 1;
+  { a musica propria de um cenario so toca nele }
+  if MusicaDeCenario(MusicaAtual) and
+     not ((CenarioAtual >= 1) and (CenarioAtual <= FQtdCenarios) and (FMusicaCenario[CenarioAtual] = MusicaAtual)) then
+    MusicaAtual := 1;
   carregarmusica(MusicaAtual);
   QuadroAtivo := True;
 end;

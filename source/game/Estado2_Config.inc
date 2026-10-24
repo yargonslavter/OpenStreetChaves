@@ -7,14 +7,14 @@ var
   function Prev(const L: TLutador): Byte;
   begin
     Result := 0;
-    if L.AntCima <> 0 then Result := Result or 1;
-    if L.AntBaixo <> 0 then Result := Result or 2;
-    if L.AntEsq <> 0 then Result := Result or 4;
-    if L.AntDir <> 0 then Result := Result or 8;
-    if L.AntSocoFraco <> 0 then Result := Result or 16;
-    if L.AntChuteFraco <> 0 then Result := Result or 32;
-    if L.AntSocoForte <> 0 then Result := Result or 64;
-    if L.AntChuteForte <> 0 then Result := Result or 128;
+    if L.AntCima then Result := Result or 1;
+    if L.AntBaixo then Result := Result or 2;
+    if L.AntEsq then Result := Result or 4;
+    if L.AntDir then Result := Result or 8;
+    if L.AntSocoFraco then Result := Result or 16;
+    if L.AntChuteFraco then Result := Result or 32;
+    if L.AntSocoForte then Result := Result or 64;
+    if L.AntChuteForte then Result := Result or 128;
   end;
 begin
   K1 := TecP1;
@@ -90,17 +90,17 @@ begin
     3: Val(280, 3, 9, Sel);
     4: Val(345, 3, 10, Sel);
   end;
-  if Sangue = 1 then Val(140, 5, 4, Sel);
-  if Sangue = 0 then Val(230, 5, 5, Sel);
+  if Sangue then Val(140, 5, 4, Sel);
+  if not Sangue then Val(230, 5, 5, Sel);
   texto((NumRounds - 1) * 30 + 140, 135, IntToStr(NumRounds), AEsq, 11, Sel);
   if Idioma = 1 then Val(140, 7, 15, Sel);
   if Idioma = 2 then Val(230, 7, 16, Sel);
-  if Flash = 1 then Val(140, 10, 4, Sel);
-  if Flash = 0 then Val(230, 10, 5, Sel);
-  if MostrarNivel = 1 then Val(140, 11, 4, Sel);
-  if MostrarNivel = 0 then Val(230, 11, 5, Sel);
-  if MostrarCreditos = 1 then Val(140, 12, 4, Sel);
-  if MostrarCreditos = 0 then Val(230, 12, 5, Sel);
+  if Flash then Val(140, 10, 4, Sel);
+  if not Flash then Val(230, 10, 5, Sel);
+  if MostrarNivel then Val(140, 11, 4, Sel);
+  if not MostrarNivel then Val(230, 11, 5, Sel);
+  if MostrarCreditos then Val(140, 12, 4, Sel);
+  if not MostrarCreditos then Val(230, 12, 5, Sel);
 
   { entrada }
   E := BordaTeclas;
@@ -113,7 +113,7 @@ begin
       2: Dec(TempoRound);
       3: Dec(ModoPoder);
       4: NivelDano := NivelDano - 0.1;
-      5: Sangue := 1;
+      5: Sangue := True;
       6: Dec(NumRounds);
       7: if Idioma = 2 then
          begin
@@ -123,9 +123,9 @@ begin
          end;
       8: if SomPendente > 1 then Dec(SomPendente);
       9: if MusicaAtual > 1 then Dec(MusicaAtual);
-      10: Flash := 1;
-      11: MostrarNivel := 1;
-      12: MostrarCreditos := 1;
+      10: Flash := True;
+      11: MostrarNivel := True;
+      12: MostrarCreditos := True;
     end;
   end;
   if (E and 8) <> 0 then
@@ -135,7 +135,7 @@ begin
       2: Inc(TempoRound);
       3: Inc(ModoPoder);
       4: NivelDano := NivelDano + 0.1;
-      5: Sangue := 0;
+      5: Sangue := False;
       6: Inc(NumRounds);
       7: if Idioma = 1 then
          begin
@@ -145,9 +145,9 @@ begin
          end;
       8: if SomPendente < QtdSons then Inc(SomPendente);
       9: if MusicaAtual < QtdMusicas then Inc(MusicaAtual);
-      10: Flash := 0;
-      11: MostrarNivel := 0;
-      12: MostrarCreditos := 0;
+      10: Flash := False;
+      11: MostrarNivel := False;
+      12: MostrarCreditos := False;
     end;
   end;
   if (E and 16) <> 0 then

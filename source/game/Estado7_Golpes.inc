@@ -1,25 +1,25 @@
 { Estado7_Golpes.inc - Estado CHS_LUTA: golpes, sequencias, CPU e defesa (seta, sequencia, golpe, sequenciagolpe, cpu, defendergolpe). Gerado a partir do codigo de maquina e revisado a mao. }
 
 
-function TJogo.seta(Jog: Byte; const Dir: string): Byte;
-{ Responde 1 se o jogador esta segurando a direcao pedida:
+function TJogo.seta(Jog: Byte; const Dir: string): Boolean;
+{ Responde True se o jogador esta segurando a direcao pedida:
   'CIMA', 'BAIXO', 'FRENTE' (para onde esta virado) ou 'TRAS'. Jogador 1 = teclado, 2 = "joystick". }
 var
   K: Byte;
 begin
-  Result := 0;
+  Result := False;
   if Jog = 1 then K := TecP1 else K := TecP2;
-  if ((K and 2) <> 0) and (Dir = 'BAIXO') then Result := 1;
-  if ((K and 1) <> 0) and (Dir = 'CIMA') then Result := 1;
+  if ((K and 2) <> 0) and (Dir = 'BAIXO') then Result := True;
+  if ((K and 1) <> 0) and (Dir = 'CIMA') then Result := True;
   if (K and 4) <> 0 then      // esquerda
   begin
-    if (Lutador[Jog].Lado = 1) and (Dir = 'TRAS') then Result := 1;
-    if (Lutador[Jog].Lado = 2) and (Dir = 'FRENTE') then Result := 1;
+    if (Lutador[Jog].Lado = 1) and (Dir = 'TRAS') then Result := True;
+    if (Lutador[Jog].Lado = 2) and (Dir = 'FRENTE') then Result := True;
   end;
   if (K and 8) <> 0 then      // direita
   begin
-    if (Lutador[Jog].Lado = 2) and (Dir = 'TRAS') then Result := 1;
-    if (Lutador[Jog].Lado = 1) and (Dir = 'FRENTE') then Result := 1;
+    if (Lutador[Jog].Lado = 2) and (Dir = 'TRAS') then Result := True;
+    if (Lutador[Jog].Lado = 1) and (Dir = 'FRENTE') then Result := True;
   end;
 end;
 
@@ -837,7 +837,7 @@ var
   P: PLutador;
 begin
   P := @Lutador[Jog];
-  if seta(Jog, 'BAIXO') <> 0 then
+  if seta(Jog, 'BAIXO') then
   begin
     P.TempoBaixo := (P.TempoBaixo)+1;
   end;
@@ -845,11 +845,11 @@ begin
   begin
     P.TempoBaixo := 18;
   end;
-  if (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) > 1) then
+  if not seta(Jog, 'BAIXO') and ((P.TempoBaixo) > 1) then
   begin
     P.TempoBaixo := (P.TempoBaixo)-1;
   end;
-  if seta(Jog, 'TRAS') <> 0 then
+  if seta(Jog, 'TRAS') then
   begin
     P.TempoTras := (P.TempoTras)+1;
   end;
@@ -857,827 +857,827 @@ begin
   begin
     P.TempoTras := 18;
   end;
-  if (seta(Jog, 'TRAS') = 0) and ((P.TempoTras) > 1) then
+  if not seta(Jog, 'TRAS') and ((P.TempoTras) > 1) then
   begin
     P.TempoTras := (P.TempoTras)-1;
   end;
   if (P.Personagem) = 1 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
     begin
       sequencia(Jog, 0, 4);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
     begin
       sequencia(Jog, 1, 4);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
   end;
   if (P.Personagem) = 2 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 3, 7);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 9);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'FRENTE') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 9, 10);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 2, 10);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 9, 10);
     end;
   end;
   if (P.Personagem) = 3 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
   end;
   if (P.Personagem) = 4 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 4, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 7, 2);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 4);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 9);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 10);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 10, 11);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 11);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 10, 11);
     end;
   end;
   if (P.Personagem) = 5 then
   begin
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 1);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
     begin
       sequencia(Jog, 0, 4);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
     begin
       sequencia(Jog, 1, 4);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
   end;
   if (P.Personagem) = 6 then
   begin
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 7);
     end;
   end;
   if (P.Personagem) = 7 then
   begin
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) and ((P.TempoTras) >= 6) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and ((P.TempoTras) >= 6) then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 6) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
     begin
       sequencia(Jog, 0, 2);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 6) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
     begin
       sequencia(Jog, 3, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
   end;
   if (P.Personagem) = 8 then
   begin
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
   end;
   if (P.Personagem) = 9 then
   begin
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 1) then
+    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 6);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 7);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
   end;
   if (P.Personagem) = 10 then
   begin
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) and ((P.TempoTras) >= 6) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and ((P.TempoTras) >= 6) then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 6) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
     begin
       sequencia(Jog, 0, 2);
     end;
-    if (seta(Jog, 'CIMA') <> 0) and (seta(Jog, 'BAIXO') = 0) and ((P.TempoBaixo) >= 6) then
+    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
     begin
       sequencia(Jog, 3, 2);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 1) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'FRENTE') = 1) and (seta(Jog, 'TRAS') = 0) then
+    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'FRENTE') = 0) and ((P.TempoTras) >= 6) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
     begin
       sequencia(Jog, 1, 5);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 5, 6);
     end;
   end;
   if (P.Personagem) = 11 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 3);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
   end;
   if (P.Personagem) = 12 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 2);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 6);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 6, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 7);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
   end;
   if (P.Personagem) = 13 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 5, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 0, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 4);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 8, 5);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 5, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'FRENTE') = 0) and ((P.TempoTras) >= 6) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
     begin
       sequencia(Jog, 0, 7);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'FRENTE') = 0) and ((P.TempoTras) >= 6) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
     begin
       sequencia(Jog, 7, 7);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'FRENTE') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
     begin
       sequencia(Jog, 8, 9);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 9, 10);
     end;
   end;
   if (P.Personagem) = 14 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 2);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 0, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 3, 3);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 6);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 6, 8);
     end;
   end;
   if (P.Personagem) = 15 then
   begin
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 0, 1);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 1, 1);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 2);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 1, 3);
     end;
-    if (seta(Jog, 'TRAS') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 5, 3);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 0, 4);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 4, 4);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 4, 5);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 2, 5);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 5, 6);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') = 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 7);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 3, 8);
     end;
-    if (seta(Jog, 'BAIXO') <> 0) and (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'TRAS') = 0) then
+    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
     begin
       sequencia(Jog, 7, 8);
     end;
-    if (seta(Jog, 'FRENTE') <> 0) and (seta(Jog, 'BAIXO') = 0) then
+    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
     begin
       sequencia(Jog, 7, 8);
     end;
@@ -1711,7 +1711,7 @@ begin
   for I := 1 to MaxEfeitos do
   begin
     E := @Efeitos[I];
-    if (E.PodeAcertar = 1) and (E.Dono <> Jog) and (E.Tipo <> 0) then
+    if E.PodeAcertar and (E.Dono <> Jog) and (E.Tipo <> 0) then
     begin
       Ameaca := 1;
       DistProj := Abs(Round(P.X) - Round(E.X));
@@ -1730,7 +1730,7 @@ begin
     end;
   end;
   if Abs(Dist - P.DistanciaIA) <= 50 then P.DistanciaIA := Dist;
-  if ((P.Defendendo) = 0) and (Ameaca = 0) then
+  if not P.Defendendo and (Ameaca = 0) then
   begin
     if (Dist >= P.DistanciaIA) and ((P.Lado) = 1) then
     begin
@@ -1749,7 +1749,7 @@ begin
       AcaoJogador(Jog, 2);
     end;
   end;
-  if ((P.Defendendo) = 0) and (Ameaca = 0) and (Dist <= 80) then
+  if not P.Defendendo and (Ameaca = 0) and (Dist <= 80) then
   begin
     r7 := Random(Round(8 * Fator));
     if r7 = 0 then
@@ -1795,7 +1795,7 @@ begin
       end;
     end;
   end;
-  if (P.Defendendo) = 0 then
+  if not P.Defendendo then
   begin
     if (P.Personagem) = 1 then
     begin
@@ -2493,24 +2493,24 @@ var
   E: PEfeito;
   I: Integer;
   Dist, DistProj, Ameaca: Integer;
-  Terminando: Byte;
+  Terminando: Boolean;
   ProjY: Double;
   Fator: Double;
 
   procedure DefesaHumana;
   begin
-    if (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'BAIXO') = 0) then AcaoJogador(Jog, 12);
-    if (seta(Jog, 'TRAS') = 1) and (seta(Jog, 'BAIXO') = 1) then AcaoJogador(Jog, 13);
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then AcaoJogador(Jog, 12);
+    if seta(Jog, 'TRAS') and seta(Jog, 'BAIXO') then AcaoJogador(Jog, 13);
   end;
 
   procedure Pular;
   begin
     P.VelY := -32;
-    P.NoAr := 1;
+    P.NoAr := True;
     P.Acao := 12;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 99;
-    P.Defendendo := 0;
+    P.Defendendo := False;
     if P.Lado = 1 then P.DirPulo := 3;
     if P.Lado = 2 then P.DirPulo := 2;
     if Random(8) = 0 then P.DirPulo := 1;
@@ -2519,37 +2519,37 @@ var
 begin
   P := @Lutador[Jog];
   O := @Lutador[3 - Jog];
-  if P.Ativo = 1 then
+  if P.Ativo then
   begin
-    if O.GolpeAtivo = 1 then DefesaHumana;
+    if O.GolpeAtivo then DefesaHumana;
     for I := 1 to MaxEfeitos do
     begin
       E := @Efeitos[I];
-      if (E.Tipo <> 0) and (E.PodeAcertar = 1) and (E.Dono <> Jog) then DefesaHumana;
+      if (E.Tipo <> 0) and E.PodeAcertar and (E.Dono <> Jog) then DefesaHumana;
     end;
   end;
-  if P.Ativo = 0 then
+  if not P.Ativo then
   begin
     Dist := Abs(Round(Lutador[Jog].X) - Round(O.X));
     Ameaca := 0;
     DistProj := 0;
-    Terminando := 0;
+    Terminando := False;
     ProjY := 0;
     for I := 1 to MaxEfeitos do
     begin
       E := @Efeitos[I];
-      if (E.PodeAcertar = 1) and (E.Dono <> Jog) and (E.Tipo <> 0) then
+      if E.PodeAcertar and (E.Dono <> Jog) and (E.Tipo <> 0) then
       begin
         Ameaca := 1;
         DistProj := Abs(Round(P.X) - Round(E.X));
-        if E.Terminando = 1 then Terminando := 1;
+        if E.Terminando then Terminando := True;
         ProjY := E.Y;
       end;
     end;
     Fator := (8 - NivelJogo) * 0.9 + 1.2 - Fase * 0.1;
     if Fator < 0 then Fator := 0;
     // golpe do adversario chegando
-    if (O.GolpeAtivo = 1) and (Dist <= 160) then
+    if O.GolpeAtivo and (Dist <= 160) then
     begin
       if (ChaoY - 30) >= O.Y then
         if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, 12);
@@ -2563,7 +2563,7 @@ begin
     begin
       if (Ameaca = 1) and (DistProj <= 130) and ((P.Y - 120) < ProjY) and (Random(Round(5 * Fator)) <= 3) then
         Pular
-      else if (Ameaca = 0) and (Random(Round(45 * Fator)) = 0) and (P.NoAr = 0) and (Terminando = 0) then
+      else if (Ameaca = 0) and (Random(Round(45 * Fator)) = 0) and not P.NoAr and not Terminando then
         Pular;
     end;
     // projetil chegando

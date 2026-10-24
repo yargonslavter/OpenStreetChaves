@@ -39,9 +39,9 @@ type
     Poder: Word;  // estoques de golpe especial (0..3)
     _p90: array[0..5] of Byte;
     CargaPoder: Double;  // carga para o proximo estoque (0..102; 102 = cheio)
-    GolpeAtivo: Byte;  // 1 = o golpe atual ainda pode acertar
-    EhChute: Byte;  // 1 = o golpe atual e um chute
-    NoAr: Byte;  // 1 = esta pulando/no ar
+    GolpeAtivo: Boolean;  // True = o golpe atual ainda pode acertar
+    EhChute: Boolean;  // True = o golpe atual e um chute
+    NoAr: Boolean;  // True = esta pulando/no ar
     Acao: Byte;  // acao atual (1 parado, 2 andando, 3.. golpes, 12 pulo, 17/18 apanhando, 19.. etc.)
     Quadro: Byte;  // indice do sprite atual (P1 1..49, P2 51..99)
     Lado: Byte;  // 1 = virado para a direita, 2 = para a esquerda
@@ -64,10 +64,10 @@ type
     CursorIni: Byte;  // posicao do cursor ao digitar iniciais
     MsgBonus: Byte;  // mensagem de bonus (1 = Primeiro Ataque, 2 = Bonus)
     TempoMsgBonus: Byte;  // quadros restantes da mensagem
-    DesenhaPorCima: Byte;  // 1 = este lutador e desenhado por cima do outro
-    Vencedor: Byte;  // 1 = venceu o round
-    Defendendo: Byte;  // 1 = esta defendendo
-    Campo_148: Byte;
+    DesenhaPorCima: Boolean;  // True = este lutador e desenhado por cima do outro
+    Vencedor: Boolean;  // True = venceu o round
+    Defendendo: Boolean;  // True = esta defendendo
+    Campo_148: Boolean;
     Acertos: Byte;  // combo: acertos seguidos
     TempoAcertos: Byte;  // quadros restantes do combo
     MaxAcertos: Byte;  // maior combo da luta
@@ -77,17 +77,17 @@ type
     TempoTras: Byte;  // quadros seguidos segurando para tras (maximo 18)
     CargaSoco: Byte;  // contador decrescente (botoes 1/3)
     CargaChute: Byte;  // contador decrescente (botoes 2/4)
-    Ativo: Byte;  // 1 = jogador humano ativo (entrou com ficha)
-    Escolheu: Byte;  // ja confirmou o personagem
+    Ativo: Boolean;  // True = jogador humano ativo (entrou com ficha)
+    Escolheu: Boolean;  // ja confirmou o personagem
     Adversarios: array[1..8] of Byte;  // ordem dos 8 adversarios da campanha (o 8o e o chefe)
-    AntSocoFraco: Byte;  // estado anterior (borda): botao 1
-    AntChuteFraco: Byte;
-    AntSocoForte: Byte;
-    AntChuteForte: Byte;
-    AntCima: Byte;
-    AntBaixo: Byte;
-    AntEsq: Byte;
-    AntDir: Byte;
+    AntSocoFraco: Boolean;  // estado anterior (borda): botao 1
+    AntChuteFraco: Boolean;
+    AntSocoForte: Boolean;
+    AntChuteForte: Boolean;
+    AntCima: Boolean;
+    AntBaixo: Boolean;
+    AntEsq: Boolean;
+    AntDir: Boolean;
   end;
   PLutador = ^TLutador;
 
@@ -104,19 +104,19 @@ type
     Dono: Byte;                    // 36: jogador que criou (0 = ninguem)
     _p37: Byte;
     VelY: SmallInt;                // 38: (prov.) velocidade vertical
-    Estagio: Byte;                 // 40: (prov.) 0/1 alterna entre duas animacoes/textos
-    Variante: Byte;                // 41: (prov.)
-    Terminando: Byte;              // 42: (prov.)
+    Estagio: Boolean;                 // 40: (prov.) alterna entre duas animacoes/textos
+    Variante: Boolean;                // 41: (prov.)
+    Terminando: Boolean;              // 42: (prov.)
     Tipo: Byte;                    // 43: tipo do efeito (1..36); 0 = livre
     Quadro: Byte;                  // 44: contador de animacao
     Duracao: Byte;                 // 45: quadros de vida (99 = ate mudar)
     Sprite: Byte;                  // 46: indice do sprite desenhado
     Contagem: Byte;                // 47: (prov.)
     LimiteContagem: Byte;          // 48: (prov.)
-    PodeAcertar: Byte;             // 49: (prov.) 1 = ainda pode ferir
-    Flag50: Byte;                  // 50: (prov.)
-    Flag51: Byte;                  // 51: (prov.)
-    Flag52: Byte;                  // 52: (prov.) 1 = sofre gravidade
+    PodeAcertar: Boolean;             // 49: (prov.) True = ainda pode ferir
+    Flag50: Boolean;                  // 50: (prov.)
+    Flag51: Boolean;                  // 51: (prov.)
+    Flag52: Boolean;                  // 52: (prov.) True = sofre gravidade
     _p53: array[0..2] of Byte;
   end;
   PEfeito = ^TEfeito;
@@ -127,7 +127,7 @@ type
     Vel: Byte;
     Tipo: Byte;
     Alcance: Word;
-    Ativo: Byte;
+    Ativo: Boolean;
     _p13: array[0..2] of Byte;
   end;
 
@@ -164,16 +164,16 @@ var
   FaseSelecao: Byte;             // selecao de lutador: 1 = entrando, 2 = interativa
   IntervaloTimer: Word;          // intervalo do timer em ms (velocidade do jogo), padrao 28
   AvisoVelocidade: Byte;         // quadros restantes mostrando a barra de velocidade
-  Pausado: Byte;                 // 1 = jogo pausado (tecla P)
-  PassoAPasso: Byte;             // 1 = pausa quadro a quadro (tecla G durante a luta)
-  PrimeiroAtaque: Byte;          // 1 = o primeiro ataque do round ja aconteceu (concede bonus)
+  Pausado: Boolean;                 // True = jogo pausado (tecla P)
+  PassoAPasso: Boolean;             // True = pausa quadro a quadro (tecla G durante a luta)
+  PrimeiroAtaque: Boolean;          // True = o primeiro ataque do round ja aconteceu (concede bonus)
   TempoDemo: SmallInt;           // contagem da luta de demonstracao (600 ao iniciar)
-  RelogioParado: Byte;           // 1 = relogio/contagem do round parado (luta ainda nao comecou); 0 = luta rolando
+  RelogioParado: Boolean;           // True = relogio/contagem do round parado (luta ainda nao comecou); False = luta rolando
   Fichas: Byte;                  // creditos inseridos (tecla 5)
   Fase: Byte;                    // adversario atual da campanha (1..8)
   ContagemSeg, ContagemTick: Byte;  // contagem regressiva (segundos / quadros) da selecao e do round
   AvisoEntrada: Word;            // quadros do aviso "alguem entrou no combate"
-  MusicaPendente: Byte;          // 1 = tocar a musica no proximo quadro da luta
+  MusicaPendente: Boolean;          // True = tocar a musica no proximo quadro da luta
   FlashTela: Byte;               // quadros restantes do efeito de tela piscando
   TremorTela: Byte;              // quadros restantes de tremor da camera
 
@@ -189,29 +189,29 @@ var
   MouseX, MouseY: Integer;       // posicao do mouse sobre a tela de jogo
   Versao: string;                // 'V1.5A'
 
-  { --- configuracoes (tela F1; salvas em Chaves.dat) --- }
+  { --- configuracoes (tela F1; salvas em Chaves.ini) --- }
   NivelJogo: Byte;               // "Nivel do Jogo" 1..8 (dificuldade)
   TempoRound: Byte;              // "Tempo do Round": 1 = 30s, 2 = 60s, 3 = 90s, 4 = sem limite
   ModoPoder: Byte;               // "Poder": 1 normal, 2 = 1P max, 3 = 2P max, 4 = max
   NivelDano: Double;             // "Nivel de Dano" 0.3 .. 2.0
-  Sangue: Byte;                  // "Sangue": 1 = sim, 0 = nao
+  Sangue: Boolean;                  // "Sangue": liga/desliga
   NumRounds: Byte;               // "Rounds" 1..3
   Idioma: Byte;                  // 1 = Portugues, 2 = Espanhol
-  Flash: Byte;                   // "Flash": 1 = sim
-  MostrarNivel: Byte;            // "Mostrar Nivel"
-  MostrarCreditos: Byte;         // "Mostrar Creditos"
+  Flash: Boolean;                   // "Flash": liga/desliga
+  MostrarNivel: Boolean;            // "Mostrar Nivel"
+  MostrarCreditos: Boolean;         // "Mostrar Creditos"
   SomPendente: Byte;             // som a tocar no proximo quadro (0 = nenhum); tambem usado no "Teste de Som"
   QtdSons: Byte;                 // quantidade de sons carregados (Sons/Som-NN.wav)
   MusicaAtual: Byte;             // musica em uso / selecionada no "Teste de Musica"
   QtdMusicas: Byte;              // quantidade de musicas (Musicas/Musica-NN.wav)
 
   { --- truques liberados por arquivos .dat na pasta do jogo --- }
-  CheatChurros: Byte;            // Churros.dat: mostra os proximos adversarios
-  CheatGentalha: Byte;           // Gentalha.dat: comeca na fase 8
-  CheatSatanas: Byte;            // Satanas.dat
-  CheatFadiga: Byte;             // Fadiga.dat: pula para o estado 10
-  CheatMentecapto: Byte;         // Mentecapto.dat: camera afastada
-  CheatBruxa: Byte;              // Bruxa.dat
+  CheatChurros: Boolean;            // Churros.dat: mostra os proximos adversarios
+  CheatGentalha: Boolean;           // Gentalha.dat: comeca na fase 8
+  CheatSatanas: Boolean;            // Satanas.dat
+  CheatFadiga: Boolean;             // Fadiga.dat: pula para o estado 10
+  CheatMentecapto: Boolean;         // Mentecapto.dat: camera afastada
+  CheatBruxa: Boolean;              // Bruxa.dat
   CenarioSecreto: Byte;          // SC01..SC12.dat: forca o cenario
   BonusEnergeticos: Double;      // Energeticos.dat: 0.15
 
@@ -230,10 +230,10 @@ var
   TempoDialogo: Word;            // (prov.) quadros do dialogo/frase de vitoria
   PausaImpacto: Byte;            // quadros de congelamento ao acertar um golpe forte
   GanhoCarga: Double;            // multiplicador do ganho de carga do poder (2.0 padrao)
-  Depurar: Byte;                 // (prov.) 1 = mostra informacoes de depuracao
+  Depurar: Boolean;                 // (prov.) True = mostra informacoes de depuracao
   FinalId: Byte;                 // personagem cujo final esta sendo exibido (estado 10)
   Tmp4494: Integer;              // temporario compartilhado (pulso do HUD, fase do dialogo)
-  MostrarCaixas: Byte;           // 1 = desenha as caixas de colisao e a cruz de posicao (depuracao)
+  MostrarCaixas: Boolean;           // True = desenha as caixas de colisao e a cruz de posicao (depuracao)
 
 implementation
 

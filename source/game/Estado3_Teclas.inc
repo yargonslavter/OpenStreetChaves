@@ -14,10 +14,10 @@ begin
   begin
     K := MapaP1[I - 1];
     Y := (I - 1) * 20;
-    if K = Integer(SDL_SCANCODE_UP) then ImgIcone[0].Draw(Tela, 200, Y + 85, 0)
-    else if K = Integer(SDL_SCANCODE_DOWN) then ImgIcone[1].Draw(Tela, 200, Y + 85, 0)
-    else if K = Integer(SDL_SCANCODE_RIGHT) then ImgIcone[2].Draw(Tela, 200, Y + 85, 0)
-    else if K = Integer(SDL_SCANCODE_LEFT) then ImgIcone[3].Draw(Tela, 200, Y + 85, 0)
+    if K = Integer(SDL_SCANCODE_UP) then ImgIcone.PorNome('Cima').Draw(Tela, 200, Y + 85, 0)
+    else if K = Integer(SDL_SCANCODE_DOWN) then ImgIcone.PorNome('Baixo').Draw(Tela, 200, Y + 85, 0)
+    else if K = Integer(SDL_SCANCODE_RIGHT) then ImgIcone.PorNome('Direita').Draw(Tela, 200, Y + 85, 0)
+    else if K = Integer(SDL_SCANCODE_LEFT) then ImgIcone.PorNome('Esquerda').Draw(Tela, 200, Y + 85, 0)
     else texto(200, Y + 80, NomeTecla(K), AEsq, 11, Branco);
   end;
   if (CursorMenu >= 1) and (CursorMenu <= 8) then

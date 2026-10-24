@@ -9,11 +9,10 @@
         <Filename Value="GeraFonte.lpr"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
-        <TopLine Value="202"/>
-        <CursorPos X="47" Y="233"/>
+        <TopLine Value="22"/>
+        <CursorPos X="110" Y="43"/>
         <UsageCount Value="20"/>
         <Loaded Value="True"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
     </Units>
     <JumpHistory HistoryIndex="-1"/>

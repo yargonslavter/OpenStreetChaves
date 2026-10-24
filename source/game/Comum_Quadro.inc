@@ -2,7 +2,7 @@
 
 procedure TJogo.ExecutarQuadro;
 begin
-  if CheatMentecapto = 1 then
+  if CheatMentecapto then
   begin
     DeslocHudTopo := -90;
     DeslocHudBase := 40;
@@ -34,15 +34,15 @@ begin
   begin
     if AvisoVelocidade > 0 then
     begin
-      texto(200, 260, 'VELOCIDADE', ACentro, 8, Branco);
+      texto(200, 260, TextoInterface('Velocidade'), ACentro, 8, Branco);
       L := 238 - Round(IntervaloTimer / 1.05);
       barra(160, 278, 240, 280, Branco);
       barra(L, 275, L + 2, 283, VermelhoAlerta);
       Dec(AvisoVelocidade);
     end;
-    if MostrarNivel = 1 then
+    if MostrarNivel then
       texto(200, 285, Linha(MemoTexto, 18) + IntToStr(NivelJogo), ACentro, 10, Branco);
-    if MostrarCreditos = 1 then
+    if MostrarCreditos then
     begin
       texto(300, 285, Linha(MemoTexto, 19), AEsq, 10, Branco);
       texto(395, 285, IntToStr(Fichas), ADir, 10, Branco);
@@ -54,7 +54,7 @@ begin
       texto(200, 100, Linha(MemoTexto, 10), ACentro, 15, RosaClaro);
       texto(200, 120, Linha(MemoTexto, 11), ACentro, 15, RosaClaro);
       texto(200, 140, Linha(MemoTexto, 12), ACentro, 15, RosaClaro);
-      RelogioParado := 1;
+      RelogioParado := True;
       Dec(AvisoEntrada);
       if AvisoEntrada = 0 then
       begin
@@ -65,7 +65,7 @@ begin
       end;
     end;
   end;
-  if Pausado = 1 then QuadroAtivo := False;
+  if Pausado then QuadroAtivo := False;
   MemorizaTeclas;
 end;
 
@@ -77,14 +77,14 @@ var
 begin
   K1 := TecP1;
   K2 := TecP2;
-  if ((K1 and 16) <> 0) and (Lutador[1].AntSocoFraco = 0) then Inc(Lutador[1].CargaSoco, 6)
-  else if ((K1 and 64) <> 0) and (Lutador[1].AntSocoForte = 0) then Inc(Lutador[1].CargaSoco, 6);
-  if ((K2 and 16) <> 0) and (Lutador[2].AntSocoFraco = 0) then Inc(Lutador[2].CargaSoco, 6)
-  else if ((K2 and 64) <> 0) and (Lutador[2].AntSocoForte = 0) then Inc(Lutador[2].CargaSoco, 6);
-  if ((K1 and 32) <> 0) and (Lutador[1].AntChuteFraco = 0) then Inc(Lutador[1].CargaChute, 6)
-  else if ((K1 and 128) <> 0) and (Lutador[1].AntChuteForte = 0) then Inc(Lutador[1].CargaChute, 6);
-  if ((K2 and 32) <> 0) and (Lutador[2].AntChuteFraco = 0) then Inc(Lutador[2].CargaChute, 6)
-  else if ((K2 and 128) <> 0) and (Lutador[2].AntChuteForte = 0) then Inc(Lutador[2].CargaChute, 6);
+  if ((K1 and 16) <> 0) and not Lutador[1].AntSocoFraco then Inc(Lutador[1].CargaSoco, 6)
+  else if ((K1 and 64) <> 0) and not Lutador[1].AntSocoForte then Inc(Lutador[1].CargaSoco, 6);
+  if ((K2 and 16) <> 0) and not Lutador[2].AntSocoFraco then Inc(Lutador[2].CargaSoco, 6)
+  else if ((K2 and 64) <> 0) and not Lutador[2].AntSocoForte then Inc(Lutador[2].CargaSoco, 6);
+  if ((K1 and 32) <> 0) and not Lutador[1].AntChuteFraco then Inc(Lutador[1].CargaChute, 6)
+  else if ((K1 and 128) <> 0) and not Lutador[1].AntChuteForte then Inc(Lutador[1].CargaChute, 6);
+  if ((K2 and 32) <> 0) and not Lutador[2].AntChuteFraco then Inc(Lutador[2].CargaChute, 6)
+  else if ((K2 and 128) <> 0) and not Lutador[2].AntChuteForte then Inc(Lutador[2].CargaChute, 6);
 
   for I := 1 to 2 do
   begin
@@ -95,20 +95,20 @@ begin
   end;
 
   { estado anterior das teclas (para deteccao de borda no proximo quadro) }
-  Lutador[1].AntCima := Ord((K1 and 1) <> 0);
-  Lutador[1].AntBaixo := Ord((K1 and 2) <> 0);
-  Lutador[1].AntEsq := Ord((K1 and 4) <> 0);
-  Lutador[1].AntDir := Ord((K1 and 8) <> 0);
-  Lutador[1].AntSocoFraco := Ord((K1 and 16) <> 0);
-  Lutador[1].AntChuteFraco := Ord((K1 and 32) <> 0);
-  Lutador[1].AntSocoForte := Ord((K1 and 64) <> 0);
-  Lutador[1].AntChuteForte := Ord((K1 and 128) <> 0);
-  Lutador[2].AntCima := Ord((K2 and 1) <> 0);
-  Lutador[2].AntBaixo := Ord((K2 and 2) <> 0);
-  Lutador[2].AntEsq := Ord((K2 and 4) <> 0);
-  Lutador[2].AntDir := Ord((K2 and 8) <> 0);
-  Lutador[2].AntSocoFraco := Ord((K2 and 16) <> 0);
-  Lutador[2].AntChuteFraco := Ord((K2 and 32) <> 0);
-  Lutador[2].AntSocoForte := Ord((K2 and 64) <> 0);
-  Lutador[2].AntChuteForte := Ord((K2 and 128) <> 0);
+  Lutador[1].AntCima := (K1 and 1) <> 0;
+  Lutador[1].AntBaixo := (K1 and 2) <> 0;
+  Lutador[1].AntEsq := (K1 and 4) <> 0;
+  Lutador[1].AntDir := (K1 and 8) <> 0;
+  Lutador[1].AntSocoFraco := (K1 and 16) <> 0;
+  Lutador[1].AntChuteFraco := (K1 and 32) <> 0;
+  Lutador[1].AntSocoForte := (K1 and 64) <> 0;
+  Lutador[1].AntChuteForte := (K1 and 128) <> 0;
+  Lutador[2].AntCima := (K2 and 1) <> 0;
+  Lutador[2].AntBaixo := (K2 and 2) <> 0;
+  Lutador[2].AntEsq := (K2 and 4) <> 0;
+  Lutador[2].AntDir := (K2 and 8) <> 0;
+  Lutador[2].AntSocoFraco := (K2 and 16) <> 0;
+  Lutador[2].AntChuteFraco := (K2 and 32) <> 0;
+  Lutador[2].AntSocoForte := (K2 and 64) <> 0;
+  Lutador[2].AntChuteForte := (K2 and 128) <> 0;
 end;

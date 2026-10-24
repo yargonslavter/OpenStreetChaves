@@ -21,8 +21,8 @@ procedure DefineCaixaCorpo(Jog, Quadro: Byte; X1, Y1, X2, Y2: Integer);
 procedure DefineCaixaAtaque(Jog, Acao: Byte; QuadroAcao: Integer; X1, Y1, X2, Y2: Integer;
   Ativo, Forca, Dano, DanoDefesa: Byte);
 procedure DefineCaixaEfeito(Slot, X1, Y1, X2, Y2: Integer);
-{ 1 se ja existe um efeito deste Tipo criado por Dono (limita projeteis); sempre 0 com o truque Bruxa. }
-function ExisteEfeito(Tipo, Dono: Byte): Byte;
+{ True se ja existe um efeito deste Tipo criado por Dono (limita projeteis); sempre False com o truque Bruxa. }
+function ExisteEfeito(Tipo, Dono: Byte): Boolean;
 { Cria um efeito (fumaca, sangue, bola de fogo, texto...) na primeira posicao livre. }
 procedure CriaEfeito(Tipo: Byte; const Texto: string; Dono: Byte; X, Y: Double);
 { Deslocamento horizontal do centro do sprite atual do lutador (para desenhar centralizado). }
@@ -46,13 +46,13 @@ begin
      (O.CorpoY2 + O.Y > P.CorpoY1 + P.Y) and (O.CorpoY1 + O.Y < P.CorpoY2 + P.Y) and
      (P.Acao <> 23) and (P.Acao <> 20) then
   begin
-    if (P.X <= O.X) and (RelogioParado = 0) then
+    if (P.X <= O.X) and not RelogioParado then
     begin
       O.X := O.X + 5;
       if O.X > CameraX + 370 then O.X := CameraX + 370;
       P.X := ((O.CorpoX1 + O.X) - P.CorpoX2) - 5;
     end;
-    if (P.X > O.X) and (RelogioParado = 0) then
+    if (P.X > O.X) and not RelogioParado then
     begin
       O.X := O.X - 5;
       if O.X < CameraX + 30 then O.X := CameraX + 30;
@@ -101,7 +101,7 @@ begin
     P.AtaqueX1 := -X2;
     P.AtaqueX2 := -X1;
   end;
-  P.GolpeAtivo := Ativo;
+  P.GolpeAtivo := Ativo <> 0;
   if Forca <> 0 then P.ForcaGolpe := Forca;
   P.DanoGolpe := Dano;
   P.DanoDefesa := DanoDefesa;
@@ -115,14 +115,14 @@ begin
   Efeitos[Slot].CaixaY2 := Y2;
 end;
 
-function ExisteEfeito(Tipo, Dono: Byte): Byte;
+function ExisteEfeito(Tipo, Dono: Byte): Boolean;
 var
   I: Integer;
 begin
-  Result := 0;
+  Result := False;
   for I := 1 to MaxEfeitos do
-    if (Efeitos[I].Tipo = Tipo) and (CheatBruxa = 0) and (Efeitos[I].Dono = Dono) then
-      Result := 1;
+    if (Efeitos[I].Tipo = Tipo) and not CheatBruxa and (Efeitos[I].Dono = Dono) then
+      Result := True;
 end;
 
 
@@ -141,22 +141,22 @@ begin
     E.Tipo := Tipo;
     E.Quadro := 0;
     E.VelY := 0;
-    E.Estagio := 0;
+    E.Estagio := False;
     E.Lado := 1;
     E.Vel := 0;
-    E.PodeAcertar := 0;
-    E.Variante := 0;
+    E.PodeAcertar := False;
+    E.Variante := False;
     E.CaixaX1 := 0;
     E.CaixaY1 := 0;
     E.CaixaX2 := 0;
     E.CaixaY2 := 0;
     E.Dono := Dono;
-    E.Terminando := 0;
+    E.Terminando := False;
     E.Contagem := 0;
     E.LimiteContagem := 0;
-    E.Flag50 := 0;
-    E.Flag51 := 0;
-    E.Flag52 := 0;
+    E.Flag50 := False;
+    E.Flag51 := False;
+    E.Flag52 := False;
     E.Dano := 0;
     E.DanoDefesa := 0;
     if E.Tipo = 1 then
@@ -166,13 +166,13 @@ begin
     if E.Tipo = 2 then
     begin
       E.Duracao := 15;
-      E.Flag51 := 1;
+      E.Flag51 := True;
     end;
     if (E.Tipo = 3) or ((E.Tipo) = 4) then
     begin
       E.Duracao := 80;
       E.VelY := -22;
-      E.Flag52 := 1;
+      E.Flag52 := True;
       DefineCaixaEfeito(Slot, -12, -8, 12, 10);
     end;
     if E.Tipo = 5 then
@@ -183,18 +183,18 @@ begin
     begin
       E.Duracao := 99;
       E.VelY := -22;
-      E.Flag52 := 1;
+      E.Flag52 := True;
       E.Lado := Lutador[Dono].Lado;
       E.Vel := 5;
     end;
     if E.Tipo = 7 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
-      E.Flag51 := 1;
+      E.PodeAcertar := True;
+      E.Flag51 := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -212,22 +212,22 @@ begin
     if E.Tipo = 8 then
     begin
       E.Duracao := 23;
-      E.PodeAcertar := 1;
-      E.Flag51 := 1;
+      E.PodeAcertar := True;
+      E.Flag51 := True;
       E.Dano := 40;
       E.DanoDefesa := Round(E.Dano / 15);
-      E.Variante := 1;
-      E.Terminando := 1;
+      E.Variante := True;
+      E.Terminando := True;
       E.Lado := Lutador[Dono].Lado;
       DefineCaixaEfeito(Slot, -30, -50, 30, 0);
     end;
     if E.Tipo = 9 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -253,10 +253,10 @@ begin
     if E.Tipo = 12 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -274,10 +274,10 @@ begin
     if E.Tipo = 13 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -299,10 +299,10 @@ begin
     if E.Tipo = 15 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -329,10 +329,10 @@ begin
     if E.Tipo = 18 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -350,10 +350,10 @@ begin
     if E.Tipo = 19 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -371,12 +371,12 @@ begin
     if E.Tipo = 20 then
     begin
       E.Duracao := 5;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       E.Lado := Lutador[Dono].Lado;
       E.Vel := Random(2)+10;
       E.Dano := 7;
       E.DanoDefesa := Round(E.Dano / 4);
-      E.Variante := 1;
+      E.Variante := True;
       DefineCaixaEfeito(Slot, -8, -5, 8, 5);
     end;
     if E.Tipo = 21 then
@@ -384,7 +384,7 @@ begin
       E.Duracao := 23;
       r34 := Random(5);
       E.VelY := -23-(r34+(r34*4));
-      E.Flag52 := 1;
+      E.Flag52 := True;
       E.Lado := Random(2)+1;
       E.Vel := Random(10);
       r37 := Random(3);
@@ -394,7 +394,7 @@ begin
     begin
       E.Duracao := 20;
       E.Sprite := 56;
-      E.Flag52 := 1;
+      E.Flag52 := True;
       if Texto = 'A' then
       begin
         E.VelY := -13;
@@ -403,10 +403,10 @@ begin
       begin
         E.VelY := -17;
       end;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -424,13 +424,13 @@ begin
     if E.Tipo = 23 then
     begin
       E.Duracao := 26;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       E.Dano := 12;
       E.DanoDefesa := Round(E.Dano / 4);
       E.Lado := Lutador[Dono].Lado;
-      E.Terminando := 1;
-      E.Variante := 1;
-      E.Flag51 := 1;
+      E.Terminando := True;
+      E.Variante := True;
+      E.Flag51 := True;
       DefineCaixaEfeito(Slot, -30, -145, 30, 0);
     end;
     if E.Tipo = 24 then
@@ -445,10 +445,10 @@ begin
     if E.Tipo = 26 then
     begin
       E.Duracao := 6;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -489,8 +489,8 @@ begin
     begin
       E.Duracao := 4;
       E.LimiteContagem := 20;
-      E.PodeAcertar := 1;
-      E.Terminando := 1;
+      E.PodeAcertar := True;
+      E.Terminando := True;
       E.Dano := 2;
       E.DanoDefesa := Round(E.Dano / 4);
       E.Lado := Lutador[Dono].Lado;
@@ -499,10 +499,10 @@ begin
     if E.Tipo = 29 then
     begin
       E.Duracao := 6;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -521,11 +521,11 @@ begin
     begin
       E.Duracao := 5;
       E.LimiteContagem := 25;
-      E.PodeAcertar := 1;
-      E.Terminando := 1;
+      E.PodeAcertar := True;
+      E.Terminando := True;
       E.Lado := Lutador[Dono].Lado;
-      E.Variante := 1;
-      E.Flag50 := 1;
+      E.Variante := True;
+      E.Flag50 := True;
       E.Vel := 0;
       E.Dano := 10;
       E.DanoDefesa := Round(E.Dano / 4);
@@ -535,12 +535,12 @@ begin
     begin
       E.Duracao := 6;
       E.LimiteContagem := 70;
-      E.PodeAcertar := 1;
-      E.Terminando := 1;
-      E.Variante := 1;
+      E.PodeAcertar := True;
+      E.Terminando := True;
+      E.Variante := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       E.Dano := 35;
@@ -550,10 +550,10 @@ begin
     if E.Tipo = 33 then
     begin
       E.Duracao := 6;
-      E.PodeAcertar := 1;
+      E.PodeAcertar := True;
       if Random(5) = 0 then
       begin
-        E.Variante := 1;
+        E.Variante := True;
       end;
       E.Lado := Lutador[Dono].Lado;
       if Texto = 'A' then
@@ -571,10 +571,10 @@ begin
     if E.Tipo = 34 then
     begin
       E.Duracao := 20;
-      E.PodeAcertar := 1;
-      E.Flag51 := 1;
-      E.Terminando := 1;
-      E.Variante := 1;
+      E.PodeAcertar := True;
+      E.Flag51 := True;
+      E.Terminando := True;
+      E.Variante := True;
       E.Lado := Lutador[Dono].Lado;
       E.Dano := 18;
       E.DanoDefesa := Round(E.Dano / 4);
@@ -925,16 +925,16 @@ begin
   begin
     Desloc := 50;
   end;
-  P.Defendendo := 0;
+  P.Defendendo := False;
   if (Codigo = 1) and (((P.Acao) = 1) or ((P.Acao) = 2)) then
   begin
     Empurra(Jog, -(P.Velocidade));
     P.Acao := 2;
     P.DuracaoAcao := 99;
-    P.Campo_148 := 0;
+    P.Campo_148 := False;
     if (P.Lado) = 2 then
     begin
-      P.Campo_148 := 1;
+      P.Campo_148 := True;
     end;
   end;
   if (Codigo = 2) and (((P.Acao) = 1) or ((P.Acao) = 2)) then
@@ -942,10 +942,10 @@ begin
     Empurra(Jog, P.Velocidade);
     P.Acao := 2;
     P.DuracaoAcao := 99;
-    P.Campo_148 := 0;
+    P.Campo_148 := False;
     if (P.Lado) = 1 then
     begin
-      P.Campo_148 := 1;
+      P.Campo_148 := True;
     end;
   end;
   if (Codigo = 3) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21)) and ((P.VelY) = 0) then
@@ -981,7 +981,7 @@ begin
     end;
     SomPendente := 6;
   end;
-  if (Codigo = 6) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21)) and ((P.VelY) = 0) and ((P.NoAr) = 0) then
+  if (Codigo = 6) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21)) and ((P.VelY) = 0) and not P.NoAr then
   begin
     P.Acao := 6;
     P.QuadroAcao := 0;
@@ -1035,7 +1035,7 @@ begin
     P.Acao := 11;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 11;
-    P.EhChute := 1;
+    P.EhChute := True;
     if (P.CargaPoder) < CargaMax then
     begin
       P.CargaPoder := (2 * GanhoCarga) + (P.CargaPoder);
@@ -1108,10 +1108,10 @@ begin
     P.QuadroAcao := 0;
     P.DuracaoAcao := 50;
     P.VelY := -19;
-    P.NoAr := 1;
+    P.NoAr := True;
     P.DirPulo := 0;
-    P.Vencedor := 1;
-    P.GolpeAtivo := 0;
+    P.Vencedor := True;
+    P.GolpeAtivo := False;
   end;
   if Codigo = 11 then
   begin
@@ -1119,25 +1119,25 @@ begin
     P.QuadroAcao := 0;
     P.DuracaoAcao := 25;
     P.VelY := -13;
-    P.NoAr := 1;
-    P.Vencedor := 1;
+    P.NoAr := True;
+    P.Vencedor := True;
   end;
   if (Codigo = 12) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 7) or ((P.Acao) = 21) or ((P.Acao) = 22) or ((P.Acao) = 20) and (((P.QuadroAcao)) >= ((P.DuracaoAcao))-3)) then
   begin
     P.Acao := 21;
-    P.Vencedor := 0;
+    P.Vencedor := False;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 11;
-    P.Defendendo := 1;
+    P.Defendendo := True;
     P.Quadro := Desloc+31;
   end;
   if (Codigo = 13) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 7) or ((P.Acao) = 21) or ((P.Acao) = 22) or ((P.Acao) = 20) and (((P.QuadroAcao)) >= ((P.DuracaoAcao))-3)) then
   begin
     P.Acao := 22;
-    P.Vencedor := 0;
+    P.Vencedor := False;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 11;
-    P.Defendendo := 1;
+    P.Defendendo := True;
     P.Quadro := Desloc+32;
   end;
   if (P.Personagem) = 1 then
@@ -1154,7 +1154,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(7, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(7, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1207,7 +1207,7 @@ begin
           P.CargaPoder := (6 * GanhoCarga) + (P.CargaPoder);
         end;
         P.Y := (ChaoY);
-        P.NoAr := 0;
+        P.NoAr := False;
         P.QuadroAcao := 0;
         P.VelY := 0;
         P.DirPulo := 0;
@@ -1279,7 +1279,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(9, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(9, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1320,8 +1320,8 @@ begin
       P.Acao := 27;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
-      P.EhChute := 1;
-      P.NoAr := 0;
+      P.EhChute := True;
+      P.NoAr := False;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1376,7 +1376,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(9, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(9, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1400,7 +1400,7 @@ begin
       P.Acao := 26;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 15;
-      P.EhChute := 1;
+      P.EhChute := True;
       if Codigo = 18 then
       begin
         P.VelY := -23;
@@ -1409,7 +1409,7 @@ begin
       begin
         P.VelY := -29;
       end;
-      P.NoAr := 1;
+      P.NoAr := True;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1428,7 +1428,7 @@ begin
     begin
       P.Acao := 27;
       P.QuadroAcao := 0;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1464,7 +1464,7 @@ begin
       begin
         P.VelY := -23;
       end;
-      P.NoAr := 1;
+      P.NoAr := True;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (6 * GanhoCarga) + (P.CargaPoder);
@@ -1507,7 +1507,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(12, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(12, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1530,7 +1530,7 @@ begin
     begin
       P.Acao := 26;
       P.QuadroAcao := 0;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1576,7 +1576,7 @@ begin
       P.Acao := 28;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 15;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1597,7 +1597,7 @@ begin
       begin
         P.VelY := -32;
       end;
-      P.NoAr := 1;
+      P.NoAr := True;
       SomPendente := 27;
     end;
     if (Codigo = 24) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 7) or ((P.Acao) = 21) or ((P.Acao) = 22) or ((P.Acao) = 26)) and (((P.Vida) <= 15) or ((P.Poder) > 0)) then
@@ -1606,14 +1606,14 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 13;
       P.ForcaGolpe := 2;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.Poder) = 3 then
       begin
         P.CargaPoder := 0;
       end;
       P.Poder := (P.Poder)-1;
       P.Quadro := Desloc+12;
-      O.Vencedor := 0;
+      O.Vencedor := False;
       FlashTela := 22;
       SomPendente := 19;
     end;
@@ -1632,7 +1632,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(13, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(13, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1677,7 +1677,7 @@ begin
         P.Acao := 27;
         P.Y := (ChaoY);
         P.VelY := 0;
-        P.NoAr := 0;
+        P.NoAr := False;
         P.TempoBaixo := 0;
         P.QuadroAcao := 0;
         if (P.CargaPoder) < CargaMax then
@@ -1752,7 +1752,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(15, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(15, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -1771,7 +1771,7 @@ begin
       end;
       SomPendente := 33;
     end;
-    if ((Codigo = 18) or (Codigo = 19)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(15, Jog) = 0) then
+    if ((Codigo = 18) or (Codigo = 19)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(15, Jog) then
     begin
       P.Acao := 26;
       P.QuadroAcao := 0;
@@ -1795,7 +1795,7 @@ begin
       P.Acao := 27;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 25;
-      P.NoAr := 0;
+      P.NoAr := False;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -1835,7 +1835,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 50;
       P.VelY := -18;
-      P.NoAr := 1;
+      P.NoAr := True;
       if (P.Poder) = 3 then
       begin
         P.CargaPoder := 0;
@@ -1914,7 +1914,7 @@ begin
         P.Acao := 27;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 15;
-        P.NoAr := 1;
+        P.NoAr := True;
         P.DirPulo := 0;
         P.TempoBaixo := 0;
         P.Y := (ChaoY);
@@ -1948,7 +1948,7 @@ begin
         P.Acao := 28;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 15;
-        P.NoAr := 1;
+        P.NoAr := True;
         P.DirPulo := 0;
         P.TempoBaixo := 0;
         P.Y := (ChaoY);
@@ -2004,7 +2004,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(18, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(18, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2023,7 +2023,7 @@ begin
       end;
       SomPendente := 39;
     end;
-    if ((Codigo = 18) or (Codigo = 19)) and ((P.Acao) = 12) and (ExisteEfeito(19, Jog) = 0) then
+    if ((Codigo = 18) or (Codigo = 19)) and ((P.Acao) = 12) and not ExisteEfeito(19, Jog) then
     begin
       P.Acao := 26;
       P.QuadroAcao := 0;
@@ -2182,7 +2182,7 @@ begin
       P.Acao := 28;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 15;
-      P.NoAr := 0;
+      P.NoAr := False;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -2279,7 +2279,7 @@ begin
         P.Acao := 27;
         P.QuadroAcao := 0;
         P.Y := ((((ChaoY))-50));
-        P.NoAr := 1;
+        P.NoAr := True;
         P.DuracaoAcao := 20;
         if (P.CargaPoder) < CargaMax then
         begin
@@ -2352,7 +2352,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(22, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(22, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2468,7 +2468,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 20;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(9, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(9, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2486,7 +2486,7 @@ begin
         P.ForcaGolpe := 2;
       end;
     end;
-    if ((Codigo = 18) or (Codigo = 19)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 7) or ((P.Acao) = 21) or ((P.Acao) = 22) or ((P.Acao) = 30) and ((P.GolpeAtivo) = 0)) then
+    if ((Codigo = 18) or (Codigo = 19)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 7) or ((P.Acao) = 21) or ((P.Acao) = 22) or ((P.Acao) = 30) and not P.GolpeAtivo) then
     begin
       P.Acao := 26;
       P.QuadroAcao := 0;
@@ -2510,7 +2510,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 28;
       P.VelY := 0;
-      P.NoAr := 0;
+      P.NoAr := False;
       P.DirPulo := 0;
       if (P.CargaPoder) < CargaMax then
       begin
@@ -2548,7 +2548,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 250;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(26, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(26, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2589,7 +2589,7 @@ begin
         P.ForcaGolpe := 2;
       end;
     end;
-    if ((Codigo = 20) or (Codigo = 21)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(28, Jog) = 0) then
+    if ((Codigo = 20) or (Codigo = 21)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(28, Jog) then
     begin
       P.Acao := 27;
       P.QuadroAcao := 0;
@@ -2638,7 +2638,7 @@ begin
       P.Acao := 29;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 30;
-      P.NoAr := 0;
+      P.NoAr := False;
       P.DirPulo := 0;
       P.VelY := 0;
       if (P.Poder) = 3 then
@@ -2659,7 +2659,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 250;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(29, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(29, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2692,7 +2692,7 @@ begin
       P.Acao := 27;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 35;
-      P.NoAr := 0;
+      P.NoAr := False;
       P.VelY := 0;
       if (P.CargaPoder) < CargaMax then
       begin
@@ -2712,7 +2712,7 @@ begin
       P.Acao := 28;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 35;
-      P.NoAr := 0;
+      P.NoAr := False;
       P.VelY := 0;
       if (P.CargaPoder) < CargaMax then
       begin
@@ -2750,7 +2750,7 @@ begin
       P.QuadroAcao := 0;
       P.DuracaoAcao := 250;
     end;
-    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and (ExisteEfeito(33, Jog) = 0) then
+    if ((Codigo = 16) or (Codigo = 17)) and (((P.Acao) = 1) or ((P.Acao) = 2) or ((P.Acao) = 21) or ((P.Acao) = 22)) and not ExisteEfeito(33, Jog) then
     begin
       P.Acao := 25;
       P.QuadroAcao := 0;
@@ -2791,7 +2791,7 @@ begin
       P.Acao := 27;
       P.QuadroAcao := 0;
       P.DuracaoAcao := 25;
-      P.NoAr := 0;
+      P.NoAr := False;
       if (P.CargaPoder) < CargaMax then
       begin
         P.CargaPoder := (5 * GanhoCarga) + (P.CargaPoder);
@@ -2868,7 +2868,7 @@ begin
   if (P.Acao) = 1 then
   begin
     P.Quadro := Desloc+1;
-    P.Vencedor := 0;
+    P.Vencedor := False;
   end;
   if ((P.Acao) = 2) and ((P.QuadroAcao) = 0) then
   begin
@@ -2888,11 +2888,11 @@ begin
   end;
   if ((P.Personagem) = 8) and ((P.Acao) = 2) then
   begin
-    if (P.Campo_148) = 1 then
+    if P.Campo_148 then
     begin
       P.Quadro := Desloc+2;
     end;
-    if (P.Campo_148) = 0 then
+    if not P.Campo_148 then
     begin
       P.Quadro := Desloc+3;
     end;
@@ -3111,7 +3111,7 @@ begin
   end;
   if ((P.Acao) = 21) or ((P.Acao) = 22) then
   begin
-    P.Defendendo := 1;
+    P.Defendendo := True;
   end;
   if (P.Personagem) = 1 then
   begin
@@ -3243,21 +3243,21 @@ begin
       begin
         CriaEfeito(16, '', Jog, (P.X) - 60, (P.Y) - 85);
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 27 then
     begin
       if (P.Acertos) >= 1 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
       if (P.Acertos) >= 4 then
       begin
-        O.Vencedor := 1;
+        O.Vencedor := True;
       end;
       if (P.QuadroAcao) > 7 then
       begin
-        O.Vencedor := 1;
+        O.Vencedor := True;
       end;
       if (P.QuadroAcao) = 0 then
       begin
@@ -3285,9 +3285,9 @@ begin
       end;
       if (P.QuadroAcao) = 20 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 28 then
     begin
@@ -3340,7 +3340,7 @@ begin
       end;
       if (P.QuadroAcao) >= 12 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 29 then
@@ -3489,7 +3489,7 @@ begin
       if (((P.QuadroAcao) <> 11) and ((P.QuadroAcao) = 15) and ((P.ForcaGolpe) = 2)) or (((P.QuadroAcao) = 11) and (((P.ForcaGolpe) = 1) or ((P.QuadroAcao) = 15) and ((P.ForcaGolpe) = 2))) then
       begin
         P.Quadro := Desloc+40;
-        P.NoAr := 1;
+        P.NoAr := True;
         P.VelY := -6;
       end;
       if (P.Quadro) = Desloc+39 then
@@ -3535,15 +3535,15 @@ begin
       end;
       if (P.Quadro) = Desloc+40 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
       if (P.QuadroAcao) >= 5 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if (P.Acertos) = 1 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
     end;
     if (P.Acao) = 27 then
@@ -3615,7 +3615,7 @@ begin
       end;
       if (P.Acao) = 29 then
       begin
-        if (Flash = 1) and (Random(6) = 0) then
+        if Flash and (Random(6) = 0) then
         begin
           FlashVermelho := 3;
         end;
@@ -3685,7 +3685,7 @@ begin
     begin
       P.Recuo := 0;
       P.Quadro := (Random(45)+1)+Desloc;
-      if (Flash = 1) and (Random(5) = 0) then
+      if Flash and (Random(5) = 0) then
       begin
         FlashVermelho := 3;
       end;
@@ -3742,7 +3742,7 @@ begin
         PausaImpacto := 5;
         AcaoJogador(Jog, 19);
         AcaoJogador(3-Jog, 10);
-        P.GolpeAtivo := 0;
+        P.GolpeAtivo := False;
         O.Recuo := 28;
         O.VelY := -30;
         if (O.Lado) = 1 then
@@ -3984,7 +3984,7 @@ begin
       end;
       if (P.QuadroAcao) >= 5 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 29 then
@@ -4015,7 +4015,7 @@ begin
         P.Quadro := Desloc+50;
       end;
       P.Y := (P.Y) - 3;
-      if (Flash = 1) and (Random(5) = 0) then
+      if Flash and (Random(5) = 0) then
       begin
         FlashVermelho := 3;
       end;
@@ -4069,7 +4069,7 @@ begin
         P.DanoGolpe := 36;
         O.Vida := (O.Vida) - ((((P.DanoGolpe))) * NivelDano);
         P.VelY := -28;
-        P.NoAr := 1;
+        P.NoAr := True;
         P.Acao := 12;
         P.QuadroAcao := 0;
         P.DuracaoAcao := 99;
@@ -4250,7 +4250,7 @@ begin
       end;
       if (P.QuadroAcao) >= 6 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -4498,7 +4498,7 @@ begin
       end;
       if (P.QuadroAcao) >= 15 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 27 then
@@ -4548,7 +4548,7 @@ begin
       end;
       if (P.QuadroAcao) >= 26 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -4602,7 +4602,7 @@ begin
       end;
       if (P.QuadroAcao) >= 15 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if ((P.QuadroAcao) = 1) or ((P.QuadroAcao) = 8) or ((P.QuadroAcao) = 12) then
       begin
@@ -4817,9 +4817,9 @@ begin
         begin
           P.VelY := -6;
         end;
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 28 then
     begin
@@ -4865,11 +4865,11 @@ begin
       end;
       if (P.QuadroAcao) >= 3 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if (P.QuadroAcao) = 6 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
     end;
     if (P.Acao) = 29 then
@@ -4910,7 +4910,7 @@ begin
       end;
       if (P.QuadroAcao) = 8 then
       begin
-        P.NoAr := 0;
+        P.NoAr := False;
         P.Y := (ChaoY);
       end;
       if (P.QuadroAcao) = 8 then
@@ -4943,13 +4943,13 @@ begin
       end;
       if (P.QuadroAcao) = 26 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
         P.VelY := -5;
       end;
       if ((P.QuadroAcao) >= 9) and (((O.Acao) = 17) or ((O.Acao) = 19)) then
       begin
-        P.EhChute := 1;
-        O.Vencedor := 0;
+        P.EhChute := True;
+        O.Vencedor := False;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -5, 40, 30, 200);
@@ -5106,7 +5106,7 @@ begin
       end;
       if (P.QuadroAcao) >= 5 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 27 then
@@ -5144,7 +5144,7 @@ begin
       end;
       if (P.QuadroAcao) >= 3 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -5173,7 +5173,7 @@ begin
       begin
         Empurra(Jog, -11);
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if ((P.Acao) = 29) and ((P.QuadroAcao) = 0) then
     begin
@@ -5199,7 +5199,7 @@ begin
     begin
       P.Recuo := 0;
       P.Quadro := (Random(46)+1)+Desloc;
-      if (Flash = 1) and (Random(5) = 0) then
+      if Flash and (Random(5) = 0) then
       begin
         FlashVermelho := 3;
       end;
@@ -5259,7 +5259,7 @@ begin
         end;
         P.QuadroAcao := 0;
         P.VelY := -48;
-        P.NoAr := 1;
+        P.NoAr := True;
         AcaoJogador(Jog, 21);
         AcaoJogador(3-Jog, 10);
         O.Recuo := 30;
@@ -5380,7 +5380,7 @@ begin
       if (P.QuadroAcao) = 0 then
       begin
         P.VelY := 0;
-        P.NoAr := 0;
+        P.NoAr := False;
       end;
       if (P.QuadroAcao) = 0 then
       begin
@@ -5413,7 +5413,7 @@ begin
       if (P.QuadroAcao) = 8 then
       begin
         P.VelY := 0;
-        P.NoAr := 0;
+        P.NoAr := False;
       end;
     end;
     if (P.Acao) = 27 then
@@ -5453,7 +5453,7 @@ begin
       if (P.QuadroAcao) = 2 then
       begin
         P.DirPulo := 0;
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
       if ((P.QuadroAcao) > 2) and ((P.QuadroAcao) < 8) then
       begin
@@ -5474,7 +5474,7 @@ begin
           Empurra(Jog, -12);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 28 then
     begin
@@ -5485,15 +5485,15 @@ begin
       if (P.QuadroAcao) = 0 then
       begin
         P.VelY := 0;
-        P.NoAr := 0;
+        P.NoAr := False;
       end;
       if (P.QuadroAcao) = 1 then
       begin
-        P.Vencedor := 1;
+        P.Vencedor := True;
       end;
       if (P.QuadroAcao) = 9 then
       begin
-        P.Vencedor := 0;
+        P.Vencedor := False;
       end;
       if (P.QuadroAcao) = 8 then
       begin
@@ -5516,7 +5516,7 @@ begin
         P.Y := 50;
         P.VelY := 0;
         P.DirPulo := 0;
-        P.NoAr := 1;
+        P.NoAr := True;
         CriaEfeito(24, '', Jog, (P.X) - 37, (P.Y) - 80);
       end;
       if (P.QuadroAcao) = 9 then
@@ -5558,7 +5558,7 @@ begin
           Empurra(Jog, -8);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 29 then
     begin
@@ -5581,7 +5581,7 @@ begin
           CriaEfeito(20, 'A', Jog, (P.X) - 20, (P.Y) - 90);
         end;
       end;
-      O.Vencedor := 0;
+      O.Vencedor := False;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -17, 30, 14, 170);
     DefineCaixaCorpo(Jog, Desloc+2, -17, 30, 14, 170);
@@ -5682,7 +5682,7 @@ begin
           Empurra(Jog, -13);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 26 then
     begin
@@ -5702,7 +5702,7 @@ begin
       if (P.QuadroAcao) = 8 then
       begin
         P.VelY := -10;
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
       if (P.QuadroAcao) < 8 then
       begin
@@ -5731,7 +5731,7 @@ begin
           P.Y := (P.Y) - 15;
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 27 then
     begin
@@ -5772,7 +5772,7 @@ begin
       end;
       if ((P.QuadroAcao) >= 6) and ((P.ForcaGolpe) = 2) then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -5812,11 +5812,11 @@ begin
         begin
           P.Acao := 1;
           P.QuadroAcao := 0;
-          P.GolpeAtivo := 0;
+          P.GolpeAtivo := False;
           P.Y := (ChaoY);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 29 then
     begin
@@ -5894,8 +5894,8 @@ begin
           Empurra(Jog, -15);
         end;
         P.Y := (P.Y) - 18;
-        P.EhChute := 1;
-        O.Vencedor := 0;
+        P.EhChute := True;
+        O.Vencedor := False;
       end;
       if (P.QuadroAcao) = 22 then
       begin
@@ -5904,7 +5904,7 @@ begin
       if (P.QuadroAcao) = 22 then
       begin
         P.VelY := -14;
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -17, 30, 14, 160);
@@ -6065,7 +6065,7 @@ begin
           CriaEfeito(2, '', 0, Random(40) + (P.X - 20), Random(10) + P.Y);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 27 then
     begin
@@ -6099,7 +6099,7 @@ begin
       end;
       if (P.QuadroAcao) >= 5 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -6135,7 +6135,7 @@ begin
           CriaEfeito(2, '', 0, Random(40) + (P.X - 20), Random(10) + P.Y);
         end;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 29 then
     begin
@@ -6158,7 +6158,7 @@ begin
       if (P.QuadroAcao) = 15 then
       begin
         P.VelY := -35;
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
       if (P.QuadroAcao) = 20 then
       begin
@@ -6189,11 +6189,11 @@ begin
       end;
       if (P.QuadroAcao) = 14 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if (P.QuadroAcao) > 14 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -14, 30, 19, 170);
@@ -6369,11 +6369,11 @@ begin
       end;
       if (P.ForcaGolpe) = 1 then
       begin
-        P.EhChute := 0;
+        P.EhChute := False;
       end;
       if (P.ForcaGolpe) = 2 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -6430,16 +6430,16 @@ begin
       begin
         P.Y := (P.Y) - 8;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
       if ((P.Acertos) >= 1) and ((O.Acao) = 19) then
       begin
         if (P.TempoAcertos) > 19 then
         begin
-          O.Vencedor := 0;
+          O.Vencedor := False;
         end;
         if (P.TempoAcertos) < 17 then
         begin
-          O.Vencedor := 1;
+          O.Vencedor := True;
         end;
       end;
       if (P.QuadroAcao) = 11 then
@@ -6533,11 +6533,11 @@ begin
       end;
       if ((P.Acertos) >= 3) and ((P.TempoAcertos) >= 18) then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
       if (P.QuadroAcao) >= 28 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -14, 30, 19, 170);
@@ -6698,7 +6698,7 @@ begin
       if (((P.QuadroAcao) <> 8) and ((P.QuadroAcao) = 10) and ((P.ForcaGolpe) = 2)) or (((P.QuadroAcao) = 8) and (((P.ForcaGolpe) = 1) or ((P.QuadroAcao) = 10) and ((P.ForcaGolpe) = 2))) then
       begin
         P.Quadro := Desloc+40;
-        P.NoAr := 1;
+        P.NoAr := True;
         P.VelY := -6;
       end;
       if (P.Quadro) = Desloc+39 then
@@ -6730,9 +6730,9 @@ begin
       end;
       if (P.Quadro) = Desloc+40 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 27 then
     begin
@@ -6804,11 +6804,11 @@ begin
       end;
       if ((P.QuadroAcao) >= 6) and ((P.QuadroAcao) <= 16) then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
       if (P.QuadroAcao) >= 10 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
     end;
     if (P.Acao) = 28 then
@@ -6862,15 +6862,15 @@ begin
       end;
       if (P.QuadroAcao) = 25 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
         P.DirPulo := 0;
         P.VelY := -8;
       end;
       O.Recuo := 0;
       if (P.QuadroAcao) >= 13 then
       begin
-        P.EhChute := 1;
-        O.Vencedor := 0;
+        P.EhChute := True;
+        O.Vencedor := False;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -8, 30, 26, 175);
@@ -7072,7 +7072,7 @@ begin
           P.X := ((CameraX+$140));
         end;
         P.Y := ((CameraY+150));
-        P.NoAr := 1;
+        P.NoAr := True;
         P.VelY := 0;
         SomPendente := 41;
       end;
@@ -7097,11 +7097,11 @@ begin
       end;
       if (P.Acertos) > 1 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
       if (P.QuadroAcao) >= 15 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if (P.QuadroAcao) = 2 then
       begin
@@ -7320,7 +7320,7 @@ begin
       end;
       if (P.QuadroAcao) = 17 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
         P.DirPulo := 0;
         P.VelY := -2;
         P.Quadro := Desloc+21;
@@ -7329,7 +7329,7 @@ begin
       begin
         SomPendente := 60;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
     end;
     if (P.Acao) = 29 then
     begin
@@ -7560,17 +7560,17 @@ begin
       end;
       if (P.QuadroAcao) = 9 then
       begin
-        P.NoAr := 1;
+        P.NoAr := True;
         P.VelY := -5;
       end;
       if (P.QuadroAcao) = 1 then
       begin
         SomPendente := 65;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.QuadroAcao) <= 3 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
     end;
     if (P.Acao) = 28 then
@@ -7599,10 +7599,10 @@ begin
       begin
         SomPendente := 66;
       end;
-      P.EhChute := 1;
+      P.EhChute := True;
       if (P.QuadroAcao) <= 3 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
     end;
     if (P.Acao) = 29 then
@@ -7640,11 +7640,11 @@ begin
       end;
       if (P.QuadroAcao) >= 15 then
       begin
-        P.EhChute := 1;
+        P.EhChute := True;
       end;
       if (P.QuadroAcao) <= 15 then
       begin
-        O.Vencedor := 0;
+        O.Vencedor := False;
       end;
     end;
     DefineCaixaCorpo(Jog, Desloc+1, -8, 28, 23, 160);

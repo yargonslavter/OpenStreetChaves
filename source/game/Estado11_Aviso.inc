@@ -7,8 +7,7 @@ begin
   Sup := Tela;
   barra(0, 0, LarguraTela, AlturaTela, Preto);
   texto(200, 50, Linha(MemoTexto, 25), ACentro, 15, Branco);
-  if (Idioma = 1) and (ImgAbertura.Count > 12) then ImgAbertura[12].Draw(Sup, 89, 80, 0);
-  if (Idioma = 2) and (ImgAbertura.Count > 13) then ImgAbertura[13].Draw(Sup, 89, 80, 0);
+  ImgAbertura.PorNome('Logo' + SufixoIdioma).Draw(Sup, 89, 80, 0);
   texto(200, 240, Linha(MemoTexto, 26), ACentro, 10, Branco);
   texto(200, 260, Linha(MemoTexto, 31), ACentro, 10, Branco);
   Inc(TempoEstado);

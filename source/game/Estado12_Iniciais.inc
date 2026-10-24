@@ -23,20 +23,20 @@ begin
     if ContPisca < 15 then texto(X + (P.CursorIni - 1) * 15, 4, '-', AEsq, 27, Branco);
 
     if J = 1 then K := TecP1 else K := TecP2;
-    if ((K and 4) <> 0) and (P.AntEsq = 0) then Dec(P.CursorIni);
-    if ((K and 8) <> 0) and (P.AntDir = 0) then Inc(P.CursorIni);
+    if ((K and 4) <> 0) and not P.AntEsq then Dec(P.CursorIni);
+    if ((K and 8) <> 0) and not P.AntDir then Inc(P.CursorIni);
     if P.CursorIni < 1 then P.CursorIni := 1;
     if P.CursorIni > 3 then P.CursorIni := 3;
-    if ((K and 1) <> 0) and (P.AntCima = 0) then P.Iniciais[P.CursorIni] := Chr(Ord(P.Iniciais[P.CursorIni]) + 1);
-    if ((K and 2) <> 0) and (P.AntBaixo = 0) then P.Iniciais[P.CursorIni] := Chr(Ord(P.Iniciais[P.CursorIni]) - 1);
+    if ((K and 1) <> 0) and not P.AntCima then P.Iniciais[P.CursorIni] := Chr(Ord(P.Iniciais[P.CursorIni]) + 1);
+    if ((K and 2) <> 0) and not P.AntBaixo then P.Iniciais[P.CursorIni] := Chr(Ord(P.Iniciais[P.CursorIni]) - 1);
     if Ord(P.Iniciais[P.CursorIni]) < 48 then P.Iniciais[P.CursorIni] := Chr(48);
     if Ord(P.Iniciais[P.CursorIni]) > 90 then P.Iniciais[P.CursorIni] := Chr(90);
-    if ((K and 16) <> 0) and (P.AntSocoFraco = 0) then Inc(P.CursorIni);
+    if ((K and 16) <> 0) and not P.AntSocoFraco then Inc(P.CursorIni);
 
     // confirmou (3 letras) ou o tempo acabou
     if (P.CursorIni > 3) or (TempoEstado = 1000) then
     begin
-      if P.Ativo = 0 then
+      if not P.Ativo then
       begin
         Estado := CHS_CONTINUAR;
         ContPisca := 0;

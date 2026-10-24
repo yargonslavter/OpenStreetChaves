@@ -2,9 +2,6 @@
 
 { Estado 5: mostra a ordem dos adversarios e o cenario do proximo combate }
 procedure TJogo.Estado5_Adversarios;
-const
-  CenPrimeiro: array[1..15] of Byte = (1, 2, 2, 3, 3, 4, 11, 1, 1, 11, 6, 1, 1, 2, 1);
-  CenAlt: array[1..15] of Byte = (0, 7, 10, 10, 8, 8, 5, 9, 10, 10, 5, 9, 5, 1, 6);
 var
   C, J, K, Ch, X, Y, N: Integer;
   K1, K2: Byte;
@@ -30,9 +27,9 @@ begin
   end;
 
   for J := 1 to 2 do
-    if Lutador[J].Ativo = 1 then
+    if Lutador[J].Ativo then
     begin
-      Lutador[J].Escolheu := 1;
+      Lutador[J].Escolheu := True;
       Ch := TempoEstado;
       if Ch < 30 then
         texto(200 - (Ch - 30) * 20, 135, Linha(MemoTexto, 20), ACentro, 26, VerdeAnuncio);
@@ -56,13 +53,13 @@ begin
         if (Ch * 5 - 4 < ImgRetrato.Count) and (Fase > K) then
         begin
           if TempoEstado < 50 then
-            ImgIcone[10].Draw(Tela, 48 * K - 35, 485 - TempoEstado * 5, 0)
+            ImgIcone.PorNome('X').Draw(Tela, 48 * K - 35, 485 - TempoEstado * 5, 0)
           else
-            ImgIcone[10].Draw(Tela, 48 * K - 35, 235, 0);
+            ImgIcone.PorNome('X').Draw(Tela, 48 * K - 35, 235, 0);
         end;
-        if CheatChurros = 0 then
+        if not CheatChurros then
         begin
-          if Fase < K then ImgIcone[9].Draw(Tela, X, Y, 0);
+          if Fase < K then ImgIcone.PorNome('RostoSecreto').Draw(Tela, X, Y, 0);
         end
         else if Fase < K then
           Retrato(Ch * 5 - 5 + 1, X, Y);
@@ -70,7 +67,7 @@ begin
     end;
 
   if (TempoEstado >= 50) and (ContPisca <= 10) then
-    ImgIcone[8].Draw(Tela, Fase * 48 - 20, 215, 0);
+    ImgIcone.PorNome('Select').Draw(Tela, Fase * 48 - 20, 215, 0);
   if (TempoEstado > 60) and (ImgCenario.Count > 0) then
   begin
     ImgCenario[0].StretchDraw(Tela, Rect(80, 6, 320, 134), 0);
@@ -80,21 +77,24 @@ begin
   { no primeiro quadro: escolhe e carrega o cenario do adversario }
   if TempoEstado = 0 then
     for J := 1 to 2 do
-      if Lutador[J].Ativo = 0 then
+      if not Lutador[J].Ativo then
       begin
         Ch := Lutador[J].Personagem;
-        if (Ch >= 1) and (Ch <= 15) then
+        if (Ch >= 1) and (Ch <= FQtdLutadores) then
         begin
-          CenarioAtual := CenPrimeiro[Ch];
-          if (Random(5) <= 1) and (Fase < 8) and (CenAlt[Ch] <> 0) then CenarioAtual := CenAlt[Ch];
-          if (Random(6) <= 1) and (Fase < 8) and (Ch in [3, 4, 9, 10, 11, 14]) then CenarioAtual := 12;
+          { cenarios do adversario (Dados/Lutadores/Cnn.ini) }
+          CenarioAtual := FLutadores[Ch].Cenario;
+          if (Random(5) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioAlternativo <> 0) then
+            CenarioAtual := FLutadores[Ch].CenarioAlternativo;
+          if (Random(6) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioRaro <> 0) then
+            CenarioAtual := FLutadores[Ch].CenarioRaro;
           if (CenarioSecreto <> 0) and (Fase < 8) then
           begin
             if CenarioSecreto < 1 then CenarioSecreto := 1;
-            if CenarioSecreto > 12 then CenarioSecreto := 12;
+            if CenarioSecreto > FQtdCenarios then CenarioSecreto := FQtdCenarios;
             CenarioAtual := CenarioSecreto;
           end;
-          carregarcenario(NomeNN('Cenarios/Cenario-', '.bmp', CenarioAtual));
+          carregarcenario(CenarioAtual);
         end;
       end;
 
@@ -103,7 +103,7 @@ begin
   if TempoEstado < 1000 then Inc(TempoEstado);
   K1 := TecP1;
   K2 := TecP2;
-  if ((((K1 and 16) <> 0) and (Lutador[1].Ativo = 1)) or (((K2 and 16) <> 0) and (Lutador[2].Ativo = 1))) and
+  if ((((K1 and 16) <> 0) and Lutador[1].Ativo) or (((K2 and 16) <> 0) and Lutador[2].Ativo)) and
      (TempoEstado > 0) then
     Inc(TempoEstado, 5);
   if TempoEstado > 120 then
@@ -112,7 +112,7 @@ begin
       barra(0, C * 20, 400, C * 20 + (TempoEstado - 120), Preto);
     if TempoEstado > 150 then Estado := CHS_PREPARALUTA;
   end;
-  if CheatFadiga = 1 then
+  if CheatFadiga then
   begin
     Estado := CHS_FINAL;
     ContPisca := 0;

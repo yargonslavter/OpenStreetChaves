@@ -33,19 +33,19 @@ significado observado no codigo. **Confirmado** = visto nos textos ou no uso;
 | 4B44DD | `Fase` | Byte |
 | 4B44DE | `FaseIntro` | Byte |
 | 4B44DF | `FaseFim` | Byte |
-| 4B44E0 | `RelogioParado` | Byte |
-| 4B44E1 | `Sangue` | Byte |
+| 4B44E0 | `RelogioParado` | Boolean |
+| 4B44E1 | `Sangue` | Boolean |
 | 4B44E2 | `ModoPoder` | Byte |
 | 4B44E3 | `ContagemSeg` | Byte |
 | 4B44E4 | `ContagemTick` | Byte |
-| 4B57F4 | `PrimeiroAtaque` | Byte |
+| 4B57F4 | `PrimeiroAtaque` | Boolean |
 | 4B57F6 | `TempoDialogo` | Word |
 | 4B57F8 | `FlashTela` | Byte |
 | 4B57F9 | `PausaImpacto` | Byte |
 | 4B57FA | `AvisoEntrada` | Word |
 | 4B5800 | `MouseX` | Integer |
 | 4B5804 | `MouseY` | Integer |
-| 4B5808 | `MusicaPendente` | Byte |
+| 4B5808 | `MusicaPendente` | Boolean |
 | 4B5809 | `SomPendente` | Byte |
 | 4B580A | `MusicaAtual` | Byte |
 | 4B580C | `TempoDemo` | SmallInt |
@@ -56,25 +56,28 @@ significado observado no codigo. **Confirmado** = visto nos textos ou no uso;
 | 4B58A1 | `Idioma` | Byte |
 | 4B58A2 | `QtdSons` | Byte |
 | 4B58A3 | `QtdMusicas` | Byte |
-| 4B58A4 | `Depurar` | Byte |
-| 4B58A5 | `MostrarCaixas` | Byte |
-| 4B58A6 | `PassoAPasso` | Byte |
-| 4B58A7 | `Pausado` | Byte |
-| 4B58A8 | `Flash` | Byte |
-| 4B58A9 | `MostrarNivel` | Byte |
-| 4B58AA | `MostrarCreditos` | Byte |
-| 4B58AB | `CheatChurros` | Byte |
-| 4B58AC | `CheatGentalha` | Byte |
-| 4B58AD | `CheatSatanas` | Byte |
-| 4B58AE | `CheatFadiga` | Byte |
-| 4B58AF | `CheatMentecapto` | Byte |
-| 4B58B0 | `CheatBruxa` | Byte |
+| 4B58A4 | `Depurar` | Boolean |
+| 4B58A5 | `MostrarCaixas` | Boolean |
+| 4B58A6 | `PassoAPasso` | Boolean |
+| 4B58A7 | `Pausado` | Boolean |
+| 4B58A8 | `Flash` | Boolean |
+| 4B58A9 | `MostrarNivel` | Boolean |
+| 4B58AA | `MostrarCreditos` | Boolean |
+| 4B58AB | `CheatChurros` | Boolean |
+| 4B58AC | `CheatGentalha` | Boolean |
+| 4B58AD | `CheatSatanas` | Boolean |
+| 4B58AE | `CheatFadiga` | Boolean |
+| 4B58AF | `CheatMentecapto` | Boolean |
+| 4B58B0 | `CheatBruxa` | Boolean |
 | 4B58B1 | `CenarioSecreto` | Byte |
 
 Truques (arquivos `.dat` na pasta do jogo): `CheatBruxa` (Bruxa.dat) tira o limite de projeteis simultaneos
 (a funcao `ExisteEfeito` passa a responder sempre "nao"). Os outros truques estao descritos em `ChavesTipos.pas`.
 
 ## Campos do registro `TLutador` (176 bytes)
+
+Os campos que no original eram Byte com valor 0/1 agora sao Boolean (tambem 1 byte: o tamanho
+e os deslocamentos do registro nao mudam).
 
 | Deslocamento | Nome | Tipo | Significado |
 |---|---|---|---|
@@ -98,9 +101,9 @@ Truques (arquivos `.dat` na pasta do jogo): `CheatBruxa` (Bruxa.dat) tira o limi
 | 80 | `AtrasoBarra` | Double | contagem antes da barra vermelha comecar a baixar |
 | 88 | `Poder` | Word | estoques de golpe especial (0..3) |
 | 96 | `CargaPoder` | Double | carga para o proximo estoque (0..102; 102 = cheio) |
-| 104 | `GolpeAtivo` | Byte | 1 = o golpe atual ainda pode acertar |
-| 105 | `EhChute` | Byte | 1 = o golpe atual e um chute |
-| 106 | `NoAr` | Byte | 1 = esta pulando/no ar |
+| 104 | `GolpeAtivo` | Boolean | True = o golpe atual ainda pode acertar |
+| 105 | `EhChute` | Boolean | True = o golpe atual e um chute |
+| 106 | `NoAr` | Boolean | True = esta pulando/no ar |
 | 107 | `Acao` | Byte | acao atual (1 parado, 2 andando, 3.. golpes, 12 pulo, 17/18 apanhando, 19.. etc.) |
 | 108 | `Quadro` | Byte | indice do sprite atual (P1 1..49, P2 51..99) |
 | 109 | `Lado` | Byte | 1 = virado para a direita, 2 = para a esquerda |
@@ -120,10 +123,10 @@ Truques (arquivos `.dat` na pasta do jogo): `CheatBruxa` (Bruxa.dat) tira o limi
 | 142 | `CursorIni` | Byte | posicao do cursor ao digitar iniciais |
 | 143 | `MsgBonus` | Byte | mensagem de bonus (1 = Primeiro Ataque, 2 = Bonus) |
 | 144 | `TempoMsgBonus` | Byte | quadros restantes da mensagem |
-| 145 | `DesenhaPorCima` | Byte | 1 = este lutador e desenhado por cima do outro |
-| 146 | `Vencedor` | Byte | 1 = venceu o round |
-| 147 | `Defendendo` | Byte | 1 = esta defendendo |
-| 148 | `Campo_148` | Byte |  |
+| 145 | `DesenhaPorCima` | Boolean | True = este lutador e desenhado por cima do outro |
+| 146 | `Vencedor` | Boolean | True = venceu o round |
+| 147 | `Defendendo` | Boolean | True = esta defendendo |
+| 148 | `Campo_148` | Boolean |  |
 | 149 | `Acertos` | Byte | combo: acertos seguidos |
 | 150 | `TempoAcertos` | Byte | quadros restantes do combo |
 | 151 | `MaxAcertos` | Byte | maior combo da luta |
@@ -131,17 +134,17 @@ Truques (arquivos `.dat` na pasta do jogo): `CheatBruxa` (Bruxa.dat) tira o limi
 | 154 | `Campo_154` | Word |  |
 | 156 | `CargaSoco` | Byte | contador decrescente (botoes 1/3) |
 | 157 | `CargaChute` | Byte | contador decrescente (botoes 2/4) |
-| 158 | `Ativo` | Byte | 1 = jogador humano ativo (entrou com ficha) |
-| 159 | `Escolheu` | Byte | ja confirmou o personagem |
+| 158 | `Ativo` | Boolean | True = jogador humano ativo (entrou com ficha) |
+| 159 | `Escolheu` | Boolean | ja confirmou o personagem |
 | 160 | `Adversarios` | array[1..8] of Byte | ordem dos 8 adversarios da campanha (o 8o e o chefe) |
-| 168 | `AntSocoFraco` | Byte | estado anterior (borda): botao 1 |
-| 169 | `AntChuteFraco` | Byte |  |
-| 170 | `AntSocoForte` | Byte |  |
-| 171 | `AntChuteForte` | Byte |  |
-| 172 | `AntCima` | Byte |  |
-| 173 | `AntBaixo` | Byte |  |
-| 174 | `AntEsq` | Byte |  |
-| 175 | `AntDir` | Byte |  |
+| 168 | `AntSocoFraco` | Boolean | estado anterior (borda): botao 1 |
+| 169 | `AntChuteFraco` | Boolean |  |
+| 170 | `AntSocoForte` | Boolean |  |
+| 171 | `AntChuteForte` | Boolean |  |
+| 172 | `AntCima` | Boolean |  |
+| 173 | `AntBaixo` | Boolean |  |
+| 174 | `AntEsq` | Boolean |  |
+| 175 | `AntDir` | Boolean |  |
 
 ## Registro `TEfeito` (56 bytes, 80 posicoes em `Efeitos`)
 

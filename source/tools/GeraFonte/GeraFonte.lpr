@@ -212,6 +212,7 @@ begin
     Textos.AddStrings(Nomes); Textos.AddStrings(Texto); Textos.AddStrings(Config);
     Textos.AddStrings(Frases); Textos.AddStrings(Dialogo); Textos.AddStrings(Finais);
     Textos.AddStrings(Cenarios);
+    ListarInterface(Textos);
   end;
   { textos montados em tempo de execucao: numeros, pontos, relogio, iniciais }
   for I := 0 to 99 do

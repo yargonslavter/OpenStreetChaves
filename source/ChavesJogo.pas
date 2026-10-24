@@ -2,8 +2,7 @@ unit ChavesJogo;
 
 { ChavesJogo.pas - o jogo Street Chaves (porte para Lazarus).
 
-  Portado a partir do executavel original (Delphi 5 + DelphiX) usando a camada de
-  compatibilidade DelphiX (pasta legacy). Os nomes dos metodos e os das variaveis globais
+  Portado a partir do executavel original (Delphi 5 + DelphiX). Os nomes dos metodos e os das variaveis globais
   (ChavesTipos) seguem o original. TJogo nao e um formulario: quem abre a janela, conduz o
   tempo e entrega o teclado e o ChavesSDL.pas. O codigo esta dividido por estado (pasta game).
 }
@@ -13,8 +12,8 @@ unit ChavesJogo;
 interface
 
 uses
-  Classes, SysUtils, Types, Math, DXTipos,
-  sdl2, DXClass, ChavesGfx, ChavesSom, ChavesConst, ChavesTipos, ChavesTextos, ChavesGolpes;
+  Classes, SysUtils, Types, Math, IniFiles, DXTipos,
+  sdl2, DXClass, ChavesGfx, ChavesSom, ChavesConst, ChavesTipos, ChavesTextos, ChavesGolpes, ChavesDados;
 
 type
   { Lista de linhas com a mesma interface do antigo TMemo (propriedade Lines) }
@@ -23,6 +22,34 @@ type
     function GetLines: TStrings;
   public
     property Lines: TStrings read GetLines;
+  end;
+
+  { Um desenho das animacoes do cenario (Dados/Cenarios/Cenario-NN.ini, secoes [AnimacaoN]) }
+  TDesenhoCenario = record
+    De, Ate: Integer;          // faixa de ContPisca em que aparece; De = -1: sempre; Ate = -1: sem fim
+    Lista: TListaImagens;      // lista da imagem; nil = desenho especial (feito em AnimacaoEspecial)
+    Indice, X, Y: Integer;
+    TremorX: Integer;          // soma Random(TremorX) ao X
+    TremorY, PassoY: Integer;  // sobe PassoY * Random(TremorY)
+    Especial: string;
+    Esconde: set of Byte;      // personagens que, lutando, fazem o desenho sumir
+  end;
+
+  { Golpe da lista da tecla G }
+  TGolpeInfo = record
+    N: string;     // nome ('*' no comeco = golpe especial final)
+    S: string;     // sequencia de teclas (letras explicadas em Dados/Lutadores/Cnn.ini)
+  end;
+
+  { Dados de cada personagem (Dados/Lutadores/Cnn.ini, secoes [Geral] e [Golpes]) }
+  TDadosLutador = record
+    AlturaSprite: Integer;
+    Velocidade: Double;                 // velocidade de caminhada
+    Chefe: Integer;                     // ultimo adversario da campanha
+    NaoEnfrenta: set of Byte;           // nunca aparecem como adversarios
+    Cenario, CenarioAlternativo, CenarioRaro: Integer;   // cenario quando e o adversario
+    MusicaCPU: Integer;                 // musica quando controlado pelo computador (0 = sorteada)
+    Golpes: array[1..5] of TGolpeInfo;
   end;
 
   { TJogo }
@@ -35,8 +62,7 @@ type
     MemoDialogo: TTextoLista;
     MemoFinais: TTextoLista;
     MemoCenarios: TTextoLista;
-    MemoConfigSalvo: TTextoLista;
-    { componentes DelphiX do shim: criados em codigo (ChavesDX.inc), fora do .lfm }
+    { tela, imagens e sons: criados em CriaComponentes e preenchidos por CarregarRecursos (Comum_Recursos.inc) }
     Tela: TSuperficie;                 // buffer 400x300 onde o jogo desenha cada quadro
     DeslocX: Integer;                  // deslocamento horizontal da imagem na janela (teclas , e .)
     QuadroAtivo: Boolean;              // False = jogo pausado (antes: DXTimer1.Enabled)
@@ -58,10 +84,24 @@ type
     ImgAnimacao: TListaImagens;
     ImgEfeitosInvert: TListaImagens;
     procedure ExecutarQuadro;
-    procedure CriaComponentesDX;
+    procedure CriaComponentes;
+    procedure CarregarRecursos;
+    procedure LerConfiguracao(Ini: TCustomIniFile; const Secao: string);
   private
     FFrameSheet: TSuperficie;     // folha de sprites em memoria (carregarlutador)
     FTick7: Integer;
+    FPadraoLutador, FPadraoCenario, FPadraoMusica: string;   // nomes de arquivo (Dados/Recursos.ini)
+    FPadraoDadosCenario: string;  // Dados/Cenarios/Cenario-##.ini
+    FQtdCenarios: Integer;        // cenarios existentes (1..FQtdCenarios)
+    FMusicaCenario: array of Integer;   // musica propria de cada cenario (0 = nenhuma)
+    FQtdLutadores: Integer;       // personagens existentes (1..FQtdLutadores)
+    FLutadores: array of TDadosLutador; // dados de cada personagem (indice 1..FQtdLutadores)
+    FVolumes: TStringList;        // Chave=volume: Dados/Som.ini e, por cima, Chaves.ini ([Volume])
+    { cenario carregado (carregarcenario) }
+    FDesenhos: array of TDesenhoCenario;   // animacoes, na ordem de desenho
+    FCameraXMax, FCameraYMax: Integer;     // limite da camera (tamanho da imagem - tela)
+    FVoadorModo: Integer;                  // 0 = sem voador, 1 = sempre, 2 = so com o relogio andando
+    FVoadorY: Integer;
     { --- primitivas de desenho (sobre Tela) --- }
     procedure barra(X1, Y1, X2, Y2: Integer; Cor: TColor);
     procedure retangulo(X1, Y1, X2, Y2: Integer; Cor: TColor);
@@ -72,7 +112,12 @@ type
     { --- carga de recursos --- }
     procedure copiabmp(Indice, X1, Y1, X2, Y2: Integer);
     procedure carregarlutador(const Nome: string; Personagem: Byte; Jogador: Integer);
-    procedure carregarcenario(const Nome: string);
+    procedure carregarcenario(Numero: Integer);
+    procedure LerDadosCenario(Numero: Integer);
+    procedure LerDadosLutadores(const Padrao: string);
+    procedure LerVolumes;
+    function VolumeDe(const Arquivo: string): Integer;
+    function MusicaDeCenario(Musica: Integer): Boolean;
     procedure carregarosto(const Nome: string; Variante: Byte);
     procedure carregarfala(const Nome: string);
     procedure carregaranimacao(const Nome: string);
@@ -90,7 +135,9 @@ type
     procedure IniciarEntrada;
     function NomeTecla(Scan: Integer): string;
     function Linha(Memo: TTextoLista; I: Integer): string;
-    function NomeNN(const Prefixo, Sufixo: string; N: Integer): string;
+    function ArqLutador(N: Integer): string;      // folha de sprites do personagem N
+    function ArqCenario(N: Integer): string;      // imagem do cenario N
+    function SufixoIdioma: string;                // '-PT' ou '-ES' (imagens com versao por idioma)
     procedure AplicarResolucao(Modo: Integer);
     procedure SalvarConfiguracao;
     procedure TocarSom(Indice: Integer);
@@ -104,7 +151,7 @@ type
     procedure Estado5_Adversarios;
     procedure Estado6_PreparaLuta;
     { --- luta (Estado7_Golpes.inc e Estado7_Luta.inc) --- }
-    function seta(Jog: Byte; const Dir: string): Byte;
+    function seta(Jog: Byte; const Dir: string): Boolean;
     procedure sequencia(Jog, De, Para: Byte);
     procedure golpe(Jog, Botao: Byte);
     procedure sequenciagolpe(Jog: Byte);
@@ -113,6 +160,7 @@ type
     procedure desenhalutador(Jog: Byte; X, Y: Integer; Acao, QuadroAcao: Byte);
     procedure A_Desenha(Lista: TListaImagens; Idx, X, Y: Integer);
     procedure desenhaanimacoes;
+    procedure AnimacaoEspecial(const Nome: string);
     procedure desenhaefeitos;
     procedure mostrasequencia(X, Y: Integer; const Nome, Seq: string);
     procedure mostragolpe;
@@ -137,7 +185,7 @@ type
     procedure Estado10_Final;
     procedure Estado11_Aviso;
     procedure Estado12_Iniciais;
-    procedure F10_Fala(R: TRect; Img, X, Y: Integer);
+    procedure F10_Fala(R: TRect; const Img: string; X, Y: Integer);
     procedure F10_Explosao;
     procedure RodapeDoQuadro;
     procedure MemorizaTeclas;
@@ -208,8 +256,5 @@ end;
 {$I Estado10_Final.inc}
 {$I Estado11_Aviso.inc}
 {$I Estado12_Iniciais.inc}
-
-{ --- criacao dos componentes DelphiX --- }
-{$I ChavesDX.inc}
 
 end.

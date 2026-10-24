@@ -8,7 +8,8 @@ unit ChavesGfx;
     TSuperficie    buffer de pixels + copias (normal, esticada, alfa, soma, subtracao, rotacao)
                    + retangulos, elipses, retangulos redondos e texto (fonte do atlas)
     TImagem        imagem com cor transparente e "padroes" (grade de quadros de uma folha)
-    TListaImagens  lista numerada de imagens (ImgX[i].Draw(Tela, X, Y, Quadro))
+    TListaImagens  lista numerada de imagens (ImgX[i].Draw(Tela, X, Y, Quadro)), com busca
+                   opcional por nome (ImgX.PorNome('Mesa'); nomes vem de Dados/Recursos.ini)
 
   Cor "TColor" = 0x00BBGGRR (como no Delphi); pixel = 0xAARRGGBB. }
 
@@ -128,16 +129,24 @@ type
     property TransparentColor: TColor read FTransparentColor write SetTransparentColor;
   end;
 
-  { lista numerada de imagens: Img[i] }
+  { lista numerada de imagens: Img[i]; cada imagem pode ter um ou mais nomes }
   TListaImagens = class
   private
     FLista: TList;
+    FNomes: TStringList;     // nome -> indice (em Objects), ordenada, sem diferenciar maiusculas
+    FVazia: TImagem;         // devolvida por PorNome quando o nome nao existe (nao desenha nada)
     function GetItem(Indice: Integer): TImagem;
     function GetCount: Integer;
   public
     constructor Create;
     destructor Destroy; override;
-    function Adicionar: TImagem;
+    function Adicionar(const Nome: string = ''): TImagem;
+    { da mais um nome a imagem Indice }
+    procedure Apelidar(const Nome: string; Indice: Integer);
+    { indice da imagem com esse nome; -1 se nao existir }
+    function IndiceDe(const Nome: string): Integer;
+    { imagem com esse nome; se nao existir, uma imagem vazia (desenhar nao faz nada) }
+    function PorNome(const Nome: string): TImagem;
     property Count: Integer read GetCount;
     property Items[Indice: Integer]: TImagem read GetItem; default;
   end;
@@ -861,6 +870,11 @@ constructor TListaImagens.Create;
 begin
   inherited Create;
   FLista := TList.Create;
+  FNomes := TStringList.Create;
+  FNomes.CaseSensitive := False;
+  FNomes.Sorted := True;
+  FNomes.Duplicates := dupIgnore;
+  FVazia := TImagem.Create;
 end;
 
 destructor TListaImagens.Destroy;
@@ -869,7 +883,33 @@ var
 begin
   for I := 0 to FLista.Count - 1 do TImagem(FLista[I]).Free;
   FLista.Free;
+  FNomes.Free;
+  FVazia.Free;
   inherited Destroy;
+end;
+
+procedure TListaImagens.Apelidar(const Nome: string; Indice: Integer);
+begin
+  if (Nome <> '') and (Indice >= 0) and (Indice < FLista.Count) then
+    FNomes.AddObject(Nome, TObject(PtrInt(Indice)));
+end;
+
+function TListaImagens.IndiceDe(const Nome: string): Integer;
+var
+  I: Integer;
+begin
+  if FNomes.Find(Nome, I) then
+    Result := Integer(PtrInt(FNomes.Objects[I]))
+  else
+    Result := -1;
+end;
+
+function TListaImagens.PorNome(const Nome: string): TImagem;
+var
+  I: Integer;
+begin
+  I := IndiceDe(Nome);
+  if I >= 0 then Result := TImagem(FLista[I]) else Result := FVazia;
 end;
 
 function TListaImagens.GetCount: Integer;
@@ -882,10 +922,11 @@ begin
   Result := TImagem(FLista[Indice]);
 end;
 
-function TListaImagens.Adicionar: TImagem;
+function TListaImagens.Adicionar(const Nome: string): TImagem;
 begin
   Result := TImagem.Create;
   FLista.Add(Result);
+  Apelidar(Nome, FLista.Count - 1);
 end;
 
 initialization

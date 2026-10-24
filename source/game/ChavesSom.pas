@@ -12,7 +12,9 @@ unit ChavesSom;
   Sem placa de som o jogo segue normalmente, apenas sem tocar.
 
   Uso: um TBancoSom e uma lista numerada de sons. Adicionar devolve o numero do som (o espaco
-  e reservado mesmo se o arquivo nao existir, para manter a numeracao do jogo). }
+  e reservado mesmo se o arquivo nao existir, para manter a numeracao do jogo).
+  Volume: cada som e carregado ja com o seu volume (em % do arquivo, 0..400; 100 = sem mudanca),
+  aplicado uma vez nas amostras, com corte no maximo. }
 
 {$mode delphi}{$H+}
 
@@ -29,7 +31,7 @@ type
   public
     destructor Destroy; override;
     procedure Limpar;
-    procedure CarregarArquivo(const Arquivo: string);
+    procedure CarregarArquivo(const Arquivo: string; Volume: Integer = 100);
   end;
 
   TBancoSom = class
@@ -41,8 +43,10 @@ type
   public
     constructor Create(ALoop: Boolean = False);
     destructor Destroy; override;
-    function Adicionar(const Arquivo: string): Integer;   // novo som; '' ou arquivo inexistente = som vazio
-    procedure Carregar(Indice: Integer; const Arquivo: string);   // troca o conteudo de um som
+    { novo som; '' ou arquivo inexistente = som vazio. Volume em % do arquivo (100 = sem mudanca). }
+    function Adicionar(const Arquivo: string; Volume: Integer = 100): Integer;
+    { troca o conteudo de um som }
+    procedure Carregar(Indice: Integer; const Arquivo: string; Volume: Integer = 100);
     procedure Tocar(Indice: Integer);
     procedure Parar(Indice: Integer);
     procedure PararTodos;
@@ -190,7 +194,25 @@ begin
   FQuadros := 0;
 end;
 
-procedure TAmostra.CarregarArquivo(const Arquivo: string);
+{ Multiplica as amostras por Volume/100, cortando no maximo do formato. }
+procedure AplicarVolume(Dados: PSmallInt; Amostras, Volume: Integer);
+var
+  I: Integer;
+  S: LongInt;
+begin
+  if (Dados = nil) or (Volume = 100) then Exit;
+  if Volume < 0 then Volume := 0;
+  if Volume > 400 then Volume := 400;
+  for I := 0 to Amostras - 1 do
+  begin
+    S := (LongInt(Dados[I]) * Volume) div 100;
+    if S > 32767 then S := 32767
+    else if S < -32768 then S := -32768;
+    Dados[I] := S;
+  end;
+end;
+
+procedure TAmostra.CarregarArquivo(const Arquivo: string; Volume: Integer);
 var
   Nome: string;
   F: TFileStream;
@@ -238,6 +260,7 @@ begin
           Exit;
         end;
         FQuadros := Disp div 4;
+        AplicarVolume(FDados, FQuadros * 2, Volume);
       finally
         SDL_FreeAudioStream(Conv);
       end;
@@ -277,21 +300,21 @@ begin
   if (Indice >= 0) and (Indice < FSons.Count) then Result := TAmostra(FSons[Indice]) else Result := nil;
 end;
 
-function TBancoSom.Adicionar(const Arquivo: string): Integer;
+function TBancoSom.Adicionar(const Arquivo: string; Volume: Integer): Integer;
 var
   A: TAmostra;
 begin
   A := TAmostra.Create;
-  if Arquivo <> '' then A.CarregarArquivo(Arquivo);
+  if Arquivo <> '' then A.CarregarArquivo(Arquivo, Volume);
   Result := FSons.Add(A);
 end;
 
-procedure TBancoSom.Carregar(Indice: Integer; const Arquivo: string);
+procedure TBancoSom.Carregar(Indice: Integer; const Arquivo: string; Volume: Integer);
 var
   A: TAmostra;
 begin
   A := Obter(Indice);
-  if A <> nil then A.CarregarArquivo(Arquivo);
+  if A <> nil then A.CarregarArquivo(Arquivo, Volume);
 end;
 
 procedure TBancoSom.Tocar(Indice: Integer);

@@ -8,13 +8,14 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   fixo -> desenho -> apresentação), trata tela cheia (F11 / Alt+Enter), teclado, controles e foco da janela.
 - `source/ChavesJogo.pas` - a classe `TJogo`: todo o jogo. O código vem de `{$I}` em `source/game/` (veja abaixo).
 - `source/game/` - lógica do jogo:
-  - `ChavesTipos`, `ChavesConst`, `ChavesTextos`, `ChavesGolpes` - tipos, constantes, textos e golpes;
+  - `ChavesTipos`, `ChavesConst`, `ChavesGolpes` - tipos, constantes e golpes;
+  - `ChavesTextos.pas` - lê os textos de `Dados/Textos/<idioma>.ini`;
   - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`);
   - `ChavesSom.pas` - áudio (`TBancoSom`, mixer sobre o áudio do SDL);
   - `Comum_*.inc` - partes compartilhadas (desenho, recursos, sprites, início, quadro, entrada, SDL);
   - `Estado0..12_*.inc` - um arquivo por estado do jogo (resolução, abertura, configuração, teclas, seleção,
     adversários, preparação da luta, luta, golpes, recordes, continuar, final, aviso, iniciais);
-  - `ChavesDX.inc` - cria as listas de imagens, a tela e os sons embutidos.
+  - `ChavesDados.pas` - leitura dos arquivos de dados (`Dados/*.ini`, `Chaves.ini`).
 - `source/legacy/` - o que sobrou da antiga camada DelphiX (a ser incorporado ao resto do código):
   `DXTipos` (cor), `DXClass` (coleção por nome e resolução de caminhos), `DXBmp` (leitor de BMP),
   `DXFonte` (texto pelo atlas de glifos).
@@ -22,7 +23,26 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   `sdl2_gfx/image/mixer/net/ttf` não são usados pelo jogo.
 - `source/tools/GeraFonte/` - ferramenta separada (usa a LCL) que gera `Fontes/ComicSansMS.atlas` a partir da fonte
   Comic Sans MS instalada no Windows e confere o resultado contra todos os textos do jogo.
-- `source/Embutidos/` - BMPs/WAVs extraídos do `Chaves.exe` original.
+- `Embutidos/` (na raiz) - BMPs/WAVs extraídos do `Chaves.exe` original (ícones, abertura, finais e música dos menus).
+- `Dados/` (na raiz) - arquivos de dados lidos pelo jogo:
+  - `Jogo.ini` - valores do jogo (intervalo do quadro, gravidade, carga do especial, voador), padrões da
+    configuração F1 e recordes iniciais;
+  - `Recursos.ini` - imagens e sons carregados (listas com nome, séries numeradas e quantidades). O código
+    usa as imagens pelo nome (`ImgIcone.PorNome('Mesa')`), não pela posição.
+  - `Lutadores/CNN.ini` - dados de cada personagem: `[Geral]` (altura do sprite, velocidade, chefe, quem nunca
+    enfrenta, cenários e música quando é o adversário) e `[Golpes]` (lista da tecla G), editados à mão;
+    `[CentroX]`, `[Corpo]` e `[Ataque]` gerados por `source/tools/ExtraiDados/extrai_lutadores.py` (ainda
+    não lidos pelo jogo).
+  - `Cenarios/Cenario-NN.ini` - dados de cada cenário: animações do fundo (`[AnimacaoN]`, com os personagens
+    que as escondem e a faixa de `ContPisca` de cada quadro), item que quebra (`[Item]`) e voador (`[Voador]`).
+    O limite da câmera vem do tamanho da imagem do cenário. `[Geral] Musica` = música própria do cenário.
+  - `Som.ini` - volume de cada som (em % do arquivo), com medidas e sugestões comentadas; busca pelo
+    nome do arquivo, depois pela pasta, depois `Padrao`. A seção `[Volume]` do `Chaves.ini` ajusta só aquele
+    computador e vale mais que o `Som.ini`.
+  - `Textos/PT.ini` e `Textos/ES.ini` - todos os textos do jogo, um arquivo por idioma (listas numeradas
+    `[Nomes]`, `[Texto]`, `[Dialogo]`, `[Finais]`... e a seção `[Interface]` com os textos que o original
+    deixava fixos no código). Texto com espaço nas pontas fica entre aspas.
+- `Chaves.ini` (na raiz, criado pelo jogo) - configuração salva na tela F1 (substitui o antigo `Chaves.dat`).
 - `Cenarios/ Lutadores/ Sons/ Musicas/ Rostos/ ...` - recursos originais do jogo.
 
 ## Como o jogo funciona
