@@ -1,0 +1,170 @@
+; Dados/Lutadores/C05.rot - roteiro do personagem 5 (DonaFlorinda).
+;   [Acao]  parte de AcaoJogador so deste personagem (os golpes especiais e suas condicoes),
+;           executada depois do [Acao] de Comum.rot.
+;   [Quadro] parte de AtualizaQuadro so deste personagem (a animacao e os efeitos de cada golpe),
+;           executada depois do [Quadro] de Comum.rot. A sintaxe esta explicada em Comum.rot.
+
+[Acao]
+if (Codigo = cmVitoria) and (P.Acao in [acParado, acAndando, acAgachado]) then
+begin
+  P.Acao := acVitoria;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 250;
+end;
+if (Codigo = cmPose) and (P.Acao in [acParado, acAndando]) then
+begin
+  P.Acao := acPose;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 20;
+end;
+if (Codigo in [cmEsp1Fraco, cmEsp1Forte]) and (P.Acao in [acParado, acAndando, acDefesa, acDefesaBaixa]) and
+   not ExisteEfeito(13, Jog) then
+begin
+  P.Acao := acEspecial1;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 28;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 5 * GanhoCarga + P.CargaPoder;
+  if Codigo = cmEsp1Fraco then P.ForcaGolpe := fgFraco;
+  if Codigo = cmEsp1Forte then P.ForcaGolpe := fgForte;
+  SomPendente := 29;
+end;
+if (Codigo in [cmEsp2Fraco, cmEsp2Forte]) and (P.Acao in [acParado, acAndando, acDefesa, acDefesaBaixa]) then
+begin
+  P.Acao := acEspecial2;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 23;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 5 * GanhoCarga + P.CargaPoder;
+  if Codigo = cmEsp2Fraco then P.ForcaGolpe := fgFraco;
+  if Codigo = cmEsp2Forte then P.ForcaGolpe := fgForte;
+  SomPendente := 30;
+end;
+if (Codigo in [cmEsp3Fraco, cmEsp3Forte]) and (P.Acao in [acParado, acAndando, acPulo, acDefesaBaixa]) then
+  if ChaoY - 90 <= P.Y then
+  begin
+    P.Acao := acEspecial3;
+    P.Y := ChaoY;
+    P.VelY := 0;
+    P.NoAr := False;
+    P.TempoBaixo := 0;
+    P.QuadroAcao := 0;
+    if P.CargaPoder < CargaMax then P.CargaPoder := 6 * GanhoCarga + P.CargaPoder;
+    if Codigo = cmEsp3Fraco then P.ForcaGolpe := fgFraco;
+    if Codigo = cmEsp3Forte then P.ForcaGolpe := fgForte;
+    if P.ForcaGolpe = fgFraco then P.DuracaoAcao := 38;
+    if P.ForcaGolpe = fgForte then P.DuracaoAcao := 40;
+    SomPendente := 31;
+  end;
+if (Codigo in [cmEsp4Fraco, cmEsp4Forte]) and
+   (P.Acao in [acParado, acAndando, acAgachado, acDefesa, acDefesaBaixa]) then
+begin
+  P.Acao := acEspecial4;
+  P.CargaChute := 0;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 20;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 5 * GanhoCarga + P.CargaPoder;
+  if Codigo = cmEsp4Fraco then P.ForcaGolpe := fgFraco;
+  if Codigo = cmEsp4Forte then P.ForcaGolpe := fgForte;
+  SomPendente := 32;
+end;
+if (Codigo = cmEspFinal) and
+   (P.Acao in [acParado, acAndando, acAgachado, acDefesa, acDefesaBaixa, acEspecial4]) and
+   ((P.Vida <= 15) or (P.Poder > 0)) then
+begin
+  P.Acao := acEspecial5;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 30;
+  if P.Poder = 3 then P.CargaPoder := 0;
+  P.Poder := P.Poder - 1;
+  P.Quadro := Desloc + 6;
+  FlashTela := 22;
+  SomPendente := sndEspFinal;
+end;
+
+[Quadro]
+var S_0: Integer;
+
+if (P.Acao = acVitoria) and (P.QuadroAcao < 5) then P.Quadro := Desloc + 33;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 9) then P.Quadro := Desloc + 34;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 13) then P.Quadro := Desloc + 33;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 17) then P.Quadro := Desloc + 34;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 21) then P.Quadro := Desloc + 33;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 25) then P.Quadro := Desloc + 34;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 29) then P.Quadro := Desloc + 33;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 33) then P.Quadro := Desloc + 34;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 37) then P.Quadro := Desloc + 33;
+if (P.Acao = acVitoria) and (P.QuadroAcao = 41) then P.Quadro := Desloc + 35;
+if (P.Acao = acPose) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 12;
+if (P.Acao = acPose) and (P.QuadroAcao = 2) then P.Quadro := Desloc + 30;
+if P.Acao = acEspecial1 then
+begin
+  if P.QuadroAcao = 0 then P.Quadro := Desloc + 36;
+  if P.QuadroAcao = 5 then P.Quadro := Desloc + 37;
+  if P.QuadroAcao = 10 then
+  begin
+    P.Quadro := Desloc + 38;
+    if (P.Lado = ldDireita) and (P.ForcaGolpe = fgFraco) then CriaEfeito(13, 'A', Jog, P.X + 40, P.Y - 103);
+    if (P.Lado = ldEsquerda) and (P.ForcaGolpe = fgFraco) then CriaEfeito(13, 'A', Jog, P.X - 40, P.Y - 103);
+    if (P.Lado = ldDireita) and (P.ForcaGolpe = fgForte) then CriaEfeito(13, 'B', Jog, P.X + 40, P.Y - 103);
+    if (P.Lado = ldEsquerda) and (P.ForcaGolpe = fgForte) then CriaEfeito(13, 'B', Jog, P.X - 40, P.Y - 103);
+  end;
+end;
+if P.Acao = acEspecial2 then
+begin
+  if P.QuadroAcao = 0 then P.Quadro := Desloc + 39;
+  if P.QuadroAcao = 5 then P.Quadro := Desloc + 40;
+  if P.QuadroAcao = 10 then P.Quadro := Desloc + 41;
+  if P.QuadroAcao = 15 then P.Quadro := Desloc + 42;
+  if P.QuadroAcao = 20 then P.Quadro := Desloc + 12;
+  if P.QuadroAcao < 13 then
+  begin
+    if (P.ForcaGolpe = fgFraco) and (P.Lado = ldDireita) then Empurra(Jog, 6);
+    if (P.ForcaGolpe = fgFraco) and (P.Lado = ldEsquerda) then Empurra(Jog, -6);
+    if (P.ForcaGolpe = fgForte) and (P.Lado = ldDireita) then Empurra(Jog, 10);
+    if (P.ForcaGolpe = fgForte) and (P.Lado = ldEsquerda) then Empurra(Jog, -10);
+  end;
+  if P.QuadroAcao >= 15 then P.EhChute := True;
+end;
+if P.Acao = acEspecial3 then
+begin
+  if P.QuadroAcao mod 2 = 0 then P.Quadro := Desloc + 43;
+  if P.QuadroAcao mod 2 <> 0 then P.Quadro := Desloc + 44;
+  if P.QuadroAcao = 0 then P.Quadro := Desloc + 39;
+  if P.QuadroAcao = 2 then P.Quadro := Desloc + 40;
+  if P.QuadroAcao = 35 then P.Quadro := Desloc + 40;
+  if P.QuadroAcao = 38 then P.Quadro := Desloc + 39;
+  if (P.QuadroAcao >= 4) and (P.QuadroAcao < 35) then
+  begin
+    if (P.ForcaGolpe = fgFraco) and (P.Lado = ldDireita) then Empurra(Jog, 7);
+    if (P.ForcaGolpe = fgFraco) and (P.Lado = ldEsquerda) then Empurra(Jog, -7);
+    if (P.ForcaGolpe = fgForte) and (P.Lado = ldDireita) then Empurra(Jog, 9);
+    if (P.ForcaGolpe = fgForte) and (P.Lado = ldEsquerda) then Empurra(Jog, -9);
+  end;
+  if P.QuadroAcao >= 26 then P.EhChute := True;
+end;
+if P.Acao = acEspecial4 then
+begin
+  repeat
+    S_0 := Random(3) + (Desloc + 45);
+  until P.Quadro <> S_0;
+  P.Quadro := S_0;
+  if Random(5) = 0 then SomPendente := 32;
+end;
+if P.Acao = acEspecial5 then
+begin
+  if P.QuadroAcao = 0 then P.Quadro := Desloc + 7;
+  if P.QuadroAcao = 1 then P.Quadro := Desloc + 10;
+  if P.QuadroAcao = 2 then P.Quadro := Desloc + 11;
+  if P.QuadroAcao = 3 then P.Quadro := Desloc + 6;
+  if P.QuadroAcao = 4 then P.Quadro := Desloc + 7;
+  if P.QuadroAcao = 5 then P.Quadro := Desloc + 10;
+  if P.QuadroAcao = 6 then P.Quadro := Desloc + 11;
+  if (P.QuadroAcao >= 8) and (P.QuadroAcao < 28) then P.Quadro := Random(3) + (Desloc + 45);
+  if P.QuadroAcao = 28 then P.Quadro := Desloc + 6;
+  if P.QuadroAcao >= 15 then P.EhChute := True;
+  if P.QuadroAcao in [1, 8, 12] then SomPendente := 32;
+  if (P.Lado = ldDireita) and (P.QuadroAcao < 8) then Empurra(Jog, 5);
+  if (P.Lado = ldDireita) and (P.QuadroAcao >= 8) and (P.QuadroAcao < 28) then Empurra(Jog, 10);
+  if (P.Lado = ldEsquerda) and (P.QuadroAcao < 8) then Empurra(Jog, -5);
+  if (P.Lado = ldEsquerda) and (P.QuadroAcao >= 8) and (P.QuadroAcao < 28) then Empurra(Jog, -10);
+end;
+

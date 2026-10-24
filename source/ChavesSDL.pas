@@ -200,7 +200,16 @@ begin
   FJanelaAtiva := True;         // o "foco" e da janela SDL
   FJogo := TJogo.Create(nil);
   FJogo.AoMudarTela := AoMudarTela;
-  FJogo.Iniciar;
+  try
+    FJogo.Iniciar;
+  except
+    on E: Exception do
+    begin
+      { erro nos arquivos de dados (por exemplo, um roteiro .rot com erro de escrita) }
+      Erro('Erro ao abrir o jogo:' + LineEnding + E.Message);
+      Halt(1);
+    end;
+  end;
   AplicarModoTela(FJogo.ModoTela);
   SDL_ShowCursor(0);
   FIntervaloMs := IntervaloTimer;

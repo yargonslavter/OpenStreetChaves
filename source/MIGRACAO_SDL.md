@@ -40,6 +40,10 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
   parenteses e `begin/end` desnecessarios removidos, condicoes simplificadas (`P.Acao in [...]`) e as variaveis
   `r7..r265` da IA eliminadas. Conferido por analise do codigo (mesmos comandos, na mesma ordem, inclusive os
   `Random`) e por tabela-verdade de cada condicao alterada.
+- `AcaoJogador` e `AtualizaQuadro` viraram roteiro: `Dados/Lutadores/Comum.rot` (`[Acao]`, `[AcaoFim]`, `[Quadro]`)
+  e `CNN.rot` (`[Acao]`, `[Quadro]`), executados por `ChavesRoteiro`; `ChavesGolpes.pas` caiu de 6.696 para ~840 linhas.
+  Com `CONFERIR_ROTEIRO` (em `ChavesGolpes.pas`) o jogo roda tambem o codigo antigo (`ChavesGolpesAntigo.inc`), com
+  os mesmos sorteios, e anota as diferencas em `conferencia.log`.
 - A LCL saiu tambem do `.lpr` e do `.lpi`; o UTF-8 como padrao (que a LCL ligava) ficou em `ChavesUTF8.pas`.
 
 ## Proximos passos

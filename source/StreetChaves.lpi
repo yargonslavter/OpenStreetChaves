@@ -69,6 +69,10 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
+        <Filename Value="game/ChavesRoteiro.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
         <Filename Value="game/ChavesDados.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>

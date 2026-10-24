@@ -11,6 +11,7 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   - `ChavesTipos`, `ChavesConst`, `ChavesGolpes` - tipos, constantes e golpes;
   - `ChavesTextos.pas` - lê os textos de `Dados/Textos/<idioma>.ini`;
   - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`) e leitor de BMP;
+  - `ChavesRoteiro.pas` - interpretador dos roteiros `.rot` dos lutadores (Pascal simplificado);
   - `ChavesFonte.pas` - texto pelo atlas de glifos (`Fontes/ComicSansMS.atlas`), usado também pela GeraFonte;
   - `ChavesSom.pas` - áudio (`TBancoSom`, mixer sobre o áudio do SDL);
   - `Comum_*.inc` - partes compartilhadas (desenho, recursos, sprites, início, quadro, entrada, SDL);
@@ -33,6 +34,11 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
     sequência -> comando), lidos por `golpe`/`sequenciagolpe`;
     `[CentroX]`, `[Corpo]` e `[Ataque]` (centro do sprite e caixas de colisão de cada quadro, lidos por
     `ChavesGolpes`).
+  - `Lutadores/Comum.rot` e `Lutadores/CNN.rot` - roteiros dos lutadores, em Pascal simplificado: `[Acao]`
+    (`AcaoJogador`: quando cada ação pode começar) e `[Quadro]` (`AtualizaQuadro`: sprite de cada quadro, efeitos,
+    sons e movimento de cada golpe). `Comum.rot` tem o que vale para todos (andar, golpes básicos, defesa, apanhar)
+    e cada `CNN.rot` os golpes especiais do personagem. A sintaxe está explicada no começo de `Comum.rot`; um erro aparece ao abrir o
+    jogo, com o arquivo e a linha.
   - `Cenarios/Cenario-NN.ini` - dados de cada cenário: animações do fundo (`[AnimacaoN]`, com os personagens
     que as escondem e a faixa de `ContPisca` de cada quadro), item que quebra (`[Item]`) e voador (`[Voador]`).
     O limite da câmera vem do tamanho da imagem do cenário. `[Geral] Musica` = música própria do cenário.

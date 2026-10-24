@@ -1,0 +1,284 @@
+; Dados/Lutadores/Comum.rot - roteiro comum a todos os lutadores (lido por ChavesRoteiro).
+;
+; Cada secao e um trecho de Pascal simplificado, executado pelo jogo:
+;   [Acao]     inicio de AcaoJogador (pedido de acao: andar, golpear, defender, apanhar...),
+;              para qualquer personagem; depois vem o [Acao] do arquivo do personagem (CNN.rot)
+;   [AcaoFim]  fim de AcaoJogador, depois do [Acao] do personagem
+;   [Quadro]   inicio de AtualizaQuadro (a cada quadro da luta: escolhe o sprite, avanca a
+;              animacao, cria efeitos); depois vem o [Quadro] do personagem e as caixas de colisao
+; Nomes que o roteiro conhece: P. e O. (campos do lutador e do oponente: P.Acao, P.QuadroAcao...),
+; Jog, Codigo (o comando pedido, cm*), Desloc (0 para o jogador 1, 50 para o 2: os quadros do
+; jogador 2 ficam 50 posicoes depois), as constantes de ChavesTipos (ac*, cm*, snd*, fg*, ld*...),
+; algumas variaveis do jogo (SomPendente, FlashTela, ChaoY, CameraX, GanhoCarga...) e as funcoes
+; Random, Round, Trunc, Abs, Cos, Sin, ShortInt, ExisteEfeito, CriaEfeito, Empurra, AcaoJogador e
+; AplicarCaixas. Variaveis proprias: "var Nome: Tipo;" no comeco da secao.
+; Comentarios dentro das secoes: // ate o fim da linha, ou { ... }.
+; Um erro de escrita aparece ao abrir o jogo, com o nome do arquivo e a linha.
+
+[Acao]
+P.Defendendo := False;
+if (Codigo = cmEsquerda) and (P.Acao in [acParado, acAndando]) then
+begin
+  Empurra(Jog, -P.Velocidade);
+  P.Acao := acAndando;
+  P.DuracaoAcao := 99;
+  P.AndandoFrente := False;
+  if P.Lado = ldEsquerda then P.AndandoFrente := True;
+end;
+if (Codigo = cmDireita) and (P.Acao in [acParado, acAndando]) then
+begin
+  Empurra(Jog, P.Velocidade);
+  P.Acao := acAndando;
+  P.DuracaoAcao := 99;
+  P.AndandoFrente := False;
+  if P.Lado = ldDireita then P.AndandoFrente := True;
+end;
+if (Codigo = cmSocoFraco) and (P.Acao in [acParado, acAndando, acDefesa]) and (P.VelY = 0) then
+begin
+  P.Acao := acSocoFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 6;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmChuteFraco) and
+   ((P.Acao in [acParado, acAndando, acDefesa]) or ((P.Acao = acSocoFraco) and (P.QuadroAcao >= 2))) and
+   (P.VelY = 0) then
+begin
+  P.Acao := acChuteFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 6;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmSocoForte) and
+   ((P.Acao in [acParado, acAndando, acDefesa]) or ((P.Acao in [acSocoFraco, acChuteFraco]) and (P.QuadroAcao >= 2))) and
+   (P.VelY = 0) then
+begin
+  P.Acao := acSocoForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+end;
+if (Codigo = cmChuteForte) and (P.Acao in [acParado, acAndando, acDefesa]) and (P.VelY = 0) and not P.NoAr then
+begin
+  P.Acao := acChuteForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+end;
+if (Codigo = cmAgachar) and (P.Acao in [acParado, acAndando]) then
+begin
+  P.Acao := acAgachado;
+  P.DuracaoAcao := 99;
+end;
+if (Codigo = cmSocoFraco) and (P.Acao in [acAgachado, acDefesaBaixa]) then
+begin
+  P.Acao := acAgSocoFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 6;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmChuteFraco) and
+   ((P.Acao in [acAgachado, acDefesaBaixa]) or ((P.Acao = acAgSocoFraco) and (P.QuadroAcao >= 2))) then
+begin
+  P.Acao := acAgChuteFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 6;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmSocoForte) and
+   ((P.Acao in [acAgachado, acDefesaBaixa]) or ((P.Acao in [acAgSocoFraco, acAgChuteFraco]) and (P.QuadroAcao >= 2))) then
+begin
+  P.Acao := acAgSocoForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+end;
+if (Codigo = cmChuteForte) and
+   ((P.Acao in [acAgachado, acDefesaBaixa]) or ((P.Acao = acAgChuteFraco) and (P.QuadroAcao >= 2))) then
+begin
+  P.Acao := acAgChuteForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  P.EhChute := True;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+  if P.Personagem = pnJaiminho then P.DuracaoAcao := 18;
+end;
+if (Codigo = cmSocoFraco) and (P.Acao = acPulo) then
+begin
+  P.Acao := acArSocoFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 15;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmChuteFraco) and (P.Acao = acPulo) then
+begin
+  P.Acao := acArChuteFraco;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 15;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeFraco;
+end;
+if (Codigo = cmSocoForte) and (P.Acao = acPulo) then
+begin
+  P.Acao := acArSocoForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+end;
+if (Codigo = cmChuteForte) and (P.Acao = acPulo) then
+begin
+  P.Acao := acArChuteForte;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  if P.CargaPoder < CargaMax then P.CargaPoder := 2 * GanhoCarga + P.CargaPoder;
+  SomPendente := sndGolpeForte;
+end;
+if (Codigo = cmApanharAlto) and (P.VelY = 0) then
+begin
+  P.Acao := acApanhaAlto;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 8;
+end;
+if (Codigo = cmApanharBaixo) and (P.VelY = 0) then
+begin
+  P.Acao := acApanhaBaixo;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 8;
+end;
+if Codigo = cmDerrubar then
+begin
+  P.Acao := acDerrubado;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 50;
+  P.VelY := -19;
+  P.NoAr := True;
+  P.DirPulo := puloNenhum;
+  P.Invulneravel := True;
+  P.GolpeAtivo := False;
+end;
+if Codigo = cmBaterNoChao then
+begin
+  P.Acao := acQuicando;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 25;
+  P.VelY := -13;
+  P.NoAr := True;
+  P.Invulneravel := True;
+end;
+if (Codigo = cmDefender) and
+   ((P.Acao in [acParado, acAndando, acAgachado, acDefesa, acDefesaBaixa]) or ((P.Acao = acQuicando) and (P.QuadroAcao >= P.DuracaoAcao - 3))) then
+begin
+  P.Acao := acDefesa;
+  P.Invulneravel := False;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  P.Defendendo := True;
+  P.Quadro := Desloc + 31;
+end;
+if (Codigo = cmDefenderBaixo) and
+   ((P.Acao in [acParado, acAndando, acAgachado, acDefesa, acDefesaBaixa]) or ((P.Acao = acQuicando) and (P.QuadroAcao >= P.DuracaoAcao - 3))) then
+begin
+  P.Acao := acDefesaBaixa;
+  P.Invulneravel := False;
+  P.QuadroAcao := 0;
+  P.DuracaoAcao := 11;
+  P.Defendendo := True;
+  P.Quadro := Desloc + 32;
+end;
+
+[AcaoFim]
+if P.Acao = acAndando then
+begin
+  P.QuadroAcao := P.QuadroAcao + 1;
+  if P.QuadroAcao > 16 then P.QuadroAcao := 0;
+end;
+
+[Quadro]
+if P.Acao = acParado then
+begin
+  P.Quadro := Desloc + 1;
+  P.Invulneravel := False;
+end;
+if (P.Acao = acAndando) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 2;
+if (P.Acao = acAndando) and (P.QuadroAcao = 4) then P.Quadro := Desloc + 3;
+if (P.Acao = acAndando) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 2;
+if (P.Acao = acAndando) and (P.QuadroAcao = 12) then P.Quadro := Desloc + 1;
+if (P.Personagem = pnBruxa) and (P.Acao = acAndando) then
+begin
+  if P.AndandoFrente then P.Quadro := Desloc + 2;
+  if not P.AndandoFrente then P.Quadro := Desloc + 3;
+  CriaEfeito(2, '', 0, Random(20) + (P.X - 10), Random(10) + P.Y);
+end;
+if (P.Acao = acSocoFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 4;
+if (P.Acao = acSocoFraco) and (P.QuadroAcao = 2) then P.Quadro := Desloc + 5;
+if (P.Acao = acSocoFraco) and (P.QuadroAcao = 4) then P.Quadro := Desloc + 4;
+if (P.Acao = acChuteFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 6;
+if (P.Acao = acChuteFraco) and (P.QuadroAcao = 2) then P.Quadro := Desloc + 7;
+if (P.Acao = acChuteFraco) and (P.QuadroAcao = 4) then P.Quadro := Desloc + 6;
+if (P.Acao = acSocoForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 8;
+if (P.Acao = acSocoForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 9;
+if (P.Acao = acSocoForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 8;
+if (P.Acao = acChuteForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 10;
+if (P.Acao = acChuteForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 11;
+if (P.Acao = acChuteForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 10;
+if P.Acao = acAgachado then P.Quadro := Desloc + 12;
+if (P.Acao = acAgSocoFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 13;
+if (P.Acao = acAgSocoFraco) and (P.QuadroAcao = 2) then P.Quadro := Desloc + 14;
+if (P.Acao = acAgSocoFraco) and (P.QuadroAcao = 4) then P.Quadro := Desloc + 13;
+if (P.Acao = acAgChuteFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 15;
+if (P.Acao = acAgChuteFraco) and (P.QuadroAcao = 2) then P.Quadro := Desloc + 16;
+if (P.Acao = acAgChuteFraco) and (P.QuadroAcao = 4) then P.Quadro := Desloc + 15;
+if (P.Acao = acAgSocoForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 17;
+if (P.Acao = acAgSocoForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 18;
+if (P.Acao = acAgSocoForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 17;
+if P.Personagem <> pnJaiminho then
+begin
+  if (P.Acao = acAgChuteForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 19;
+  if (P.Acao = acAgChuteForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 20;
+  if (P.Acao = acAgChuteForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 19;
+end
+else if (P.Personagem = pnJaiminho) and (P.Acao = acAgChuteForte) then
+begin
+  if P.QuadroAcao = 0 then P.Quadro := Desloc + 19;
+  if P.QuadroAcao = 4 then P.Quadro := Desloc + 20;
+  if P.QuadroAcao = 16 then P.Quadro := Desloc + 19;
+  if P.Lado = ldDireita then Empurra(Jog, 9);
+  if P.Lado = ldEsquerda then Empurra(Jog, -9);
+  CriaEfeito(2, '', 0, Random(40) + (Round(P.X) - 20), Round(P.Y) - Random(5));
+end;
+if P.Acao = acPulo then P.Quadro := Desloc + 21;
+if (P.Acao = acArSocoFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 22;
+if (P.Acao = acArSocoFraco) and (P.QuadroAcao = 3) then P.Quadro := Desloc + 23;
+if (P.Acao = acArChuteFraco) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 24;
+if (P.Acao = acArChuteFraco) and (P.QuadroAcao = 3) then P.Quadro := Desloc + 25;
+if (P.Acao = acArSocoForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 22;
+if (P.Acao = acArSocoForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 23;
+if (P.Acao = acArSocoForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 22;
+if (P.Acao = acArChuteForte) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 24;
+if (P.Acao = acArChuteForte) and (P.QuadroAcao = 5) then P.Quadro := Desloc + 25;
+if (P.Acao = acArChuteForte) and (P.QuadroAcao = 8) then P.Quadro := Desloc + 24;
+if (P.Acao = acApanhaAlto) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 26;
+if (P.Acao = acApanhaBaixo) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 27;
+if (P.Acao = acApanhaBaixo) and (P.QuadroAcao = 1) then P.Quadro := Desloc + 27;
+if P.Acao = acDerrubado then P.Quadro := Desloc + 28;
+if (P.Acao = acQuicando) and (P.QuadroAcao = 0) then P.Quadro := Desloc + 29;
+if (P.Acao = acQuicando) and (P.QuadroAcao = 18) then P.Quadro := Desloc + 30;
+if (P.Acao = acQuicando) and (P.VelY = 0) and (P.Vida <= 0) then
+begin
+  P.QuadroAcao := 0;
+  P.Y := ChaoY;
+end;
+if P.Acao = acDefesa then P.Quadro := Desloc + 31;
+if P.Acao = acDefesaBaixa then P.Quadro := Desloc + 32;
+if P.Acao in [acDefesa, acDefesaBaixa] then P.Defendendo := True;
+

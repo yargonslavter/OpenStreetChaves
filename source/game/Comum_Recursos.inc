@@ -74,6 +74,9 @@ begin
       end;
     FQtdLutadores := Ini.ReadInteger('Lutadores', 'Quantidade', 15);
     LerDadosLutadores(Ini.ReadString('Lutadores', 'Dados', ''));
+    { roteiros das acoes (Dados/Lutadores/Comum.rot e CNN.rot); erro de escrita gera ERoteiro }
+    CarregarRoteiros(Ini.ReadString('Lutadores', 'Roteiro', 'Dados/Lutadores/C##.rot'),
+      Ini.ReadString('Lutadores', 'RoteiroComum', 'Dados/Lutadores/Comum.rot'), FQtdLutadores);
 
     { animacoes dos cenarios }
     Padrao := Ini.ReadString('Animacoes', 'Arquivo', '');
