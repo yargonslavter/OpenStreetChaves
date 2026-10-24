@@ -166,13 +166,6 @@ type
       @param(CorBorda cor do contorno)
       @param(CorFundo cor do preenchimento) }
     procedure barraredonda(X1, Y1, X2, Y2, R: Integer; CorBorda, CorFundo: TColor);
-    { Contorno de elipse. Sem uso no jogo atual.
-      @param(X1 esquerda)
-      @param(Y1 topo)
-      @param(X2 direita (exclusiva))
-      @param(Y2 base (exclusiva))
-      @param(Cor a cor) }
-    procedure circulo(X1, Y1, X2, Y2: Integer; Cor: TColor);
     { Elipse preenchida.
       @param(X1 esquerda)
       @param(Y1 topo)
@@ -201,7 +194,7 @@ type
     procedure copiabmp(Indice, X1, Y1, X2, Y2: Integer);
     { Carrega a folha de sprites de um lutador e separa os quadros pelas colunas escuras
       (R, G, B <= 100 no topo e na base). Arquivo inexistente nao muda nada.
-      @param(Nome caminho da folha (ArqLutador))
+      @param(Nome caminho da folha de sprites)
       @param(Personagem numero do personagem (pn*))
       @param(Jogador 1 (quadros 1..) ou 2 (quadros 51..)) }
     procedure carregarlutador(const Nome: string; Personagem: Byte; Jogador: Integer);
@@ -287,22 +280,11 @@ type
     function Linha(Lista: TStrings; I: Integer): string;
     { (Re)carrega os textos do idioma atual (Idioma: 1 = PT, 2 = ES). }
     procedure CarregarIdioma;
-    { @param(N numero do personagem)
-      @returns(o arquivo da folha de sprites do personagem) }
-    function ArqLutador(N: Integer): string;
-    { @param(N numero do cenario)
-      @returns(o arquivo da imagem do cenario) }
-    function ArqCenario(N: Integer): string;
-    { @returns('-PT' ou '-ES', para as imagens com versao por idioma (mesmo que '-' + CodigoIdioma)) }
-    function SufixoIdioma: string;
     { Guarda o modo de tela e avisa o ChavesSDL (AoMudarTela), que muda a janela.
       @param(Modo 1 = janela, 2 = tela cheia mantendo a proporcao, 3 = tela cheia esticada) }
     procedure AplicarResolucao(Modo: Integer);
     { Grava a configuracao da tela F1 em Chaves.ini (pasta somente leitura: ignora). }
     procedure SalvarConfiguracao;
-    { Toca um efeito sonoro, se existir (o mesmo que SomEfeitos.Tocar, com conferencia da faixa).
-      @param(Indice numero do som) }
-    procedure TocarSom(Indice: Integer);
     { Estado 0: escolha da resolucao (janela, tela cheia ou tela cheia esticada). }
     procedure Estado0_Resolucao;
     { Estado 1: abertura (predio, vila, logo) e modo de demonstracao; com fichas, os botoes 1 e 2
@@ -505,9 +487,6 @@ type
     procedure Iniciar;
     { Executa um quadro da logica e do desenho (se o jogo nao estiver pausado). }
     procedure PassoSDL;
-    { Sem uso no jogo atual.
-      @returns(True se o jogo nao esta pausado) }
-    function TimerLigado: Boolean;
     { @returns(o buffer ARGB de 400x300 desenhado pelo jogo) }
     function PixelsSDL: Pointer;
     { @returns(o deslocamento horizontal da imagem na janela (teclas , e .)) }

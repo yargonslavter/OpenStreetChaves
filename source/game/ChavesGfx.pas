@@ -3,7 +3,7 @@
   Tudo e desenhado num buffer ARGB (0xAARRGGBB) na memoria; quem apresenta o quadro na tela e o
   ChavesSDL (textura SDL). Nao ha canvas, pincel ou caneta: cada primitiva recebe suas cores.
 
-    TSuperficie    buffer de pixels + copias (normal, esticada, alfa, soma, subtracao, rotacao)
+    TSuperficie    buffer de pixels + copias (normal, esticada, alfa, rotacao)
                    + retangulos, elipses, retangulos redondos e texto (fonte do atlas)
     TImagem        imagem com cor transparente e "padroes" (grade de quadros de uma folha)
     TListaImagens  lista numerada de imagens (ImgX[i].Draw(Tela, X, Y, Quadro)), com busca
@@ -22,7 +22,7 @@ uses
   Classes, SysUtils, Types, Math, ChavesConst, ChavesFonte, ChavesDados;
 
 type
-  TBlendMode = (bmCopy, bmAlpha, bmAdd, bmSub);
+  TBlendMode = (bmCopy, bmAlpha);
 
   TSuperficie = class
   private
@@ -38,9 +38,9 @@ type
       @param(Y linha)
       @param(Value cor (fora da superficie = ignora)) }
     procedure SetPixel(X, Y: Integer; Value: TColor);
-    { Copia com mistura: base de Draw, StretchDraw, DrawAlpha, DrawAdd e DrawSub. Estica por
+    { Copia com mistura: base de Draw, StretchDraw e DrawAlpha. Estica por
       vizinho mais proximo e recorta nas bordas.
-      @param(Mode bmCopy, bmAlpha, bmAdd ou bmSub)
+      @param(Mode bmCopy ou bmAlpha)
       @param(DestRect retangulo de destino (largura ou altura negativa espelha))
       @param(SrcRect regiao de Image)
       @param(Image superficie de origem)
@@ -49,9 +49,9 @@ type
       @returns(False se nada foi desenhado) }
     function DoBlit(Mode: TBlendMode; const DestRect, SrcRect: TRect;
       Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
-    { Copia girada com mistura: base de DrawRotate e variantes (mapeamento inverso, vizinho mais
+    { Copia girada com mistura: base de DrawRotate (mapeamento inverso, vizinho mais
       proximo).
-      @param(Mode bmCopy, bmAlpha, bmAdd ou bmSub)
+      @param(Mode bmCopy ou bmAlpha)
       @param(X esquerda do retangulo de destino (antes de girar))
       @param(Y topo)
       @param(W largura do destino)
@@ -87,9 +87,6 @@ type
       @param(AWidth largura (negativo = 0))
       @param(AHeight altura (negativo = 0)) }
     procedure SetSize(AWidth, AHeight: Integer);
-    { Pinta a superficie inteira de uma cor. Sem uso no jogo atual.
-      @param(Color a cor) }
-    procedure Fill(Color: TColor);
     { Carrega um BMP (1/4/8/16/24/32 bits, RLE e BITFIELDS) para a superficie, trocando o tamanho.
       @param(Arquivo caminho do BMP (resolvido por ResolverCaminho))
       @returns(False se o arquivo nao existe ou e invalido (a superficie fica 0 x 0))
@@ -122,7 +119,6 @@ type
       @returns(False se nada foi desenhado) }
     function StretchDraw(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean): Boolean;
-    { Alpha: 0..255 }
     { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
       forem diferentes), misturando com o fundo pela opacidade Alpha.
       @param(DestRect retangulo de destino (largura ou altura negativa espelha))
@@ -132,26 +128,6 @@ type
       @param(Alpha intensidade, 0..255)
       @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
     function DrawAlpha(const DestRect, SrcRect: TRect; Image: TSuperficie;
-      Transparent: Boolean; Alpha: Integer): Boolean;
-    { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
-      forem diferentes), somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
-      @param(SrcRect regiao de Image)
-      @param(Image superficie de origem)
-      @param(Transparent True = pula os pixels da cor transparente de Image)
-      @param(Alpha intensidade, 0..255)
-      @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
-    function DrawAdd(const DestRect, SrcRect: TRect; Image: TSuperficie;
-      Transparent: Boolean; Alpha: Integer): Boolean;
-    { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
-      forem diferentes), subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
-      @param(SrcRect regiao de Image)
-      @param(Image superficie de origem)
-      @param(Transparent True = pula os pixels da cor transparente de Image)
-      @param(Alpha intensidade, 0..255)
-      @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
-    function DrawSub(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean; Alpha: Integer): Boolean;
     { Desenha uma regiao de outra superficie girada em torno de um pivo, copiando.
       @param(X esquerda do retangulo de destino (antes de girar))
@@ -168,54 +144,6 @@ type
     function DrawRotate(X, Y, Width, Height: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle: Integer): Boolean;
-    { Desenha uma regiao de outra superficie girada em torno de um pivo, misturando com o fundo pela opacidade Alpha. Sem uso no jogo atual.
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo do retangulo de destino)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(SrcRect regiao de Image)
-      @param(Image superficie de origem)
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical como fracao do retangulo)
-      @param(Transparent True = pula os pixels da cor transparente de Image)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255)
-      @returns(False se nada foi desenhado) }
-    function DrawRotateAlpha(X, Y, Width, Height: Integer; const SrcRect: TRect;
-      Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
-      Angle, Alpha: Integer): Boolean;
-    { Desenha uma regiao de outra superficie girada em torno de um pivo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo do retangulo de destino)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(SrcRect regiao de Image)
-      @param(Image superficie de origem)
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical como fracao do retangulo)
-      @param(Transparent True = pula os pixels da cor transparente de Image)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255)
-      @returns(False se nada foi desenhado) }
-    function DrawRotateAdd(X, Y, Width, Height: Integer; const SrcRect: TRect;
-      Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
-      Angle, Alpha: Integer): Boolean;
-    { Desenha uma regiao de outra superficie girada em torno de um pivo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo do retangulo de destino)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(SrcRect regiao de Image)
-      @param(Image superficie de origem)
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical como fracao do retangulo)
-      @param(Transparent True = pula os pixels da cor transparente de Image)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255)
-      @returns(False se nada foi desenhado) }
-    function DrawRotateSub(X, Y, Width, Height: Integer; const SrcRect: TRect;
-      Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
-      Angle, Alpha: Integer): Boolean;
     { primitivas (X2/Y2 exclusivos, como no Delphi) }
 
     { Pinta um retangulo (recortado nas bordas).
@@ -324,18 +252,6 @@ type
       @param(PatternIndex numero do padrao (fora da faixa = nada))
       @param(Alpha intensidade, 0..255) }
     procedure DrawAlpha(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
-    { Desenha um padrao (quadro) da imagem esticado no retangulo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(Surface superficie de destino)
-      @param(DestRect retangulo de destino)
-      @param(PatternIndex numero do padrao (fora da faixa = nada))
-      @param(Alpha intensidade, 0..255) }
-    procedure DrawAdd(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
-    { Desenha um padrao (quadro) da imagem esticado no retangulo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(Surface superficie de destino)
-      @param(DestRect retangulo de destino)
-      @param(PatternIndex numero do padrao (fora da faixa = nada))
-      @param(Alpha intensidade, 0..255) }
-    procedure DrawSub(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
     { Desenha um padrao (quadro) da imagem girado em torno de um pivo, copiando.
       @param(Surface superficie de destino)
       @param(X esquerda do retangulo de destino (antes de girar))
@@ -348,45 +264,6 @@ type
       @param(Angle angulo, 0..255 = 0..360 graus) }
     procedure DrawRotate(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
       CenterX, CenterY: Double; Angle: Integer);
-    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, misturando com o fundo pela opacidade Alpha. Sem uso no jogo atual.
-      @param(Surface superficie de destino)
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(PatternIndex numero do padrao (fora da faixa = nada))
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255) }
-    procedure DrawRotateAlpha(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
-      CenterX, CenterY: Double; Angle, Alpha: Integer);
-    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(Surface superficie de destino)
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(PatternIndex numero do padrao (fora da faixa = nada))
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255) }
-    procedure DrawRotateAdd(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
-      CenterX, CenterY: Double; Angle, Alpha: Integer);
-    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
-      @param(Surface superficie de destino)
-      @param(X esquerda do retangulo de destino (antes de girar))
-      @param(Y topo)
-      @param(Width largura do destino)
-      @param(Height altura do destino)
-      @param(PatternIndex numero do padrao (fora da faixa = nada))
-      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
-      @param(CenterY pivo vertical)
-      @param(Angle angulo, 0..255 = 0..360 graus)
-      @param(Alpha intensidade, 0..255) }
-    procedure DrawRotateSub(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
-      CenterX, CenterY: Double; Angle, Alpha: Integer);
     property Surface: TSuperficie read FSurface;
     property PatternCount: Integer read GetPatternCount;
     property PatternRects[I: Integer]: TRect read GetPatternRect;
@@ -442,8 +319,8 @@ implementation
 
 { ---- leitor de BMP (antes legacy/DXBmp.pas): imagem em memoria (ARGB 32 bits) com leitor de BMP proprio, sem LCL.
 
-  TLeitorBMP faz o papel que TPicture/TBitmap tinham no jogo: LoadFromFile, Assign, Empty,
-  Width/Height e Graphic (devolve ele mesmo, para manter a sintaxe do codigo original).
+  TLeitorBMP faz o papel que TPicture/TBitmap tinham no jogo: LoadFromFile, Empty e
+  Width/Height.
   Le BMP de 1, 4, 8, 16, 24 e 32 bits, sem compressao, RLE4/RLE8 e BITFIELDS, com cabecalhos
   OS/2 (12) e Windows (40..124). O canal alfa de 32 bits e ignorado (pixels opacos), como era
   no carregamento anterior. Pixel = $FFRRGGBB. }
@@ -456,16 +333,11 @@ type
     FWidth, FHeight: Integer;
     FPix: array of Cardinal;
     FOnChange: TNotifyEvent;
-    { @returns(o proprio objeto (mantem a sintaxe Picture.Graphic do codigo original)) }
-    function GetGraphic: TLeitorBMP;
     { @returns(True se a imagem nao tem pixels) }
     function GetEmpty: Boolean;
     { Avisa OnChange, se houver. }
     procedure Changed;
   public
-    { Copia outra imagem (nil = limpa). Sem uso no jogo atual.
-      @param(Source um TLeitorBMP ou nil) }
-    procedure Assign(Source: TPersistent); override;
     { Esvazia a imagem. }
     procedure Clear;
     { Muda o tamanho e pinta tudo de preto.
@@ -484,18 +356,12 @@ type
     { @param(Y linha (0 = topo; sem conferencia de faixa))
       @returns(o endereco do primeiro pixel da linha) }
     function ScanLine(Y: Integer): PCardinal;
-    property Graphic: TLeitorBMP read GetGraphic;
     property Empty: Boolean read GetEmpty;
     property Width: Integer read FWidth;
     property Height: Integer read FHeight;
     property OnChange: TNotifyEvent read FOnChange write FOnChange;
   end;
 
-
-function TLeitorBMP.GetGraphic: TLeitorBMP;
-begin
-  Result := Self;
-end;
 
 function TLeitorBMP.GetEmpty: Boolean;
 begin
@@ -528,24 +394,6 @@ end;
 function TLeitorBMP.ScanLine(Y: Integer): PCardinal;
 begin
   Result := @FPix[Y * FWidth];
-end;
-
-procedure TLeitorBMP.Assign(Source: TPersistent);
-var
-  S: TLeitorBMP;
-begin
-  if Source is TLeitorBMP then
-  begin
-    S := TLeitorBMP(Source);
-    FWidth := S.FWidth;
-    FHeight := S.FHeight;
-    FPix := Copy(S.FPix);
-    Changed;
-  end
-  else if Source = nil then
-    Clear
-  else
-    inherited Assign(Source);
 end;
 
 procedure TLeitorBMP.LoadFromFile(const FileName: string);
@@ -911,11 +759,6 @@ begin
   FPix[Y * FWidth + X] := CorParaPixel(Value);
 end;
 
-procedure TSuperficie.Fill(Color: TColor);
-begin
-  if Length(FPix) > 0 then FillDWord(FPix[0], Length(FPix), CorParaPixel(Color));
-end;
-
 function TSuperficie.CarregarBMP(const Arquivo: string): Boolean;
 var
   Pic: TLeitorBMP;
@@ -1020,30 +863,6 @@ begin
             DB := (DB * IA + SB * A) div 255;
             DRow[DX] := $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
           end;
-        bmAdd:
-          begin
-            DP := DRow[DX];
-            SR := (SP shr 16) and $FF; SG := (SP shr 8) and $FF; SB := SP and $FF;
-            DR := ((DP shr 16) and $FF) + SR * A div 255;
-            DG := ((DP shr 8) and $FF) + SG * A div 255;
-            DB := (DP and $FF) + SB * A div 255;
-            if DR > 255 then DR := 255;
-            if DG > 255 then DG := 255;
-            if DB > 255 then DB := 255;
-            DRow[DX] := $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
-          end;
-        bmSub:
-          begin
-            DP := DRow[DX];
-            SR := (SP shr 16) and $FF; SG := (SP shr 8) and $FF; SB := SP and $FF;
-            DR := ((DP shr 16) and $FF) - SR * A div 255;
-            DG := ((DP shr 8) and $FF) - SG * A div 255;
-            DB := (DP and $FF) - SB * A div 255;
-            if DR < 0 then DR := 0;
-            if DG < 0 then DG := 0;
-            if DB < 0 then DB := 0;
-            DRow[DX] := $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
-          end;
       end;
     end;
   end;
@@ -1074,18 +893,6 @@ function TSuperficie.DrawAlpha(const DestRect, SrcRect: TRect;
   Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
 begin
   Result := DoBlit(bmAlpha, DestRect, SrcRect, Image, Transparent, Alpha);
-end;
-
-function TSuperficie.DrawAdd(const DestRect, SrcRect: TRect;
-  Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
-begin
-  Result := DoBlit(bmAdd, DestRect, SrcRect, Image, Transparent, Alpha);
-end;
-
-function TSuperficie.DrawSub(const DestRect, SrcRect: TRect;
-  Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
-begin
-  Result := DoBlit(bmSub, DestRect, SrcRect, Image, Transparent, Alpha);
 end;
 
 function TSuperficie.DoRotate(Mode: TBlendMode; X, Y, W, H: Integer;
@@ -1165,8 +972,6 @@ begin
       case Mode of
         bmCopy:  begin DR := SR; DG := SG; DB := SB; end;
         bmAlpha: begin DR := (DR * IA + SR * A) div 255; DG := (DG * IA + SG * A) div 255; DB := (DB * IA + SB * A) div 255; end;
-        bmAdd:   begin DR := Min(255, DR + SR * A div 255); DG := Min(255, DG + SG * A div 255); DB := Min(255, DB + SB * A div 255); end;
-        bmSub:   begin DR := Max(0, DR - SR * A div 255); DG := Max(0, DG - SG * A div 255); DB := Max(0, DB - SB * A div 255); end;
       end;
       FPix[PYi * FWidth + PXi] := $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
     end;
@@ -1177,24 +982,6 @@ function TSuperficie.DrawRotate(X, Y, Width, Height: Integer; const SrcRect: TRe
   Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean; Angle: Integer): Boolean;
 begin
   Result := DoRotate(bmCopy, X, Y, Width, Height, SrcRect, Image, CenterX, CenterY, Transparent, Angle, 255);
-end;
-
-function TSuperficie.DrawRotateAlpha(X, Y, Width, Height: Integer; const SrcRect: TRect;
-  Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean; Angle, Alpha: Integer): Boolean;
-begin
-  Result := DoRotate(bmAlpha, X, Y, Width, Height, SrcRect, Image, CenterX, CenterY, Transparent, Angle, Alpha);
-end;
-
-function TSuperficie.DrawRotateAdd(X, Y, Width, Height: Integer; const SrcRect: TRect;
-  Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean; Angle, Alpha: Integer): Boolean;
-begin
-  Result := DoRotate(bmAdd, X, Y, Width, Height, SrcRect, Image, CenterX, CenterY, Transparent, Angle, Alpha);
-end;
-
-function TSuperficie.DrawRotateSub(X, Y, Width, Height: Integer; const SrcRect: TRect;
-  Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean; Angle, Alpha: Integer): Boolean;
-begin
-  Result := DoRotate(bmSub, X, Y, Width, Height, SrcRect, Image, CenterX, CenterY, Transparent, Angle, Alpha);
 end;
 
 procedure TSuperficie.PreencherRect(const R: TRect; Cor: TColor);
@@ -1479,50 +1266,12 @@ begin
   Surface.DrawAlpha(DestRect, FPatterns[PatternIndex], FSurface, FTransparent, Alpha);
 end;
 
-procedure TImagem.DrawAdd(Surface: TSuperficie;
-  const DestRect: TRect; PatternIndex, Alpha: Integer);
-begin
-  if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
-  Surface.DrawAdd(DestRect, FPatterns[PatternIndex], FSurface, FTransparent, Alpha);
-end;
-
-procedure TImagem.DrawSub(Surface: TSuperficie;
-  const DestRect: TRect; PatternIndex, Alpha: Integer);
-begin
-  if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
-  Surface.DrawSub(DestRect, FPatterns[PatternIndex], FSurface, FTransparent, Alpha);
-end;
-
 procedure TImagem.DrawRotate(Surface: TSuperficie; X, Y, Width, Height,
   PatternIndex: Integer; CenterX, CenterY: Double; Angle: Integer);
 begin
   if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
   Surface.DrawRotate(X, Y, Width, Height, FPatterns[PatternIndex], FSurface,
     CenterX, CenterY, FTransparent, Angle);
-end;
-
-procedure TImagem.DrawRotateAlpha(Surface: TSuperficie; X, Y, Width, Height,
-  PatternIndex: Integer; CenterX, CenterY: Double; Angle, Alpha: Integer);
-begin
-  if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
-  Surface.DrawRotateAlpha(X, Y, Width, Height, FPatterns[PatternIndex], FSurface,
-    CenterX, CenterY, FTransparent, Angle, Alpha);
-end;
-
-procedure TImagem.DrawRotateAdd(Surface: TSuperficie; X, Y, Width, Height,
-  PatternIndex: Integer; CenterX, CenterY: Double; Angle, Alpha: Integer);
-begin
-  if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
-  Surface.DrawRotateAdd(X, Y, Width, Height, FPatterns[PatternIndex], FSurface,
-    CenterX, CenterY, FTransparent, Angle, Alpha);
-end;
-
-procedure TImagem.DrawRotateSub(Surface: TSuperficie; X, Y, Width, Height,
-  PatternIndex: Integer; CenterX, CenterY: Double; Angle, Alpha: Integer);
-begin
-  if (PatternIndex < 0) or (PatternIndex >= Length(FPatterns)) then Exit;
-  Surface.DrawRotateSub(X, Y, Width, Height, FPatterns[PatternIndex], FSurface,
-    CenterX, CenterY, FTransparent, Angle, Alpha);
 end;
 
 { ======================= TListaImagens ======================= }

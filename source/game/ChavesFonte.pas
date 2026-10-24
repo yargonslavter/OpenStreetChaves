@@ -55,10 +55,6 @@ procedure FonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dad
   @param(S texto em UTF-8)
   @returns(a largura; 0 sem atlas) }
 function FonteLargura(Tam: Integer; const S: string): Integer;
-{ Altura da celula de um tamanho de fonte.
-  @param(Tam tamanho da fonte (exato ou o mais proximo))
-  @returns(a altura em pixels; 0 sem atlas) }
-function FonteAltura(Tam: Integer): Integer;
 
 { gravacao (usada so pela ferramenta GeraFonte) }
 
@@ -176,15 +172,6 @@ function GlifoDe(const T: TTamanho; Codigo: Cardinal): Integer;
 begin
   Result := AcharGlifo(T, Codigo);
   if Result < 0 then Result := AcharGlifo(T, Ord('?'));
-end;
-
-function FonteAltura(Tam: Integer): Integer;
-var
-  K: Integer;
-begin
-  K := AcharTamanho(Tam);
-  if K < 0 then Exit(0);
-  Result := GTam[K].Altura;
 end;
 
 function FonteLargura(Tam: Integer; const S: string): Integer;

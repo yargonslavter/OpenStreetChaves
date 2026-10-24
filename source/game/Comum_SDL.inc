@@ -5,11 +5,6 @@ begin
   if QuadroAtivo then ExecutarQuadro;
 end;
 
-function TJogo.TimerLigado: Boolean;
-begin
-  Result := QuadroAtivo;
-end;
-
 function TJogo.PixelsSDL: Pointer;
 begin
   Result := Tela.ScanLine(0);

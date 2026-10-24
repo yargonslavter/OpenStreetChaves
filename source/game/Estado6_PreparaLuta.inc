@@ -36,7 +36,7 @@ begin
   QuadroAtivo := False;
   for J := 1 to 2 do
     if (Lutador[J].Personagem >= 1) and (Lutador[J].Personagem <= FQtdLutadores) then
-      carregarlutador(ArqLutador(Lutador[J].Personagem), Lutador[J].Personagem, J);
+      carregarlutador(ArquivoNN(FPadraoLutador, Lutador[J].Personagem), Lutador[J].Personagem, J);
   if Lutador[1].Ativo and Lutador[2].Ativo then
   begin
     L := Round(Random(FQtdCenarios * 10) / 10) + 1;

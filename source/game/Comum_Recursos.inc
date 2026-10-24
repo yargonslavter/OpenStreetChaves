@@ -390,16 +390,6 @@ begin
     if FMusicaCenario[I] = Musica then Result := True;
 end;
 
-function TJogo.ArqLutador(N: Integer): string;
-begin
-  Result := ArquivoNN(FPadraoLutador, N);
-end;
-
-function TJogo.ArqCenario(N: Integer): string;
-begin
-  Result := ArquivoNN(FPadraoCenario, N);
-end;
-
 { Copia o quadro [X1,X2) x [Y1,Y2) da folha FFrameSheet para Indice das listas
   ImgLutador (normal) e ImgLutadorInvert (espelhado). }
 procedure TJogo.copiabmp(Indice, X1, Y1, X2, Y2: Integer);
@@ -463,7 +453,7 @@ var
   Nome: string;
 begin
   QuadroAtivo := False;
-  Nome := ArqCenario(Numero);
+  Nome := ArquivoNN(FPadraoCenario, Numero);
   if FileExists(Nome) then ImgCenario[0].CarregarArquivo(Nome, False, CorTransparente);
   FCameraXMax := Max(0, ImgCenario[0].Width - LarguraTela);
   FCameraYMax := Max(0, ImgCenario[0].Height - AlturaTela);

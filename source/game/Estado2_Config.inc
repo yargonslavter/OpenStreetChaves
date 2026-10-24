@@ -160,7 +160,7 @@ begin
   end;
   if (E and 16) <> 0 then
   begin
-    if CursorMenu = 8 then TocarSom(SomPendente - 1);
+    if CursorMenu = 8 then SomEfeitos.Tocar(SomPendente - 1);
     if CursorMenu = 9 then
     begin
       carregarmusica(MusicaAtual);

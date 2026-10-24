@@ -15,11 +15,6 @@ begin
   Tela.RoundRect(X1, Y1, X2, Y2, R, R, CorBorda, CorFundo);
 end;
 
-procedure TJogo.circulo(X1, Y1, X2, Y2: Integer; Cor: TColor);
-begin
-  Tela.Elipse(X1, Y1, X2, Y2, Cor, Cor, False);
-end;
-
 procedure TJogo.circulopintado(X1, Y1, X2, Y2: Integer; CorBorda, CorFundo: TColor);
 begin
   Tela.Elipse(X1, Y1, X2, Y2, CorBorda, CorFundo, True);

@@ -23,6 +23,9 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   `sdl2_gfx/image/mixer/net/ttf` não são usados pelo jogo.
 - `source/tools/GeraFonte/` - ferramenta separada (usa a LCL) que gera `Fontes/ComicSansMS.atlas` a partir da fonte
   Comic Sans MS instalada no Windows e confere o resultado contra todos os textos do jogo.
+- `source/tools/Documentacao/` - scripts que geram a documentação do código com o PasDoc (veja abaixo).
+- Regra de plataforma: o jogo tem de ser multiplataforma (sem LCL, só FPC + SDL2). As ferramentas em `source/tools/`
+  podem usar a LCL ou recursos de um sistema só; ser multiplataforma é preferível, mas não obrigatório.
 - `Embutidos/` (na raiz) - BMPs/WAVs extraídos do `Chaves.exe` original (ícones, abertura, finais e música dos menus).
 - `Dados/` (na raiz) - arquivos de dados lidos pelo jogo:
   - `Jogo.ini` - valores do jogo (intervalo do quadro, gravidade, carga do especial, voador), padrões da

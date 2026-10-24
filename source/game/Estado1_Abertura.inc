@@ -67,7 +67,7 @@ begin
       Ab.PorNome('Chaves').Draw(Sup, 210, L14 + 185 - CameraY, 0);
       Ab.PorNome('SeuMadruga').Draw(Sup, 50, L14 + 178 - CameraY, 0);
     end;
-    if TempoEstado = 200 then TocarSom(9);
+    if TempoEstado = 200 then SomEfeitos.Tocar(9);
     if TempoEstado >= 200 then
     begin
       Ab.PorNome('SeuMadrugaCaindo').Draw(Sup, 60 - ((TempoEstado - 200) shl 2),
@@ -89,7 +89,7 @@ begin
     LogoMeiaAltura := Round(117 / L);
   end;
   R := Rect(205 - L14, (-100 - CameraY) - LogoMeiaAltura, L14 + 205, (-100 - CameraY) + LogoMeiaAltura);
-  Ab.PorNome('Logo' + SufixoIdioma).DrawAlpha(Sup, R, 0, 255);
+  Ab.PorNome('Logo-' + CodigoIdioma(Idioma)).DrawAlpha(Sup, R, 0, 255);
 
   if TempoEstado > 440 then
     texto(320, 140, Versao, AEsq, 8, Branco);
@@ -157,7 +157,7 @@ begin
       if I < 1 then I := 1;
       if I > FQtdLutadores then I := FQtdLutadores;
       Lutador[L].Personagem := I;
-      carregarlutador(ArqLutador(I), I, L);
+      carregarlutador(ArquivoNN(FPadraoLutador, I), I, L);
     end;
   end;
 

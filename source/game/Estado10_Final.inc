@@ -143,7 +143,7 @@ begin
     A := F.Comandos[I].Args;
     Cmd := F.Comandos[I].Nome;
     if Cmd = 'cenario' then carregarcenario(N(0))
-    else if Cmd = 'lutador' then carregarlutador(ArqLutador(N(0)), N(0), N(1))
+    else if Cmd = 'lutador' then carregarlutador(ArquivoNN(FPadraoLutador, N(0)), N(0), N(1))
     else if Cmd = 'desenha' then desenhalutador(N(0), N(1), N(2), N(3), N(4))
     else if Cmd = 'fala' then F10_Fala(Rect(N(0), N(1), N(2), N(3)), Arg(4), N(5), N(6))
     else if Cmd = 'imagem' then ImgFinal.PorNome(Arg(0)).Draw(Tela, N(1), N(2), 0)

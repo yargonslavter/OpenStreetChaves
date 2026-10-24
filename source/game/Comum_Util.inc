@@ -21,17 +21,6 @@ begin
   CarregarTextos(Idioma, TxtNomes, TxtGeral, TxtConfig, TxtFrases, TxtDialogo, TxtFinais, TxtCenarios);
 end;
 
-function TJogo.SufixoIdioma: string;
-begin
-  Result := '-' + CodigoIdioma(Idioma);
-end;
-
-procedure TJogo.TocarSom(Indice: Integer);
-begin
-  if (Indice >= 0) and (Indice < SomEfeitos.Count) then
-    SomEfeitos.Tocar(Indice);
-end;
-
 { Grava a configuracao da tela F1 em Chaves.ini (na pasta do jogo). }
 procedure TJogo.SalvarConfiguracao;
 const

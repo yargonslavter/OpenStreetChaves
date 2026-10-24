@@ -35,12 +35,6 @@ var
   K1, K2, E1, E2: Byte;
   R: TRect;
 
-  { @param(Idx numero do efeito sonoro a tocar) }
-  procedure Som(Idx: Integer);
-  begin
-    TocarSom(Idx);
-  end;
-
   { Desenha um retrato, se existir.
     @param(Indice numero em ImgRetrato)
     @param(PX esquerda)
@@ -61,8 +55,8 @@ begin
   for I := 0 to 3 do
     for J := 0 to 1 do
     begin
-      ImgIcone.PorNome('LogoFundo' + SufixoIdioma).Draw(Tela, I * 145 - 67, (J * 200 - 200) + (ContagemTick shl 3), 0);
-      ImgIcone.PorNome('LogoFundo' + SufixoIdioma).Draw(Tela, I * 145, (J * 200 - 100) + (ContagemTick shl 3), 0);
+      ImgIcone.PorNome('LogoFundo-' + CodigoIdioma(Idioma)).Draw(Tela, I * 145 - 67, (J * 200 - 200) + (ContagemTick shl 3), 0);
+      ImgIcone.PorNome('LogoFundo-' + CodigoIdioma(Idioma)).Draw(Tela, I * 145, (J * 200 - 100) + (ContagemTick shl 3), 0);
     end;
   { faixa com os retratos }
   X := Round(TempoEstado * 1.35);
@@ -156,28 +150,28 @@ begin
       if ((K1 and 4) <> 0) and not Lutador[1].AntEsq then
       begin
         Dec(Lutador[1].Personagem);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K1 and 8) <> 0) and not Lutador[1].AntDir then
       begin
         Inc(Lutador[1].Personagem);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K1 and 1) <> 0) and not Lutador[1].AntCima and (Lutador[1].Personagem > 8) then
       begin
         Dec(Lutador[1].Personagem, 8);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K1 and 2) <> 0) and not Lutador[1].AntBaixo and (Lutador[1].Personagem <= 8) then
       begin
         Inc(Lutador[1].Personagem, 8);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K1 and 16) <> 0) and not Lutador[1].AntSocoFraco then
       begin
         Lutador[1].Escolheu := True;
         criaadversario(1, Lutador[1].Personagem);
-        Som(2);
+        SomEfeitos.Tocar(2);
       end;
     end;
     { jogador 2 (joystick emulado) }
@@ -186,28 +180,28 @@ begin
       if ((K2 and 4) <> 0) and not Lutador[2].AntEsq then
       begin
         Dec(Lutador[2].Personagem);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K2 and 8) <> 0) and not Lutador[2].AntDir then
       begin
         Inc(Lutador[2].Personagem);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K2 and 1) <> 0) and not Lutador[2].AntCima and (Lutador[2].Personagem > 8) then
       begin
         Dec(Lutador[2].Personagem, 8);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K2 and 2) <> 0) and not Lutador[2].AntBaixo and (Lutador[2].Personagem <= 8) then
       begin
         Inc(Lutador[2].Personagem, 8);
-        if SomEfeitos.Count > 1 then Som(1);
+        SomEfeitos.Tocar(1);
       end;
       if ((K2 and 16) <> 0) and not Lutador[2].AntSocoFraco then
       begin
         Lutador[2].Escolheu := True;
         criaadversario(2, Lutador[2].Personagem);
-        Som(2);
+        SomEfeitos.Tocar(2);
       end;
     end;
     for J := 1 to 2 do
@@ -224,7 +218,7 @@ begin
       if Lutador[1].Ativo then criaadversario(1, Lutador[1].Personagem);
       Lutador[2].Escolheu := True;
       if Lutador[2].Ativo then criaadversario(2, Lutador[2].Personagem);
-      Som(2);
+      SomEfeitos.Tocar(2);
     end;
     if Lutador[1].Escolheu and Lutador[2].Escolheu then
     begin

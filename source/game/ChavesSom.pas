@@ -75,8 +75,6 @@ type
     { Para todas as vozes de um som.
       @param(Indice numero do som) }
     procedure Parar(Indice: Integer);
-    { Para todos os sons do banco. Sem uso no jogo atual. }
-    procedure PararTodos;
     property Count: Integer read GetCount;
   end;
 
@@ -412,13 +410,6 @@ var
 begin
   A := Obter(Indice);
   if A <> nil then CortarVozes(A);
-end;
-
-procedure TBancoSom.PararTodos;
-var
-  I: Integer;
-begin
-  for I := 0 to FSons.Count - 1 do Parar(I);
 end;
 
 initialization

@@ -45,7 +45,7 @@ begin
     if Fichas < 99 then
     begin
       Inc(Fichas);
-      TocarSom(0);
+      SomEfeitos.Tocar(0);
       if (TempoDemo > 0) or (Estado = CHS_RECORDES) then
         if Fichas > 0 then
         begin

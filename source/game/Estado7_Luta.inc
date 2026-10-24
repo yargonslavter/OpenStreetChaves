@@ -1204,7 +1204,7 @@ begin
     texto(200, 240, Linha(TxtGeral, 6), ACentro, 10, Branco);
   if TempoDemo < 500 then
   begin
-    Logo := ImgAbertura.PorNome('Logo' + SufixoIdioma);
+    Logo := ImgAbertura.PorNome('Logo-' + CodigoIdioma(Idioma));
     W := Round(Logo.Width / 2);
     H := Round(Logo.Height / 2);
     R := Rect(390 - W, 280 - H, 390, 280);
