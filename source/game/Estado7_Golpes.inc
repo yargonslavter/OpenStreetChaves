@@ -1,6 +1,5 @@
 { Estado7_Golpes.inc - Estado CHS_LUTA: golpes, sequencias, CPU e defesa (seta, sequencia, golpe, sequenciagolpe, cpu, defendergolpe). Gerado a partir do codigo de maquina e revisado a mao. }
 
-
 function TJogo.seta(Jog: Byte; const Dir: string): Boolean;
 { Responde True se o jogador esta segurando a direcao pedida:
   'CIMA', 'BAIXO', 'FRENTE' (para onde esta virado) ou 'TRAS'. Jogador 1 = teclado, 2 = "joystick". }
@@ -130,12 +129,14 @@ begin
   end;
 end;
 
-procedure TJogo.cpu(Jog: Byte);
-{ IA do computador: decide os comandos do lutador Jog (equivale a apertar teclas) }
+{ IA do computador: calcula a distancia entre os lutadores, a ameaca de projetil inimigo e o
+  fator de dificuldade e roda os roteiros [IA] (ExecutarIA), que decidem os comandos.
+  @param(Jog lutador controlado pelo computador, 1 ou 2) }
+procedure CpuNovo(Jog: Byte);
 var
   P, O: PLutador;
   E: PEfeito;
-  Dist, DistProj, OppY, S_18, I: Integer;
+  Dist, DistProj, OppY, I: Integer;
   Ameaca: Byte;
   Fator: Double;
 begin
@@ -155,256 +156,13 @@ begin
     end;
   end;
   Fator := (8 - NivelJogo) * 0.6 + 1.3 - Fase * 0.1;
-  if Random(13) = 0 then
-    case Random(6) of
-      0: P.DistanciaIA := 100;
-      1: P.DistanciaIA := 150;
-      2: P.DistanciaIA := 200;
-      3: P.DistanciaIA := 250;
-      4: P.DistanciaIA := 300;
-      5: P.DistanciaIA := 350;
-    end;
-  if Abs(Dist - P.DistanciaIA) <= 50 then P.DistanciaIA := Dist;
-  if not P.Defendendo and (Ameaca = 0) then
-  begin
-    if (Dist >= P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmDireita);
-    if (Dist < P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmEsquerda);
-    if (Dist >= P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmEsquerda);
-    if (Dist < P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmDireita);
-  end;
-  if not P.Defendendo and (Ameaca = 0) and (Dist <= 80) then
-  begin
-    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
-    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
-    if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
-    if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
-    if Random(Round(4 * Fator)) = 0 then
-    begin
-      AcaoJogador(Jog, cmAgachar);
-      if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
-      if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
-      if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
-      if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
-    end;
-  end;
-  if not P.Defendendo then
-  begin
-    if P.Personagem = pnChaves then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Dist < 150) and (ChaoY > O.Y) then
-        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then
-        AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Dist < 150) and (ChaoY > O.Y) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnSeuMadruga then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if Dist < 200 then
-      begin
-        S_18 := ChaoY - 100;
-        if S_18 > P.Y then
-          if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      end;
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(55 * Fator)) = 0) then AcaoJogador(Jog, cmEsp4Forte);
-    end;
-    if P.Personagem = pnChiquinha then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(45 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(18 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 150) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnQuico then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(35 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 100 then
-        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnDonaFlorinda then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 150) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 300) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 100 then
-        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnProfGirafales then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(4) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(18 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(35 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(45 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnSrBarriga then
-    begin
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 150) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnBruxa then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if Dist < 200 then
-      begin
-        S_18 := ChaoY - 100;
-        if S_18 > P.Y then
-          if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      end;
-      if (Ameaca = 0) and (Dist < 150) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist > 100) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist > 100) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnPaty then
-    begin
-      if (Ameaca = 0) and (Dist < 200) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if Dist < 100 then
-        if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if Dist < 150 then
-        if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnNhonho then
-    begin
-      if Dist < 200 then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 300) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if Dist < 100 then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 200 then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnGodines then
-    begin
-      if Dist < 200 then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if Dist < 300 then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if Dist < 300 then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 200 then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnSrFurtado then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 80) then
-        if Random(Round(15 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 150) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 200 then
-      begin
-        S_18 := ChaoY - 100;
-        if S_18 > P.Y then
-          if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      end;
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEsp4Fraco);
-    end;
-    if P.Personagem = pnJaiminho then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 120) then
-        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 90) then
-        if Random(Round(15 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist > 130) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist > 120 then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(4) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 270) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspExtra2);
-    end;
-    if P.Personagem = pnDonaNeves then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 160) then
-        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 1) and (DistProj < 170) then
-        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 120) then
-        if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if Dist < 80 then
-        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 120) and (Random(Round(30 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
-    end;
-    if P.Personagem = pnGloria then
-    begin
-      if (Ameaca = 1) and (DistProj > 140) then
-        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist > 160) then
-        if Random(Round(12 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
-      if (Ameaca = 0) and (Dist < 100) then
-        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
-      if (Ameaca = 0) and (Dist < 120) then
-        if Random(Round(25 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 80) and (ChaoY - 50 > OppY) then
-        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
-      if (Ameaca = 0) and (Dist < 140) then
-        if Random(Round(22 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
-      if (Ameaca = 0) and (Dist < 120) then
-        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, cmEspFinal);
-    end;
-  end;
+  ExecutarIA(Jog, Dist, DistProj, OppY, Ameaca, Fator);
+end;
+
+procedure TJogo.cpu(Jog: Byte);
+{ IA do computador: decide os comandos do lutador Jog (equivale a apertar teclas) }
+begin
+  CpuNovo(Jog);
 end;
 
 procedure TJogo.defendergolpe(Jog: Byte);
@@ -419,12 +177,14 @@ var
   ProjY: Double;
   Fator: Double;
 
+  { Jogador humano segurando "para tras": defende em pe ou agachado. }
   procedure DefesaHumana;
   begin
     if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then AcaoJogador(Jog, cmDefender);
     if seta(Jog, 'TRAS') and seta(Jog, 'BAIXO') then AcaoJogador(Jog, cmDefenderBaixo);
   end;
 
+  { Computador: pula para frente (ou, 1 vez em 8, reto). }
   procedure Pular;
   begin
     P.VelY := -32;

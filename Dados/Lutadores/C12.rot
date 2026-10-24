@@ -2,7 +2,11 @@
 ;   [Acao]  parte de AcaoJogador so deste personagem (os golpes especiais e suas condicoes),
 ;           executada depois do [Acao] de Comum.rot.
 ;   [Quadro] parte de AtualizaQuadro so deste personagem (a animacao e os efeitos de cada golpe),
-;           executada depois do [Quadro] de Comum.rot. A sintaxe esta explicada em Comum.rot.
+;           executada depois do [Quadro] de Comum.rot.
+;   [IA]     quando o computador usa cada golpe especial deste personagem (depois do [IA] de
+;           Comum.rot). A sintaxe e as entradas estao explicadas em Comum.rot.
+;   [Acerto] quando um golpe deste personagem acerta o oponente (combo, giro, recuo, lancamento,
+;           golpes encadeados).
 
 [Acao]
 if (Codigo = cmVitoria) and (P.Acao in [acParado, acAndando, acAgachado]) then
@@ -186,4 +190,36 @@ begin
     O.Invulneravel := False;
   end;
 end;
+
+[IA]
+var S_18: Integer;
+
+if not P.Defendendo then
+begin
+  if (Ameaca = 1) and (DistProj > 140) then
+    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
+  if (Ameaca = 0) and (Dist > 120) then
+    if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
+  if (Ameaca = 0) and (Dist < 80) then
+    if Random(Round(15 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
+  if (Ameaca = 0) and (Dist < 150) then
+    if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
+  if Dist < 200 then
+  begin
+    S_18 := ChaoY - 100;
+    if S_18 > P.Y then
+      if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
+  end;
+  if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEsp4Fraco);
+end;
+
+[Acerto]
+// quando um golpe deste personagem acerta (depois do dano, da reacao e do recuo padrao do oponente):
+// tempo do combo, giro, recuo e lancamento do oponente, e golpes que continuam em outra acao.
+if (P.Acao = acEspecial4) and (P.QuadroAcao >= 22) then
+begin
+  if O.Lado = ldDireita then O.VelAngular := -20;
+  if O.Lado = ldEsquerda then O.VelAngular := 20;
+end;
+if (P.Acao = acEspecial2) and (P.ForcaGolpe = fgForte) then O.Recuo := 25;
 

@@ -6,6 +6,13 @@
 ;   [AcaoFim]  fim de AcaoJogador, depois do [Acao] do personagem
 ;   [Quadro]   inicio de AtualizaQuadro (a cada quadro da luta: escolhe o sprite, avanca a
 ;              animacao, cria efeitos); depois vem o [Quadro] do personagem e as caixas de colisao
+;   [IA]       decisoes do computador quando controla o lutador (andar, golpes basicos);
+;              depois vem o [IA] do personagem (quando usar cada especial). Entradas calculadas pelo
+;              jogo: Dist (distancia entre os lutadores), DistProj (distancia do projetil inimigo),
+;              OppY (altura do oponente), Ameaca (1 = ha projetil inimigo) e Fator (dificuldade:
+;              quanto maior, mais raro; Random(Round(8 * Fator)) = 0 e 1 chance em 8*Fator)
+;   [Acerto]   quando um golpe acerta o oponente (P = quem bateu, O = quem apanhou), depois do dano,
+;              da reacao e do recuo padrao; vem antes do [Acerto] do personagem. Opcional.
 ; Nomes que o roteiro conhece: P. e O. (campos do lutador e do oponente: P.Acao, P.QuadroAcao...),
 ; Jog, Codigo (o comando pedido, cm*), Desloc (0 para o jogador 1, 50 para o 2: os quadros do
 ; jogador 2 ficam 50 posicoes depois), as constantes de ChavesTipos (ac*, cm*, snd*, fg*, ld*...),
@@ -281,4 +288,38 @@ end;
 if P.Acao = acDefesa then P.Quadro := Desloc + 31;
 if P.Acao = acDefesaBaixa then P.Quadro := Desloc + 32;
 if P.Acao in [acDefesa, acDefesaBaixa] then P.Defendendo := True;
+
+[IA]
+if Random(13) = 0 then
+  case Random(6) of
+    0: P.DistanciaIA := 100;
+    1: P.DistanciaIA := 150;
+    2: P.DistanciaIA := 200;
+    3: P.DistanciaIA := 250;
+    4: P.DistanciaIA := 300;
+    5: P.DistanciaIA := 350;
+  end;
+if Abs(Dist - P.DistanciaIA) <= 50 then P.DistanciaIA := Dist;
+if not P.Defendendo and (Ameaca = 0) then
+begin
+  if (Dist >= P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmDireita);
+  if (Dist < P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmEsquerda);
+  if (Dist >= P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmEsquerda);
+  if (Dist < P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmDireita);
+end;
+if not P.Defendendo and (Ameaca = 0) and (Dist <= 80) then
+begin
+  if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
+  if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
+  if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
+  if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
+  if Random(Round(4 * Fator)) = 0 then
+  begin
+    AcaoJogador(Jog, cmAgachar);
+    if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
+    if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
+    if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
+    if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
+  end;
+end;
 

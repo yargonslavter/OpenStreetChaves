@@ -1,5 +1,3 @@
-unit ChavesGolpes;
-
 { Logica dos lutadores durante a luta: acoes (pular, golpear, defender...), escolha do
   quadro de animacao, caixas de colisao, danos e efeitos.
   Recuperado do executavel original (unidades Unit29/Unit30 do projeto Delphi): as rotinas
@@ -8,6 +6,8 @@ unit ChavesGolpes;
   O centro do sprite e as caixas de colisao de cada quadro vem de Dados/Lutadores/Cnn.ini
   (secoes [CentroX], [Corpo] e [Ataque]). AcaoJogador e AtualizaQuadro executam os roteiros
   Dados/Lutadores/Comum.rot e CNN.rot (interpretados por ChavesRoteiro). }
+
+unit ChavesGolpes;
 
 {$mode delphi}{$H+}
 {$POINTERMATH ON}
@@ -79,40 +79,114 @@ var
   QuadrosLutador: array of TQuadrosLutador;   // indice 1..quantidade de personagens
   TiposEfeito: array of TTipoEfeito;          // indice = tipo do efeito (1..)
 
-{ Reserva os dados de Qtd personagens. }
+{ Reserva (vazios) os dados de quadros de todos os personagens.
+  @param(Qtd quantidade de personagens; os indices validos ficam 1..Qtd) }
 procedure PrepararQuadrosLutadores(Qtd: Integer);
-{ Le [CentroX], [Corpo] e [Ataque] do personagem Pers. }
+{ Le as secoes [CentroX], [Corpo] e [Ataque] do arquivo de um personagem
+  (Dados/Lutadores/Cnn.ini), substituindo o que havia.
+    [CentroX] quadro=deslocamento
+    [Corpo] quadro=x1,y1,x2,y2
+    [Ataque] acao.quadroAcao[.fN]=x1,y1,x2,y2,ativo,forca,dano,danoDefesa (fN: so com ForcaGolpe = N)
+  @param(Pers numero do personagem (fora de 1..Qtd = ignora))
+  @param(Ini arquivo do personagem, ja aberto) }
 procedure LerQuadrosLutador(Pers: Integer; Ini: TCustomIniFile);
-{ Le os tipos de efeito (Dados/Efeitos.ini). }
+{ Le os tipos de efeito ([Efeito1], [Efeito2]... de Dados/Efeitos.ini): as atribuicoes
+  feitas ao criar o efeito (Campo[.Texto]=valor, "N em C", "dono", valores com sorteio "B+P*RS")
+  e as regras de animacao (AnimN=condicao:acao). Substitui os tipos lidos antes.
+  @param(Arquivo caminho do arquivo dos efeitos) }
 procedure LerEfeitos(const Arquivo: string);
-{ Regras de animacao do tipo do efeito (sprite, volta ao quadro 0, estagio...), a cada quadro. }
+{ Aplica, a cada quadro, as regras de animacao do tipo do efeito (troca de sprite, volta
+  ao quadro 0, estagio, subir 1 pixel).
+  @param(E o efeito) }
 procedure AnimarEfeito(E: PEfeito);
 
-{ Move o lutador Jog horizontalmente por Dx e o separa do oponente (nao deixa atravessar). }
+{ Move o lutador na horizontal e, se o corpo dele invadir o do oponente, separa os dois
+  (empurrando o oponente 5 pixels). Lutador vivo nao sai da area da camera (30..370).
+  @param(Jog lutador que se move, 1 ou 2)
+  @param(Dx deslocamento em pixels (negativo = para a esquerda)) }
 procedure Empurra(Jog: Byte; Dx: Double);
-{ Define a caixa de colisao do corpo quando o lutador esta no quadro (sprite) Quadro. }
+{ Define a caixa de colisao do corpo, se o lutador estiver no quadro pedido. A caixa e
+  espelhada para quem olha para a esquerda.
+  @param(Jog lutador, 1 ou 2)
+  @param(Quadro quadro (sprite) em que a caixa vale (o jogador 2 soma 50))
+  @param(X1 esquerda, relativa aos pes)
+  @param(Y1 topo, relativo aos pes)
+  @param(X2 direita)
+  @param(Y2 base) }
 procedure DefineCaixaCorpo(Jog, Quadro: Byte; X1, Y1, X2, Y2: Integer);
-{ Define a caixa de ataque (e dano) quando o lutador esta na acao Acao, no quadro QuadroAcao. }
+{ Define a caixa de ataque e o dano, se o lutador estiver na acao e no quadro de acao
+  pedidos. A caixa e espelhada para quem olha para a esquerda.
+  @param(Jog lutador, 1 ou 2)
+  @param(Acao acao (ac*) em que a caixa vale)
+  @param(QuadroAcao quadro da acao em que a caixa vale)
+  @param(X1 esquerda, relativa aos pes)
+  @param(Y1 topo)
+  @param(X2 direita)
+  @param(Y2 base)
+  @param(Ativo diferente de 0 = o golpe pode acertar (GolpeAtivo))
+  @param(Forca forca do golpe (fg*); 0 = mantem a atual)
+  @param(Dano dano na vida)
+  @param(DanoDefesa dano quando o oponente defende) }
 procedure DefineCaixaAtaque(Jog, Acao: Byte; QuadroAcao: Integer; X1, Y1, X2, Y2: Integer;
   Ativo, Forca, Dano, DanoDefesa: Byte);
+{ Define a caixa de colisao de um efeito (projetil).
+  @param(Slot posicao do efeito na tabela Efeitos)
+  @param(X1 esquerda, relativa a posicao do efeito)
+  @param(Y1 topo)
+  @param(X2 direita)
+  @param(Y2 base) }
 procedure DefineCaixaEfeito(Slot, X1, Y1, X2, Y2: Integer);
-{ True se ja existe um efeito deste Tipo criado por Dono (limita projeteis); sempre False com o truque Bruxa. }
+{ Diz se ja existe um efeito deste tipo criado pelo lutador (limita os projeteis).
+  @param(Tipo tipo do efeito)
+  @param(Dono lutador, 1 ou 2)
+  @returns(True se existe; sempre False com o truque Bruxa ligado) }
 function ExisteEfeito(Tipo, Dono: Byte): Boolean;
-{ Cria um efeito (fumaca, sangue, bola de fogo, texto...) na primeira posicao livre. }
+{ Cria um efeito (fumaca, sangue, projetil, texto...) na primeira posicao livre da tabela,
+  zerando os campos e aplicando os valores do tipo (Dados/Efeitos.ini). Tabela cheia = nada.
+  @param(Tipo tipo do efeito (1..))
+  @param(Texto texto do efeito (textos flutuantes) e escolha das variantes do tipo)
+  @param(Dono lutador que criou, 1 ou 2)
+  @param(X posicao horizontal no cenario)
+  @param(Y posicao vertical) }
 procedure CriaEfeito(Tipo: Byte; const Texto: string; Dono: Byte; X, Y: Double);
-{ Deslocamento horizontal do centro do sprite atual do lutador (para desenhar centralizado). }
+{ Deslocamento horizontal do centro do sprite atual do lutador, para desenha-lo centralizado.
+  @param(Jog lutador, 1 ou 2)
+  @returns(o deslocamento em pixels ([CentroX] do personagem); 0 se nao definido) }
 function CentroX(Jog: Byte): Integer;
-{ Define as caixas de corpo e de ataque do quadro atual do lutador (antes: fim de AtualizaQuadro). }
+{ Define as caixas de corpo e de ataque do quadro atual do lutador, a partir dos dados do
+  personagem. Os ataques sao aplicados na ordem do arquivo, como no original (a forca pode mudar
+  no meio).
+  @param(Jog lutador, 1 ou 2) }
 procedure AplicarCaixas(Jog: Byte);
-{ Le os roteiros dos lutadores: Comum (Dados/Lutadores/Comum.rot) e PadraoLutador com '##' (CNN.rot).
-  Um erro de escrita num roteiro gera ERoteiro com o arquivo e a linha. }
+{ Le os roteiros dos lutadores, substituindo os anteriores: todas as secoes de Comum e as
+  secoes [Acao], [Quadro], [IA] e [Acerto] de cada personagem. Secao que falta fica sem roteiro.
+  @param(PadraoLutador nome dos arquivos dos personagens com '##' ('Dados/Lutadores/C##.rot'))
+  @param(Comum arquivo do roteiro comum ('Dados/Lutadores/Comum.rot'))
+  @param(Qtd quantidade de personagens)
+  @raises(ERoteiro Comum nao existe, ou erro de escrita num roteiro (com o arquivo e a linha)) }
 procedure CarregarRoteiros(const PadraoLutador, Comum: string; Qtd: Integer);
-{ Executa uma acao pedida ao lutador (andar, pular, golpe...); Codigo = comando (cm*).
-  Roda o [Acao] de Comum.rot, o [Acao] do personagem e o [AcaoFim] de Comum.rot. }
+{ Executa uma acao pedida ao lutador (andar, pular, golpe...): roda o [Acao] de Comum.rot,
+  o [Acao] do personagem e o [AcaoFim] de Comum.rot.
+  @param(Jog lutador, 1 ou 2)
+  @param(Codigo comando (cm*), visto pelo roteiro como Codigo) }
 procedure AcaoJogador(Jog, Codigo: Byte);
-{ Avanca a animacao do lutador, escolhe o quadro e cria os efeitos de cada golpe: roda o [Quadro] de
-  Comum.rot e o [Quadro] do personagem; depois aplica as caixas de colisao (AplicarCaixas). }
+{ Avanca a animacao do lutador, escolhe o quadro e cria os efeitos de cada golpe: roda o
+  [Quadro] de Comum.rot e o do personagem e depois aplica as caixas de colisao (AplicarCaixas).
+  @param(Jog lutador, 1 ou 2) }
 procedure AtualizaQuadro(Jog: Byte);
+{ IA do computador: roda o [IA] de Comum.rot e o do personagem com os valores calculados
+  pelo jogo.
+  @param(Jog lutador controlado pelo computador, 1 ou 2)
+  @param(Dist distancia horizontal entre os lutadores)
+  @param(DistProj distancia do projetil inimigo mais proximo)
+  @param(OppY altura (Y) do oponente)
+  @param(Ameaca diferente de 0 = ha projetil inimigo ameacando)
+  @param(Fator fator de dificuldade (maior = reage mais)) }
+procedure ExecutarIA(Jog: Byte; Dist, DistProj, OppY: Integer; Ameaca: Byte; Fator: Double);
+{ O golpe do lutador acertou o oponente: roda o [Acerto] de Comum.rot (se houver) e o do
+  personagem (efeitos proprios do golpe, como sons e empurroes).
+  @param(Jog lutador que acertou, 1 ou 2) }
+procedure ExecutarAcerto(Jog: Byte);
 
 implementation
 
@@ -134,6 +208,8 @@ var
   I, Q: Integer;
   A: TCaixaAtaque;
 
+  { @param(K posicao na lista separada por virgulas)
+    @returns(o numero na posicao K, ou 0 se faltar) }
   function Parte(K: Integer): Integer;
   begin
     if K < Partes.Count then Result := StrToIntDef(Partes[K], 0) else Result := 0;
@@ -221,7 +297,9 @@ var
   Campo: TCampoEfeito;
   Achou: Boolean;
 
-  { "10", "10+R2", "-23-5*R5", "0+R10" }
+  { Le um valor com sorteio ("10", "10+R2", "-23-5*R5") para Op.Base, Op.Passo e
+    Op.Sorteio: valor = Base + Passo * Sortear(Sorteio).
+    @param(S texto do valor) }
   procedure LerValor(const S: string);
   var
     PR, PS: Integer;
@@ -255,6 +333,10 @@ var
   end;
 
   { "Q=2", "Q>=D-20", "C>=L-10" }
+  { Le um termo de condicao de animacao ("Q=2", "Q>=D-20", "C>=L-10").
+    @param(S texto do termo)
+    @param(R recebe o termo)
+    @returns(False se o texto e curto demais) }
   function LerTermo(const S: string; out R: TTermoEfeito): Boolean;
   var
     N: Integer;
@@ -377,8 +459,12 @@ begin
   end;
 end;
 
-{ Aplica ao efeito novo E (na posicao Slot) as atribuicoes do seu tipo, na ordem do arquivo.
-  Os sorteios (Random) acontecem na mesma ordem do jogo original. }
+{ Aplica ao efeito novo as atribuicoes do seu tipo, na ordem do arquivo. Os sorteios
+  acontecem na mesma ordem do jogo original.
+  @param(Slot posicao do efeito na tabela Efeitos)
+  @param(E o efeito (Efeitos[Slot]), com Tipo ja preenchido)
+  @param(Texto texto com que o efeito foi criado (escolhe as atribuicoes Campo.Texto))
+  @param(Dono lutador que criou o efeito, 1 ou 2) }
 procedure AplicarTipoEfeito(Slot: Integer; E: PEfeito; const Texto: string; Dono: Byte);
 var
   I, V: Integer;
@@ -626,73 +712,118 @@ begin
     Result := QuadrosLutador[Lutador[Jog].Personagem].CentroX[Idx];
 end;
 
-{ ---- AcaoJogador e AtualizaQuadro pelos roteiros (Dados/Lutadores/Comum.rot e CNN.rot) ---- }
+{ ---- roteiros dos lutadores (Dados/Lutadores/Comum.rot e CNN.rot) ---- }
+
+type
+  TSecaoRoteiro = (srAcao, srAcaoFim, srQuadro, srIA, srAcerto);
+
+const
+  NomesSecoes: array[TSecaoRoteiro] of string = ('Acao', 'AcaoFim', 'Quadro', 'IA', 'Acerto');
 
 var
-  RotAcaoComum, RotAcaoFim, RotQuadroComum: TRoteiro;   // Comum.rot [Acao], [AcaoFim] e [Quadro]
-  RotAcao, RotQuadro: array of TRoteiro;   // CNN.rot [Acao] e [Quadro], indice = personagem (nil = sem)
+  RotComum: array[TSecaoRoteiro] of TRoteiro;            // secoes de Comum.rot (nil = nao existe)
+  RotLutador: array of array[TSecaoRoteiro] of TRoteiro; // secoes de CNN.rot, indice = personagem
 
+{ Libera todos os roteiros carregados (comum e dos personagens). }
 procedure LiberarRoteiros;
 var
   I: Integer;
+  S: TSecaoRoteiro;
 begin
-  FreeAndNil(RotAcaoComum);
-  FreeAndNil(RotAcaoFim);
-  FreeAndNil(RotQuadroComum);
-  for I := 0 to High(RotAcao) do FreeAndNil(RotAcao[I]);
-  for I := 0 to High(RotQuadro) do FreeAndNil(RotQuadro[I]);
-  RotAcao := nil;
-  RotQuadro := nil;
+  for S := Low(TSecaoRoteiro) to High(TSecaoRoteiro) do
+  begin
+    FreeAndNil(RotComum[S]);
+    for I := 0 to High(RotLutador) do FreeAndNil(RotLutador[I][S]);
+  end;
+  RotLutador := nil;
+end;
+
+{ Le uma secao de um arquivo de roteiro, com as variaveis de entrada que a secao recebe
+  (so [IA] tem: Dist, DistProj, OppY, Ameaca e Fator).
+  @param(Arq caminho do arquivo .rot)
+  @param(S secao)
+  @returns(o roteiro, ou nil se a secao nao existir)
+  @raises(ERoteiro erro de escrita no roteiro) }
+function LerSecao(const Arq: string; S: TSecaoRoteiro): TRoteiro;
+begin
+  if S = srIA then
+    Result := CarregarRoteiro(Arq, NomesSecoes[S],
+      ['Dist: Integer', 'DistProj: Integer', 'OppY: Integer', 'Ameaca: Byte', 'Fator: Double'])
+  else
+    Result := CarregarRoteiro(Arq, NomesSecoes[S]);
 end;
 
 procedure CarregarRoteiros(const PadraoLutador, Comum: string; Qtd: Integer);
 var
   I: Integer;
   Arq: string;
+  S: TSecaoRoteiro;
 begin
   LiberarRoteiros;
   Arq := ResolverCaminho(Comum);
   if not FileExists(Arq) then
     raise ERoteiro.Create('Arquivo ' + Comum + ' nao encontrado (roteiro comum dos lutadores).');
-  RotAcaoComum := CarregarRoteiro(Arq, 'Acao');
-  RotAcaoFim := CarregarRoteiro(Arq, 'AcaoFim');
-  RotQuadroComum := CarregarRoteiro(Arq, 'Quadro');
-  SetLength(RotAcao, Qtd + 1);
-  SetLength(RotQuadro, Qtd + 1);
+  for S := Low(TSecaoRoteiro) to High(TSecaoRoteiro) do RotComum[S] := LerSecao(Arq, S);
+  SetLength(RotLutador, Qtd + 1);
+  for I := 0 to Qtd do
+    for S := Low(TSecaoRoteiro) to High(TSecaoRoteiro) do RotLutador[I][S] := nil;
   for I := 1 to Qtd do
   begin
     Arq := ResolverCaminho(ArquivoNN(PadraoLutador, I));
-    RotAcao[I] := CarregarRoteiro(Arq, 'Acao');
-    RotQuadro[I] := CarregarRoteiro(Arq, 'Quadro');
+    for S := Low(TSecaoRoteiro) to High(TSecaoRoteiro) do
+      if S <> srAcaoFim then RotLutador[I][S] := LerSecao(Arq, S);
   end;
+end;
+
+{ Roteiro de uma secao do personagem do lutador.
+  @param(Jog lutador, 1 ou 2)
+  @param(S secao)
+  @returns(o roteiro, ou nil se o personagem nao tiver essa secao) }
+function RoteiroDe(Jog: Byte; S: TSecaoRoteiro): TRoteiro;
+var
+  N: Integer;
+begin
+  N := Lutador[Jog].Personagem;
+  if N < Length(RotLutador) then Result := RotLutador[N][S] else Result := nil;
 end;
 
 procedure AcaoJogador(Jog, Codigo: Byte);
 var
-  P: PLutador;
+  R: TRoteiro;
 begin
-  P := @Lutador[Jog];
-  if RotAcaoComum <> nil then RotAcaoComum.Executar(Jog, Codigo);
-  if (P.Personagem < Length(RotAcao)) and (RotAcao[P.Personagem] <> nil) then
-    RotAcao[P.Personagem].Executar(Jog, Codigo);
-  if RotAcaoFim <> nil then RotAcaoFim.Executar(Jog, Codigo);
+  if RotComum[srAcao] <> nil then RotComum[srAcao].Executar(Jog, Codigo);
+  R := RoteiroDe(Jog, srAcao);
+  if R <> nil then R.Executar(Jog, Codigo);
+  if RotComum[srAcaoFim] <> nil then RotComum[srAcaoFim].Executar(Jog, Codigo);
 end;
 
-procedure AtualizaQuadroNovo(Jog: Byte);
+procedure AtualizaQuadro(Jog: Byte);
 var
-  P: PLutador;
+  R: TRoteiro;
 begin
-  P := @Lutador[Jog];
-  if RotQuadroComum <> nil then RotQuadroComum.Executar(Jog, 0);
-  if (P.Personagem < Length(RotQuadro)) and (RotQuadro[P.Personagem] <> nil) then
-    RotQuadro[P.Personagem].Executar(Jog, 0);
+  if RotComum[srQuadro] <> nil then RotComum[srQuadro].Executar(Jog, 0);
+  R := RoteiroDe(Jog, srQuadro);
+  if R <> nil then R.Executar(Jog, 0);
   { caixas de colisao do quadro atual (Dados/Lutadores/Cnn.ini) }
   AplicarCaixas(Jog);
 end;
 
-procedure AtualizaQuadro(Jog: Byte);
+procedure ExecutarAcerto(Jog: Byte);
+var
+  R: TRoteiro;
 begin
-  AtualizaQuadroNovo(Jog);
+  if RotComum[srAcerto] <> nil then RotComum[srAcerto].Executar(Jog, 0);
+  R := RoteiroDe(Jog, srAcerto);
+  if R <> nil then R.Executar(Jog, 0);
+end;
+
+procedure ExecutarIA(Jog: Byte; Dist, DistProj, OppY: Integer; Ameaca: Byte; Fator: Double);
+var
+  R: TRoteiro;
+begin
+  if RotComum[srIA] <> nil then RotComum[srIA].ExecutarCom(Jog, 0, [Dist, DistProj, OppY, Ameaca, Fator]);
+  R := RoteiroDe(Jog, srIA);
+  if R <> nil then R.ExecutarCom(Jog, 0, [Dist, DistProj, OppY, Ameaca, Fator]);
 end;
 
 initialization

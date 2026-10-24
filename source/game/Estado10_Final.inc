@@ -92,17 +92,23 @@ var
   A: array of string;
   Cmd: string;
 
+  { @param(K posicao do argumento)
+    @returns(o argumento como numero (0 se faltar)) }
   function N(K: Integer): Integer;
   begin
     if K < Length(A) then Result := StrToIntDef(A[K], 0) else Result := 0;
   end;
 
+  { @param(K posicao do argumento)
+    @returns(o argumento como texto ('' se faltar)) }
   function Arg(K: Integer): string;
   begin
     if K < Length(A) then Result := A[K] else Result := '';
   end;
 
-  { "150+R100" = 150 + Random(100) }
+  { Argumento com sorteio: "150+R100" = 150 + Random(100).
+    @param(K posicao do argumento)
+    @returns(o valor) }
   function Sorteado(K: Integer): Integer;
   var
     P: Integer;

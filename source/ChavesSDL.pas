@@ -1,5 +1,3 @@
-unit ChavesSDL;
-
 { ChavesSDL.pas - NOVO PRINCIPAL do jogo (migracao gradual para SDL2).
 
   Esta unit e a "casa" do jogo em SDL2: abre a janela, cria o renderizador, mantem o laco
@@ -17,6 +15,8 @@ unit ChavesSDL;
 
   Teclas do host: F11 ou Alt+Enter = alterna tela cheia. No modo --demo: I = escala inteira,
   ESC = sair. No jogo, as demais teclas vao direto ao jogo (ESC sai, como no original). }
+
+unit ChavesSDL;
 
 {$mode delphi}{$H+}
 
@@ -54,32 +54,87 @@ type
     FOnAtualizar: TNotifyEvent;
     FOnDesenhar: TNotifyEvent;
     FOnTecla: TTeclaSDLEvent;
+    { @returns(o buffer ARGB do quadro de teste (LarguraTela x AlturaTela)) }
     function GetPixels: Pointer;
+    { Mostra uma caixa de mensagem de erro do SDL.
+      @param(Msg o texto) }
     procedure Erro(const Msg: string);
+    { Trata um evento do SDL: fechar, foco da janela (sem foco solta todas as teclas), controles
+      conectados/desconectados e teclado. F11 e Alt+Enter alternam a tela cheia; as demais teclas vao
+      ao jogo (com repeticao, como no Windows).
+      @param(Ev o evento) }
     procedure TratarEvento(var Ev: TSDL_Event);
+    { Alterna entre janela e tela cheia (resolucao da area de trabalho). }
     procedure AlternarTelaCheia;
+    { Um gamepad foi conectado: fica com o primeiro jogador sem controle (no maximo dois).
+      @param(Indice indice do dispositivo no SDL) }
     procedure AbrirControle(Indice: Integer);
+    { Um gamepad foi desconectado: fecha e solta os botoes do jogador.
+      @param(IdInstancia identificador de instancia do joystick no SDL) }
     procedure FecharControle(IdInstancia: Integer);
+    { Um joystick generico (sem mapeamento de gamepad) foi conectado: fica com o primeiro jogador
+      sem controle.
+      @param(Indice indice do dispositivo no SDL) }
     procedure AbrirJoystick(Indice: Integer);
+    { Um joystick generico foi desconectado: fecha e solta os botoes do jogador.
+      @param(IdInstancia identificador de instancia do joystick no SDL) }
     procedure FecharJoystick(IdInstancia: Integer);
+    { Le os gamepads (direcional/analogico esquerdo e A, B, X, Y = botoes 1 a 4) e entrega os bits
+      ao jogo; Start = ficha do jogador (tecla 1 ou 2), Back = moeda (tecla 5). Joysticks genericos
+      passam por LerJoystick. }
     procedure LerControles;
+    { Le um joystick generico (eixos 0/1 ou hat 0, botoes 0..3 = botoes do jogo, 9 = Start,
+      8 = Back) e entrega ao jogo.
+      @param(I jogador, 0 ou 1) }
     procedure LerJoystick(I: Integer);
+    { @param(I jogador, 0 ou 1)
+      @returns(o nome do controle do jogador, para o titulo da janela ('-' = nenhum)) }
     function NomeControle(I: Integer): string;
+    { Cria o TJogo e liga as pontes com o SDL. Sem o atlas da fonte, sem Dados/Recursos.ini ou com
+      erro nos arquivos de dados, mostra a mensagem e fecha o programa. }
     procedure IniciarJogo;
+    { O jogo pediu outro modo de tela (tela F1).
+      @param(Sender o jogo) }
     procedure AoMudarTela(Sender: TObject);
+    { @param(Modo 1 = janela, 2 = tela cheia 4:3, 3 = tela cheia esticada) }
     procedure AplicarModoTela(Modo: Integer);
+    { Um passo da logica: le os controles e roda TJogo.PassoSDL (so com a janela em foco).
+      Atualiza o intervalo, que o jogo pode mudar. }
     procedure Atualizar;
+    { Desenha o quadro: OnDesenhar, ou o quadro de teste se nao houver. }
     procedure Desenhar;
+    { Copia o buffer do jogo (ou o de teste) para a textura e mostra na janela, aplicando o
+      deslocamento horizontal e o modo esticado. }
     procedure Apresentar;
+    { @param(Scan codigo fisico SDL_SCANCODE_*)
+      @returns(True se a tecla esta apertada) }
     function TeclaAtiva(Scan: Integer): Boolean;
     { quadro de teste da fase 0 }
+
+    { Pinta um retangulo no buffer do quadro de teste.
+      @param(X esquerda)
+      @param(Y topo)
+      @param(W largura)
+      @param(H altura)
+      @param(Cor pixel ARGB) }
     procedure Retangulo(X, Y, W, H: Integer; Cor: Cardinal);
+    { Quadro de teste (--demo): degrade, barras de cor, borda de 1 pixel, um quadrado em movimento
+      e os indicadores de teclado dos dois jogadores. }
     procedure DesenharDemo;
   public
+    { Cria a aplicacao (a janela so e aberta em Iniciar). }
     constructor Create;
+    { Libera o jogo, a textura, o renderizador e a janela e encerra o SDL. }
     destructor Destroy; override;
+    { Inicia o SDL, abre a janela (800x600, redimensionavel), o renderizador (acelerado ou, sem
+      aceleracao, por software) e a textura de 400x300.
+      @param(ComJogo True = cria o jogo; False = quadro de teste)
+      @returns(False se algo falhou (a mensagem ja foi mostrada)) }
     function Iniciar(ComJogo: Boolean): Boolean;
+    { Laco principal: eventos, logica em passos fixos de IntervaloMs (no maximo 250 ms acumulados),
+      desenho e apresentacao, ate fechar a janela ou o jogo pedir para sair. }
     procedure Executar;
+    { Pede o fim do laco principal. }
     procedure Parar;
     property IntervaloMs: Integer read FIntervaloMs write FIntervaloMs;
     property Pixels: Pointer read GetPixels;
@@ -88,7 +143,8 @@ type
     property OnTecla: TTeclaSDLEvent read FOnTecla write FOnTecla;
   end;
 
-{ Ponto de entrada do modo SDL (padrao do StreetChaves.lpr; --demo = quadro de teste) }
+{ Ponto de entrada do programa: cria a aplicacao e roda o jogo (ou o quadro de teste com o
+  parametro --demo). }
 procedure ExecutarModoSDL;
 
 implementation

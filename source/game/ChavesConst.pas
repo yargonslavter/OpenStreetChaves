@@ -12,6 +12,11 @@ type
   { cor no formato $00BBGGRR (o mesmo do Delphi/Lazarus) }
   TColor = type Longint;
 
+{ Monta uma cor TColor ($00BBGGRR) a partir dos tres componentes.
+  @param(R vermelho, 0..255)
+  @param(G verde, 0..255)
+  @param(B azul, 0..255)
+  @returns(a cor no formato do Delphi/Lazarus) }
 function RGBToColor(R, G, B: Byte): TColor; inline;
 
 const

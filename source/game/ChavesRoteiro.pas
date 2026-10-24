@@ -1,5 +1,3 @@
-unit ChavesRoteiro;
-
 { ChavesRoteiro.pas - interpretador dos roteiros dos lutadores (Dados/Lutadores/*.rot).
 
   Um roteiro e um trecho de Pascal simplificado, separado em secoes ([Acao], [AcaoFim]...).
@@ -18,6 +16,8 @@ unit ChavesRoteiro;
   Double dao Double, gravar num Byte/ShortInt corta o valor, "and"/"or" param assim que o
   resultado e conhecido, e Random(Round(...)) usa o Random de 64 bits, como no codigo compilado.
   Todo sorteio passa por SortearValor, que pode gravar e repetir a sequencia (modo de conferencia). }
+
+unit ChavesRoteiro;
 
 {$mode delphi}{$H+}
 {$POINTERMATH ON}
@@ -64,36 +64,87 @@ type
     FRaiz: Integer;
     FNomesLocais: array of string;
     FTiposLocais: array of TTipoDado;
+    FQtdEntradas: Integer;   // variaveis de entrada (preenchidas por ExecutarCom), depois das predefinidas
+    { Cria um no vazio na arvore do roteiro.
+      @param(T tipo do no)
+      @param(Linha linha do arquivo, para as mensagens de erro)
+      @returns(o indice do no em FNos) }
     function Novo(T: TTipoNo; Linha: Integer): Integer;
+    { Erro de escrita no roteiro.
+      @param(Linha linha do arquivo)
+      @param(Msg descricao do erro)
+      @raises(ERoteiro sempre, com a origem e a linha) }
     procedure Falha(Linha: Integer; const Msg: string);
   public
-    { Texto: o conteudo da secao; Origem e LinhaInicial: para as mensagens de erro. }
-    constructor Create(const Texto, Origem: string; LinhaInicial: Integer);
-    { Executa com P = Lutador[Jog], O = o outro, Codigo e Desloc (0 para o jogador 1, 50 para o 2). }
+    { Analisa o texto de uma secao e monta a arvore do roteiro.
+      @param(Texto o conteudo da secao)
+      @param(Origem nome para as mensagens de erro ('C01.rot [Acao]'))
+      @param(LinhaInicial linha do arquivo em que o texto comeca)
+      @param(Entradas variaveis que quem chama preenche, na ordem ('Dist: Integer', 'Fator: Double'...))
+      @raises(ERoteiro erro de escrita, com a origem e a linha) }
+    constructor Create(const Texto, Origem: string; LinhaInicial: Integer; const Entradas: array of string);
+    { Executa o roteiro com P = Lutador[Jog] e O = o outro lutador.
+      @param(Jog lutador, 1 ou 2 (Desloc vale 0 para o 1 e 50 para o 2))
+      @param(Codigo valor de Codigo no roteiro (cortado para Byte))
+      @raises(ERoteiro erro durante a execucao (tipo errado, operador invalido...)) }
     procedure Executar(Jog: Byte; Codigo: Integer);
+    { O mesmo que Executar, preenchendo as variaveis de entrada.
+      @param(Jog lutador, 1 ou 2)
+      @param(Codigo valor de Codigo no roteiro)
+      @param(Valores valores das entradas, na ordem em que foram declaradas (os que faltam ficam 0);
+      inteiros sao arredondados e convertidos para o tipo da entrada)
+      @raises(ERoteiro valor de entrada invalido ou erro durante a execucao) }
+    procedure ExecutarCom(Jog: Byte; Codigo: Integer; const Valores: array of Extended);
     property Origem: string read FOrigem;
   end;
 
-{ Le a secao [Secao] do arquivo de roteiro; nil se o arquivo ou a secao nao existirem.
-  Um erro no roteiro gera ERoteiro com o arquivo e a linha. }
-function CarregarRoteiro(const Arquivo, Secao: string): TRoteiro;
+{ Le uma secao de um arquivo de roteiro (sem variaveis de entrada).
+  @param(Arquivo caminho do arquivo .rot)
+  @param(Secao nome da secao, sem colchetes)
+  @returns(o roteiro, ou nil se o arquivo ou a secao nao existirem; quem chama libera)
+  @raises(ERoteiro erro de escrita, com o arquivo e a linha) }
+function CarregarRoteiro(const Arquivo, Secao: string): TRoteiro; overload;
+{ Le uma secao de um arquivo de roteiro. Linhas comecando com ';' sao comentarios.
+  @param(Arquivo caminho do arquivo .rot)
+  @param(Secao nome da secao, sem colchetes)
+  @param(Entradas variaveis de entrada ('Nome: Tipo'), preenchidas por TRoteiro.ExecutarCom)
+  @returns(o roteiro, ou nil se o arquivo ou a secao nao existirem; quem chama libera)
+  @raises(ERoteiro erro de escrita, com o arquivo e a linha) }
+function CarregarRoteiro(const Arquivo, Secao: string; const Entradas: array of string): TRoteiro; overload;
 
 { ---- sorteios (Random) ---- }
 type
   TModoSorteio = (msNormal, msGravar, msRepetir);
 
-{ Random(N) do Pascal (32 e 64 bits). Em msGravar anota cada sorteio; em msRepetir devolve os
-  anotados, na ordem (SorteioDivergiu = pediu algo diferente). }
+{ Random(N) do Pascal (32 bits), passando pelo controle de sorteios (ModoDeSorteio).
+  @param(N limite (o resultado fica em 0..N-1))
+  @returns(o numero sorteado (ou o gravado, em msRepetir)) }
 function Sortear(N: LongInt): LongInt;
+{ Random(N) de 64 bits do Pascal, passando pelo controle de sorteios. Sem uso no jogo atual
+  (fica para futuras conferencias).
+  @param(N limite)
+  @returns(o numero sorteado (ou o gravado, em msRepetir)) }
 function Sortear64(N: Int64): Int64;
-{ Nome do campo de TLutador que ocupa o byte Desl (para o relatorio da conferencia). }
+{ Nome do campo de TLutador que ocupa um byte do registro (para o relatorio da conferencia).
+  @param(Desl posicao do byte dentro de TLutador)
+  @returns(o nome do campo que comeca nesse byte ou antes dele; '(byte N)' se nenhum) }
 function NomeCampoLutador(Desl: Integer): string;
-{ Campos diferentes entre A e B, com os dois valores ('Y 300 -> 255; ...'); '' se iguais. }
+{ Lista os campos (conhecidos pelos roteiros) que diferem entre dois lutadores.
+  @param(A primeiro lutador)
+  @param(B segundo lutador)
+  @returns(' Campo A -> B;' para cada diferenca; '' se iguais) }
 function DiferencasLutador(const A, B: TLutador): string;
-{ Resumo do lutador (acao, quadros, posicao, velocidade, vida...) para o relatorio. }
+{ Resumo do lutador para o relatorio da conferencia.
+  @param(L o lutador)
+  @returns(' Acao=.. QuadroAcao=.. ... Lado=..') }
 function ResumoLutador(const L: TLutador): string;
+{ Muda o modo dos sorteios. msGravar comeca uma gravacao nova; msRepetir volta ao
+  primeiro sorteio gravado e limpa SorteioDivergiu.
+  @param(Modo msNormal (Random comum), msGravar (anota cada sorteio) ou msRepetir (devolve os
+  anotados, na ordem; um pedido diferente liga SorteioDivergiu e volta ao normal)) }
 procedure ModoDeSorteio(Modo: TModoSorteio);
-function SorteiosRestantes: Integer;   // em msRepetir: anotados que ainda nao foram usados
+{ @returns(em msRepetir: quantos sorteios gravados ainda nao foram usados) }
+function SorteiosRestantes: Integer;
 
 var
   SorteioDivergiu: Boolean;
@@ -248,6 +299,10 @@ var
 
 { ================= valores ================= }
 
+{ Valor inteiro.
+  @param(I o numero)
+  @param(Largo True se o valor e Int64 (como o resultado de Round))
+  @returns(o valor) }
 function VInt(I: Int64; Largo: Boolean): TValor;
 begin
   Result.C := cvInt;
@@ -257,6 +312,9 @@ begin
   Result.S := '';
 end;
 
+{ Valor real.
+  @param(F o numero)
+  @returns(o valor) }
 function VReal(F: Extended): TValor;
 begin
   Result.C := cvReal;
@@ -266,6 +324,9 @@ begin
   Result.S := '';
 end;
 
+{ Valor booleano.
+  @param(B a condicao)
+  @returns(o valor) }
 function VBool(B: Boolean): TValor;
 begin
   Result.C := cvBool;
@@ -275,6 +336,9 @@ begin
   Result.S := '';
 end;
 
+{ Valor texto.
+  @param(S o texto)
+  @returns(o valor) }
 function VStr(const S: string): TValor;
 begin
   Result.C := cvStr;
@@ -298,6 +362,10 @@ var
   Gravados: array of TSorteioGravado;
   QtdGravados, PosGravado: Integer;
 
+{ Todo sorteio passa por aqui: grava, repete ou sorteia normalmente conforme o modo.
+  @param(N limite)
+  @param(Largo True = Random de 64 bits; False = de 32 bits)
+  @returns(o numero sorteado ou o gravado) }
 function SortearValor(N: Int64; Largo: Boolean): Int64;
 begin
   if ModoSort = msRepetir then
@@ -358,6 +426,10 @@ end;
 
 { ================= memoria (campos, globais, locais) ================= }
 
+{ Le uma variavel na memoria.
+  @param(T tipo da variavel)
+  @param(P endereco)
+  @returns(o valor) }
 function LerMem(T: TTipoDado; P: Pointer): TValor;
 begin
   case T of
@@ -374,7 +446,12 @@ begin
   end;
 end;
 
-{ converte V para o tipo T (como numa atribuicao do Pascal); False se nao combina }
+{ Converte um valor para o tipo de uma variavel, como numa atribuicao do Pascal (inteiros
+  sao cortados no tamanho do tipo; inteiro vira real; real nao vira inteiro).
+  @param(T tipo de destino)
+  @param(V valor)
+  @param(R recebe o valor convertido)
+  @returns(False se o valor nao combina com o tipo) }
 function Converter(T: TTipoDado; const V: TValor; out R: TValor): Boolean;
 var
   D: Double;
@@ -418,6 +495,10 @@ begin
   end;
 end;
 
+{ Grava um valor (ja convertido) numa variavel na memoria.
+  @param(T tipo da variavel)
+  @param(P endereco)
+  @param(V valor) }
 procedure GravarMem(T: TTipoDado; P: Pointer; const V: TValor);
 begin
   case T of
@@ -432,6 +513,9 @@ begin
   end;
 end;
 
+{ Tipo de dado pelo nome usado no roteiro.
+  @param(S 'Byte', 'ShortInt', 'SmallInt', 'Word', 'Integer'/'LongInt', 'Int64', 'Double' ou 'Boolean')
+  @returns(o tipo; tdNenhum se desconhecido) }
 function TipoPorNome(const S: string): TTipoDado;
 begin
   if SameText(S, 'Byte') then Result := tdByte
@@ -462,18 +546,56 @@ type
     R: TRoteiro;
     Toks: array of TTok;
     Pos: Integer;
+    { Separa o texto em simbolos (tokens).
+      @param(ARoteiro roteiro que recebe a arvore (e as mensagens de erro))
+      @param(Texto texto da secao)
+      @param(LinhaInicial linha do arquivo em que o texto comeca)
+      @raises(ERoteiro caractere ou texto invalido) }
     constructor Create(ARoteiro: TRoteiro; const Texto: string; LinhaInicial: Integer);
+    { @returns(o token atual) }
     function Atual: TTok;
-    function Eh(const S: string): Boolean;        // simbolo ou palavra reservada atual
+    { Diz se o token atual e o simbolo ou a palavra reservada pedida.
+      @param(S simbolo ou palavra em minusculas)
+      @returns(True se for) }
+    function Eh(const S: string): Boolean;
+    { Consome o simbolo ou palavra esperada.
+      @param(S simbolo ou palavra em minusculas)
+      @raises(ERoteiro o token atual e outro) }
     procedure Pegar(const S: string);
+    { Consome um nome.
+      @returns(o nome)
+      @raises(ERoteiro o token atual nao e um nome) }
     function PegarId: string;
+    { Analisa uma expressao (comparacoes e in, a precedencia mais baixa).
+      @returns(o indice do no) }
     function Expr: Integer;
+    { Analisa uma expressao simples (+, -, or, xor).
+      @returns(o indice do no) }
     function Simples: Integer;
+    { Analisa um termo (operadores * / div mod and shl shr).
+      @returns(o indice do no) }
     function Termo: Integer;
+    { Analisa um fator: numero, texto, nome (local, global, campo P./O., constante),
+      chamada de funcao, conjunto, parenteses, not e sinal.
+      @returns(o indice do no)
+      @raises(ERoteiro nome desconhecido ou expressao mal escrita) }
     function Fator: Integer;
+    { Analisa um comando: atribuicao, chamada, if, begin..end, for, repeat, while ou case.
+      @returns(o indice do no) }
     function Comando: Integer;
-    function ListaAte(const Fim1, Fim2: string): Integer;   // devolve um cBloco
+    { Analisa uma lista de comandos separados por ';' ate uma das palavras finais (que nao e
+      consumida) ou o fim do texto.
+      @param(Fim1 primeira palavra final ('' = so o fim do texto))
+      @param(Fim2 segunda palavra final ('' = nenhuma))
+      @returns(o indice de um no cBloco) }
+    function ListaAte(const Fim1, Fim2: string): Integer;
+    { Analisa as declaracoes "var Nome[, Nome]: Tipo;" do comeco da secao, criando as
+      variaveis locais.
+      @raises(ERoteiro tipo desconhecido ou variavel repetida) }
     procedure Declaracoes;
+    { Procura uma variavel local pelo nome (sem diferenciar maiusculas).
+      @param(Nome nome da variavel)
+      @returns(o indice da variavel, ou -1) }
     function BuscaLocal(const Nome: string): Integer;
   end;
 
@@ -487,6 +609,7 @@ var
   T: TTok;
   S: string;
 
+  { Acrescenta o token T a lista. }
   procedure Add;
   begin
     if N >= Length(Toks) then SetLength(Toks, N * 2 + 64);
@@ -691,6 +814,8 @@ const
     'downto', 'do', 'case', 'of', 'not', 'and', 'or', 'xor', 'div', 'mod', 'shl', 'shr', 'in',
     'var');
 
+{ @param(S palavra em minusculas)
+  @returns(True se e palavra reservada do roteiro) }
 function EhReservada(const S: string): Boolean;
 var
   I: Integer;
@@ -1180,9 +1305,11 @@ begin
   raise ERoteiro.CreateFmt('%s, linha %d: %s', [FOrigem, Linha, Msg]);
 end;
 
-constructor TRoteiro.Create(const Texto, Origem: string; LinhaInicial: Integer);
+constructor TRoteiro.Create(const Texto, Origem: string; LinhaInicial: Integer; const Entradas: array of string);
 var
   A: TAnalisador;
+  I, K, Dois: Integer;
+  Nome, Tipo: string;
 begin
   inherited Create;
   FOrigem := Origem;
@@ -1194,6 +1321,20 @@ begin
   FTiposLocais[LocalCodigo] := tdByte;
   FNomesLocais[LocalDesloc] := 'Desloc';
   FTiposLocais[LocalDesloc] := tdInteger;
+  FQtdEntradas := Length(Entradas);
+  for I := 0 to High(Entradas) do
+  begin
+    Dois := System.Pos(':', Entradas[I]);
+    Nome := Trim(Copy(Entradas[I], 1, Dois - 1));
+    Tipo := Trim(Copy(Entradas[I], Dois + 1, MaxInt));
+    K := Length(FNomesLocais);
+    SetLength(FNomesLocais, K + 1);
+    SetLength(FTiposLocais, K + 1);
+    FNomesLocais[K] := Nome;
+    FTiposLocais[K] := TipoPorNome(Tipo);
+    if (Dois = 0) or (Nome = '') or (FTiposLocais[K] = tdNenhum) then
+      Falha(LinhaInicial, 'entrada mal escrita: ' + Entradas[I]);
+  end;
   A := TAnalisador.Create(Self, Texto, LinhaInicial);
   try
     A.Declaracoes;
@@ -1213,14 +1354,30 @@ type
     Locais: array of TValor;
   end;
 
+{ Erro durante a execucao.
+  @param(X execucao atual)
+  @param(No no onde ocorreu (da a linha))
+  @param(Msg descricao)
+  @raises(ERoteiro sempre) }
 procedure ErroExec(var X: TExecucao; No: Integer; const Msg: string);
 begin
   raise ERoteiro.CreateFmt('%s, linha %d: %s', [X.R.FOrigem, X.R.FNos[No].Linha, Msg]);
 end;
 
+{ Calcula o valor de uma expressao.
+  @param(X execucao atual)
+  @param(No indice do no da expressao)
+  @returns(o valor) }
 function Avaliar(var X: TExecucao; No: Integer): TValor; forward;
+{ Executa um comando.
+  @param(X execucao atual)
+  @param(No indice do no do comando) }
 procedure Executar1(var X: TExecucao; No: Integer); forward;
 
+{ @param(X execucao atual)
+  @param(No no (para a mensagem de erro))
+  @param(V valor inteiro ou real)
+  @returns(o valor como real) }
 function ComoReal(var X: TExecucao; No: Integer; const V: TValor): Extended;
 begin
   if V.C = cvReal then Result := V.F
@@ -1232,6 +1389,10 @@ begin
   end;
 end;
 
+{ @param(X execucao atual)
+  @param(No no (para a mensagem de erro))
+  @param(V valor inteiro)
+  @returns(o valor como inteiro (erro se nao for inteiro)) }
 function ComoInt(var X: TExecucao; No: Integer; const V: TValor): Int64;
 begin
   if V.C = cvInt then Result := V.I
@@ -1242,6 +1403,10 @@ begin
   end;
 end;
 
+{ @param(X execucao atual)
+  @param(No no (para a mensagem de erro))
+  @param(V valor booleano)
+  @returns(a condicao (erro se nao for booleano)) }
 function ComoBool(var X: TExecucao; No: Integer; const V: TValor): Boolean;
 begin
   if V.C = cvBool then Result := V.I <> 0
@@ -1252,6 +1417,10 @@ begin
   end;
 end;
 
+{ Endereco do campo de um no nCampo, no lutador P ou O.
+  @param(X execucao atual)
+  @param(No no do campo)
+  @returns(o endereco) }
 function PtrCampo(var X: TExecucao; No: Integer): Pointer;
 var
   Base: PLutador;
@@ -1260,6 +1429,14 @@ begin
   Result := PByte(Base) + Campos[X.R.FNos[No].Ind].Desl;
 end;
 
+{ Compara dois valores (textos so com = e <>; numeros como inteiros ou, se um for real,
+  como reais).
+  @param(X execucao atual)
+  @param(No no (para a mensagem de erro))
+  @param(Op operador (opIgual, opDif, opMenor...))
+  @param(A valor da esquerda)
+  @param(B valor da direita)
+  @returns(o resultado) }
 function Comparar(var X: TExecucao; No: Integer; Op: Integer; const A, B: TValor): Boolean;
 var
   FA, FB: Extended;
@@ -1316,6 +1493,11 @@ begin
   end;
 end;
 
+{ Operador in: diz se um valor esta num conjunto [a, b, c..d].
+  @param(X execucao atual)
+  @param(Conj no do conjunto)
+  @param(V valor procurado)
+  @returns(True se pertence) }
 function NoConjunto(var X: TExecucao; Conj: Integer; const V: TValor): Boolean;
 var
   I, E: Integer;
@@ -1347,6 +1529,11 @@ begin
   end;
 end;
 
+{ Calcula uma operacao com dois operandos, com as regras de tipo do Pascal (and/or com
+  condicoes param assim que o resultado e conhecido).
+  @param(X execucao atual)
+  @param(No no da operacao)
+  @returns(o valor) }
 function AvaliarBin(var X: TExecucao; No: Integer): TValor;
 var
   Op: Integer;
@@ -1427,6 +1614,11 @@ begin
   end;
 end;
 
+{ Chama uma funcao ou procedimento do jogo (Random, Round, CriaEfeito, Empurra...), avaliando
+  os argumentos na mesma ordem que o compilador.
+  @param(X execucao atual)
+  @param(No no da chamada)
+  @returns(o valor devolvido (0 para procedimentos)) }
 function Chamar(var X: TExecucao; No: Integer): TValor;
 var
   F, I, N: Integer;
@@ -1503,6 +1695,10 @@ begin
   end;
 end;
 
+{ Grava um valor numa variavel local, global ou campo, convertendo para o tipo dela.
+  @param(X execucao atual)
+  @param(No no da atribuicao)
+  @param(V valor) }
 procedure Atribuir(var X: TExecucao; No: Integer; const V: TValor);
 var
   Alvo: Integer;
@@ -1611,9 +1807,15 @@ begin
 end;
 
 procedure TRoteiro.Executar(Jog: Byte; Codigo: Integer);
+begin
+  ExecutarCom(Jog, Codigo, []);
+end;
+
+procedure TRoteiro.ExecutarCom(Jog: Byte; Codigo: Integer; const Valores: array of Extended);
 var
   X: TExecucao;
   I: Integer;
+  V: TValor;
 begin
   X.R := Self;
   X.P := @Lutador[Jog];
@@ -1626,12 +1828,29 @@ begin
   X.Locais[LocalJog] := VInt(Jog, False);
   X.Locais[LocalCodigo] := VInt(Byte(Codigo), False);
   if Jog = 2 then X.Locais[LocalDesloc] := VInt(50, False) else X.Locais[LocalDesloc] := VInt(0, False);
+  for I := 0 to FQtdEntradas - 1 do
+    if I <= High(Valores) then
+    begin
+      case FTiposLocais[QtdPredef + I] of
+        tdDouble: V := VReal(Valores[I]);
+        tdBoolean: V := VBool(Valores[I] <> 0);
+      else
+        V := VInt(Round(Valores[I]), False);
+      end;
+      if not Converter(FTiposLocais[QtdPredef + I], V, X.Locais[QtdPredef + I]) then
+        raise ERoteiro.Create(FOrigem + ': valor de entrada invalido');
+    end;
   Executar1(X, FRaiz);
 end;
 
 { ================= arquivo de roteiro ================= }
 
 function CarregarRoteiro(const Arquivo, Secao: string): TRoteiro;
+begin
+  Result := CarregarRoteiro(Arquivo, Secao, []);
+end;
+
+function CarregarRoteiro(const Arquivo, Secao: string; const Entradas: array of string): TRoteiro;
 var
   L: TStringList;
   I, Ini: Integer;
@@ -1659,7 +1878,7 @@ begin
         Texto := Texto + L[I] + #10;
     end;
     if Ini < 0 then Exit;
-    Result := TRoteiro.Create(Texto, ExtractFileName(Arquivo) + ' [' + Secao + ']', Ini + 1);
+    Result := TRoteiro.Create(Texto, ExtractFileName(Arquivo) + ' [' + Secao + ']', Ini + 1, Entradas);
   finally
     L.Free;
   end;
@@ -1682,6 +1901,8 @@ begin
     end;
 end;
 
+{ @param(V valor)
+  @returns(o valor como texto (reais com ponto)) }
 function TextoValor(const V: TValor): string;
 begin
   case V.C of
@@ -1726,6 +1947,10 @@ end;
 var
   ModeloLutador: TLutador;
 
+{ Registra um campo de TLutador que os roteiros podem usar (P.Nome / O.Nome).
+  @param(Nome nome no roteiro)
+  @param(T tipo)
+  @param(Ender endereco do campo dentro de ModeloLutador) }
 procedure Campo(const Nome: string; T: TTipoDado; Ender: Pointer);
 var
   N: Integer;
@@ -1737,6 +1962,10 @@ begin
   Campos[N].Desl := PByte(Ender) - PByte(@ModeloLutador);
 end;
 
+{ Registra uma variavel do jogo que os roteiros podem usar.
+  @param(Nome nome no roteiro)
+  @param(T tipo)
+  @param(Ender endereco da variavel) }
 procedure Global(const Nome: string; T: TTipoDado; Ender: Pointer);
 var
   N: Integer;
@@ -1751,12 +1980,18 @@ end;
 var
   OrdemTeste: string;
 
+{ Teste da ordem dos argumentos: anota C em OrdemTeste.
+  @param(C marca)
+  @returns(0) }
 function MarcaB(C: Char): Byte;
 begin
   OrdemTeste := OrdemTeste + C;
   Result := 0;
 end;
 
+{ Teste da ordem dos argumentos: anota C em OrdemTeste.
+  @param(C marca)
+  @returns(a quantidade de marcas ate agora) }
 function MarcaD(C: Char): Double;
 begin
   OrdemTeste := OrdemTeste + C;
@@ -1766,12 +2001,14 @@ end;
 var
   SomaTeste: Double;
 
-{ mesma assinatura de CriaEfeito: descobre em que ordem o compilador avalia os argumentos }
+{ Mesma assinatura de CriaEfeito: usada so para descobrir em que ordem o compilador avalia os
+  argumentos (OrdemArgsInversa). }
 procedure TesteArgs(Tipo: Byte; const Texto: string; Dono: Byte; X, Y: Double);
 begin
   SomaTeste := Tipo + Dono + X + Y + Length(Texto);
 end;
 
+{ Monta as tabelas de campos de TLutador e de variaveis do jogo que os roteiros podem usar. }
 procedure MontarTabelas;
 var
   L: TLutador absolute ModeloLutador;

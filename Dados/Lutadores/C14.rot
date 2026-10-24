@@ -2,7 +2,9 @@
 ;   [Acao]  parte de AcaoJogador so deste personagem (os golpes especiais e suas condicoes),
 ;           executada depois do [Acao] de Comum.rot.
 ;   [Quadro] parte de AtualizaQuadro so deste personagem (a animacao e os efeitos de cada golpe),
-;           executada depois do [Quadro] de Comum.rot. A sintaxe esta explicada em Comum.rot.
+;           executada depois do [Quadro] de Comum.rot.
+;   [IA]     quando o computador usa cada golpe especial deste personagem (depois do [IA] de
+;           Comum.rot). A sintaxe e as entradas estao explicadas em Comum.rot.
 
 [Acao]
 if (Codigo = cmVitoria) and (P.Acao in [acParado, acAndando, acAgachado]) then
@@ -146,5 +148,21 @@ begin
     CriaEfeito(31, 'A', Jog, P.Y - 80, P.X);
     CriaEfeito(32, 'A', Jog, P.Y - 80, P.X);
   end;
+end;
+
+[IA]
+if not P.Defendendo then
+begin
+  if (Ameaca = 1) and (DistProj > 140) then
+    if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
+  if (Ameaca = 0) and (Dist > 160) then
+    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
+  if (Ameaca = 1) and (DistProj < 170) then
+    if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
+  if (Ameaca = 0) and (Dist < 120) then
+    if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
+  if Dist < 80 then
+    if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+  if (Ameaca = 0) and (Dist < 120) and (Random(Round(30 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
 end;
 

@@ -4,6 +4,8 @@
 function TJogo.BordaTeclas: Byte;
 var
   K1, K2, A1, A2: Byte;
+  { @param(L lutador)
+    @returns(os bits das teclas do quadro anterior) }
   function Prev(const L: TLutador): Byte;
   begin
     Result := 0;
@@ -32,11 +34,19 @@ var
   Sel: TColor;
   I, Y, E: Integer;
 
+  { Escreve o rotulo de uma linha do menu.
+    @param(R linha, 1..12)
+    @param(Cor cor do texto) }
   procedure Rot(R: Integer; Cor: TColor);
   begin
     texto(10, 45 + 15 * R, Linha(TxtConfig, Rotulo[R]), AEsq, 11, Cor);
   end;
 
+  { Escreve um valor de uma linha do menu.
+    @param(X esquerda)
+    @param(R linha, 1..12)
+    @param(Idx numero do texto em [Config])
+    @param(Cor cor do texto) }
   procedure Val(X, R, Idx: Integer; Cor: TColor);
   begin
     texto(X, 45 + 15 * R, Linha(TxtConfig, Idx), AEsq, 11, Cor);

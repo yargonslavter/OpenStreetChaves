@@ -1,0 +1,13 @@
+../../ChavesJogo.pas
+../../ChavesSDL.pas
+../../ChavesUTF8.pas
+../../game/ChavesConst.pas
+../../game/ChavesTipos.pas
+../../game/ChavesDados.pas
+../../game/ChavesTextos.pas
+../../game/ChavesFonte.pas
+../../game/ChavesGfx.pas
+../../game/ChavesSom.pas
+../../game/ChavesRoteiro.pas
+../../game/ChavesGolpes.pas
+../../game/ChavesConferencia.pas

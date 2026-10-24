@@ -1,5 +1,3 @@
-unit ChavesSom;
-
 { ChavesSom.pas - audio do jogo, 100% SDL2 (sem LCL, sem MCI, sem SDL2_mixer).
 
   Mixer proprio sobre um unico dispositivo de audio SDL (44100 Hz, 16 bits, estereo):
@@ -16,6 +14,8 @@ unit ChavesSom;
   Volume: cada som e carregado ja com o seu volume (em % do arquivo, 0..400; 100 = sem mudanca),
   aplicado uma vez nas amostras, com corte no maximo. }
 
+unit ChavesSom;
+
 {$mode delphi}{$H+}
 
 interface
@@ -29,8 +29,14 @@ type
     FDados: PSmallInt;      // amostras estereo S16 a 44100 Hz (2 por quadro)
     FQuadros: Integer;
   public
+    { Para as vozes que tocam este som e libera as amostras. }
     destructor Destroy; override;
+    { Para as vozes que tocam este som e libera as amostras (o som fica vazio). }
     procedure Limpar;
+    { Carrega um WAV (qualquer formato que o SDL leia), converte para o formato
+      do mixer (44100 Hz, 16 bits, estereo) e aplica o volume. Sem arquivo ou com erro o som fica vazio.
+      @param(Arquivo caminho do WAV (resolvido por ResolverCaminho))
+      @param(Volume volume em % do arquivo, 0..400 (100 = sem mudanca)) }
     procedure CarregarArquivo(const Arquivo: string; Volume: Integer = 100);
   end;
 
@@ -38,22 +44,45 @@ type
   private
     FSons: TList;           // de TAmostra
     FLoop: Boolean;
+    { Som pelo numero.
+      @param(Indice numero do som, a partir de 0)
+      @returns(o som, ou nil fora da faixa) }
     function Obter(Indice: Integer): TAmostra;
+    { @returns(quantos sons o banco tem (inclusive os vazios)) }
     function GetCount: Integer;
   public
+    { Cria um banco de sons vazio.
+      @param(ALoop True para os sons repetirem sem fim (musica)) }
     constructor Create(ALoop: Boolean = False);
+    { Para e libera todos os sons do banco. }
     destructor Destroy; override;
-    { novo som; '' ou arquivo inexistente = som vazio. Volume em % do arquivo (100 = sem mudanca). }
+    { Acrescenta um som ao fim do banco. O numero e reservado mesmo se o arquivo nao
+      existir, para manter a numeracao do jogo.
+      @param(Arquivo caminho do WAV; '' ou inexistente = som vazio)
+      @param(Volume volume em % do arquivo, 0..400 (100 = sem mudanca))
+      @returns(o numero do som novo) }
     function Adicionar(const Arquivo: string; Volume: Integer = 100): Integer;
-    { troca o conteudo de um som }
+    { Troca o conteudo de um som ja existente.
+      @param(Indice numero do som (fora da faixa = ignora))
+      @param(Arquivo caminho do WAV novo)
+      @param(Volume volume em % do arquivo, 0..400) }
     procedure Carregar(Indice: Integer; const Arquivo: string; Volume: Integer = 100);
+    { Toca um som do comeco. Se ele ja estiver tocando, a voz anterior e cortada (como
+      MaxPlayingCount = 1 no original); sem voz livre, rouba a mais antiga. Abre o audio na
+      primeira vez. Som vazio ou numero invalido nao faz nada.
+      @param(Indice numero do som) }
     procedure Tocar(Indice: Integer);
+    { Para todas as vozes de um som.
+      @param(Indice numero do som) }
     procedure Parar(Indice: Integer);
+    { Para todos os sons do banco. Sem uso no jogo atual. }
     procedure PararTodos;
     property Count: Integer read GetCount;
   end;
 
-{ Abre o dispositivo de audio (chamado sozinho no primeiro Tocar; pode ser chamado antes). }
+{ Abre o dispositivo de audio (44100 Hz, 16 bits, estereo). E chamado sozinho no primeiro
+  Tocar e so tenta uma vez.
+  @returns(True se o audio esta disponivel) }
 function SomIniciar: Boolean;
 
 implementation
@@ -83,6 +112,11 @@ var
 
 { ---- mixer (roda na thread de audio do SDL, que ja segura o lock do dispositivo) ---- }
 
+{ Mixer: chamado pelo SDL na thread de audio para preencher um bloco. Soma todas as vozes
+  ativas com saturacao em 16 bits, repetindo as de loop e desligando as que terminam.
+  @param(userdata nao usado)
+  @param(stream buffer de saida, amostras S16 estereo)
+  @param(len tamanho do buffer em bytes) }
 procedure CallbackAudio(userdata: Pointer; stream: pcuint8; len: cint); cdecl;
 var
   Total, I, V, N, K: Integer;
@@ -155,16 +189,20 @@ begin
   Result := True;
 end;
 
+{ Trava o dispositivo de audio (o callback espera) antes de mexer nas vozes. }
 procedure Travar;
 begin
   if GDev <> 0 then SDL_LockAudioDevice(GDev);
 end;
 
+{ Libera o dispositivo de audio travado por Travar. }
 procedure Destravar;
 begin
   if GDev <> 0 then SDL_UnlockAudioDevice(GDev);
 end;
 
+{ Desliga todas as vozes que tocam um som.
+  @param(Dono a TAmostra dona das vozes) }
 procedure CortarVozes(Dono: Pointer);
 var
   V: Integer;
@@ -194,7 +232,10 @@ begin
   FQuadros := 0;
 end;
 
-{ Multiplica as amostras por Volume/100, cortando no maximo do formato. }
+{ Multiplica as amostras por Volume/100, cortando no maximo do formato.
+  @param(Dados amostras S16)
+  @param(Amostras quantidade de amostras (nao de quadros))
+  @param(Volume volume em %, limitado a 0..400 (100 = nao mexe)) }
 procedure AplicarVolume(Dados: PSmallInt; Amostras, Volume: Integer);
 var
   I: Integer;

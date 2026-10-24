@@ -822,7 +822,6 @@ var
   O_Jog: Byte;
   MX, MY: Integer;
   RX, RY: Integer;
-  Giro: Boolean;
 begin
   P := @Lutador[Jog];
   O := @Lutador[3 - Jog];
@@ -833,10 +832,10 @@ begin
   begin
     if P.Lado = ldDireita then Empurra(Jog, -P.Recuo);
     if P.Lado = ldEsquerda then Empurra(Jog, P.Recuo);
-    if Random(2) = 0 then
+    if Sortear(2) = 0 then
     begin
-      RX := Random(40);
-      RY := Random(10);
+      RX := Sortear(40);
+      RY := Sortear(10);
       CriaEfeito(2, '', 0, RX + (P.X - 20), RY + P.Y);
     end;
   end;
@@ -884,8 +883,8 @@ begin
       P.GolpeAtivo := False;
       if O.Vida > 0 then
       begin
-        if P.ForcaGolpe = fgFraco then PausaImpacto := Random(4) + 2;
-        if P.ForcaGolpe = fgForte then PausaImpacto := Random(4) + 4;
+        if P.ForcaGolpe = fgFraco then PausaImpacto := Sortear(4) + 2;
+        if P.ForcaGolpe = fgForte then PausaImpacto := Sortear(4) + 4;
       end;
     end;
 
@@ -903,10 +902,6 @@ begin
       Inc(P.Acertos);
       P.TempoAcertos := 44;
       if (P.Acao = acAgChuteForte) or (P.Acao = acArChuteForte) then P.TempoAcertos := 50;
-      if (P.Personagem = pnQuico) and (P.Acao = acEspecial2) then P.TempoAcertos := 46;
-      if (P.Personagem = pnQuico) and (P.Acao = acEspecial3) then P.TempoAcertos := 47;
-      if (P.Personagem = pnProfGirafales) and (P.Acao = acEspecial5) then P.TempoAcertos := 50;
-      if (P.Personagem = pnGloria) and (P.Acao = acEspecial3) then P.TempoAcertos := 50;
       if (AvisoEntrada = 0) and not RelogioParado then
       begin
         O.Vida := O.Vida - P.DanoGolpe * NivelDano;
@@ -914,30 +909,17 @@ begin
       end;
       if Flash then
       begin
-        if (P.ForcaGolpe = fgFraco) and (Random(5) = 0) then FlashVermelho := 6;
-        if (P.ForcaGolpe = fgForte) and (Random(2) = 0) then FlashVermelho := 6;
+        if (P.ForcaGolpe = fgFraco) and (Sortear(5) = 0) then FlashVermelho := 6;
+        if (P.ForcaGolpe = fgForte) and (Sortear(2) = 0) then FlashVermelho := 6;
       end;
       if O.Vida <= 0 then
       begin
         SomPendente := sndAcertoForte;
         AcaoJogador(O_Jog, cmDerrubar);
       end;
-      // golpes que fazem o oponente girar no ar
-      Giro := ((P.Personagem = pnQuico) and (P.Acao = acEspecial5)) or
-              ((P.Personagem = pnDonaFlorinda) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 15)) or
-              ((P.Personagem = pnProfGirafales) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 22)) or
-              ((P.Personagem = pnPaty) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 14)) or
-              ((P.Personagem = pnNhonho) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 15)) or
-              ((P.Personagem = pnGodines) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 20)) or
-              ((P.Personagem = pnSrFurtado) and (P.Acao = acEspecial4) and (P.QuadroAcao >= 22));
-      if Giro then
-      begin
-        if O.Lado = ldDireita then O.VelAngular := -20;
-        if O.Lado = ldEsquerda then O.VelAngular := 20;
-      end;
       CriaEfeito(1, '', 0, MX + P.X, MY + (P.Y - P.AlturaSprite));
       // sangue
-      if (Sangue and (P.ForcaGolpe = fgForte) and (Random(5) = 0)) or CheatSatanas then
+      if (Sangue and (P.ForcaGolpe = fgForte) and (Sortear(5) = 0)) or CheatSatanas then
         CriaEfeito(10, '', 0, O.X, O.Y - (O.AlturaSprite - 40));
       // reacao do oponente
       if (P.Acao = acChuteFraco) or (P.Acao = acChuteForte) or (P.Acao = acAgSocoFraco) or (P.Acao = acAgChuteFraco) or (P.Acao = acAgSocoForte) then
@@ -947,18 +929,6 @@ begin
       if P.EhChute or (O.VelY <> 0) or (ChaoY > O.Y) then AcaoJogador(O_Jog, cmDerrubar);
       // recuo (empurrao) do oponente
       O.Recuo := 4;
-      if (P.Personagem = pnChaves) and (P.Acao = acEspecial2) and (P.ForcaGolpe = fgForte) then O.Recuo := 20;
-      if (P.Personagem = pnSeuMadruga) and (P.Acao = acEspecial2) and (P.ForcaGolpe = fgForte) then O.Recuo := 13;
-      if (P.Personagem = pnQuico) and (P.Acao = acEspecial5) then O.Recuo := 20;
-      if (P.Personagem = pnProfGirafales) and (P.Acao = acEspecial3) and (P.ForcaGolpe = fgForte) then O.Recuo := 25;
-      if (P.Personagem = pnSrBarriga) and (P.Acao = acEspecial3) and (P.ForcaGolpe = fgForte) then O.Recuo := 18;
-      if (P.Personagem = pnPaty) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 15) then O.Recuo := 25;
-      if (P.Personagem = pnNhonho) and (P.Acao = acEspecial4) and (P.ForcaGolpe = fgForte) then O.Recuo := 13;
-      if (P.Personagem = pnSrFurtado) and (P.Acao = acEspecial2) and (P.ForcaGolpe = fgForte) then O.Recuo := 25;
-      // lancamento para cima
-      if (P.Personagem = pnQuico) and (P.Acao = acEspecial5) then O.VelY := -30;
-      if (P.Personagem = pnDonaFlorinda) and (P.Acao = acEspecial5) and (P.QuadroAcao >= 15) then O.VelY := -30;
-      if (P.Personagem = pnGloria) and (P.Acao = acEspecial3) then O.VelY := -26;
       if P.ForcaGolpe = fgFraco then SomPendente := sndAcertoFraco;
       if P.ForcaGolpe = fgForte then SomPendente := sndAcertoForte;
       if P.ForcaGolpe = fgEspecial then SomPendente := sndAcertoEspecial;
@@ -974,40 +944,13 @@ begin
       O.DesenhaPorCima := False;
       P.GolpeAtivo := False;
       O.GolpeAtivo := False;
-      // golpes encadeados (continuam em outra acao)
-      if (P.Personagem = pnSeuMadruga) and (P.Acao = acEspecial4) then
-      begin
-        P.Acao := acEspecial5;
-        P.QuadroAcao := 0;
-        P.DuracaoAcao := 30;
-        O.GolpeAtivo := False;
-      end;
-      if (P.Personagem = pnSeuMadruga) and (P.Acao = acEspecial6) then
-      begin
-        P.Acao := acEspecial7;
-        P.QuadroAcao := 0;
-        P.DuracaoAcao := 40;
-        Inc(P.Acertos);
-        O.GolpeAtivo := False;
-      end;
-      if (P.Personagem = pnChiquinha) and (P.Acao = acEspecial5) then
-      begin
-        P.Acao := acEspecial6;
-        P.QuadroAcao := 0;
-        P.DuracaoAcao := 30;
-        O.GolpeAtivo := False;
-      end;
-      if (P.Personagem = pnSrBarriga) and (P.Acao = acEspecial5) then
-      begin
-        P.Acao := acEspecial6;
-        P.QuadroAcao := 0;
-        P.DuracaoAcao := 15;
-        O.GolpeAtivo := False;
-      end;
+      // regras de cada personagem quando o golpe acerta (Dados/Lutadores/CNN.rot, secao [Acerto]):
+      // tempo do combo, giro, recuo e lancamento do oponente, golpes que continuam em outra acao
+      ExecutarAcerto(Jog);
       if O.Vida > 0 then
       begin
-        if P.ForcaGolpe = fgFraco then PausaImpacto := Random(4) + 5;
-        if P.ForcaGolpe = fgForte then PausaImpacto := Random(4) + 7;
+        if P.ForcaGolpe = fgFraco then PausaImpacto := Sortear(4) + 5;
+        if P.ForcaGolpe = fgForte then PausaImpacto := Sortear(4) + 7;
       end;
       AtualizaQuadro(O_Jog);
     end;
@@ -1096,7 +1039,7 @@ begin
           P.Angulo := 0;
           P.VelAngular := 0;
           SomPendente := sndQueda;
-          if (P.Personagem = pnSrBarriga) or (P.Personagem = pnNhonho) then
+          if (P.Personagem <= FQtdLutadores) and FLutadores[P.Personagem].TremeAoCair then
           begin
             TremorTela := 20;
             for K := 1 to 20 do
@@ -1326,6 +1269,7 @@ begin
   L7_FimRound;
 
   for J := 1 to 2 do L7_Acertos(J);
+  
   if PausaImpacto > 0 then Dec(PausaImpacto);
   L7_Fisica;
   L7_Dialogo;

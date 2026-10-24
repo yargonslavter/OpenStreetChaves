@@ -6,6 +6,10 @@ var
   C, J, K, Ch, X, Y, N: Integer;
   K1, K2: Byte;
 
+  { Desenha um retrato, se existir.
+    @param(Indice numero em ImgRetrato)
+    @param(PX esquerda)
+    @param(PY topo) }
   procedure Retrato(Indice, PX, PY: Integer);
   begin
     if Indice < ImgRetrato.Count then

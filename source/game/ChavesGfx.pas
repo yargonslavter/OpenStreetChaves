@@ -1,5 +1,3 @@
-unit ChavesGfx;
-
 { ChavesGfx.pas - graficos do jogo em software (substitui o DXDraws da camada DelphiX).
 
   Tudo e desenhado num buffer ARGB (0xAARRGGBB) na memoria; quem apresenta o quadro na tela e o
@@ -12,6 +10,8 @@ unit ChavesGfx;
                    opcional por nome (ImgX.PorNome('Mesa'); nomes vem de Dados/Recursos.ini)
 
   Cor "TColor" = 0x00BBGGRR (como no Delphi); pixel = 0xAARRGGBB. }
+
+unit ChavesGfx;
 
 {$mode delphi}{$H+}
 {$POINTERMATH ON}
@@ -30,55 +30,231 @@ type
     FPix: array of Cardinal;
     FTransparentColor: TColor;
     FMap: array of Integer;           // buffer reutilizavel p/ mapeamento de colunas
+    { @param(X coluna)
+      @param(Y linha)
+      @returns(a cor do pixel; Preto fora da superficie) }
     function GetPixel(X, Y: Integer): TColor;
+    { @param(X coluna)
+      @param(Y linha)
+      @param(Value cor (fora da superficie = ignora)) }
     procedure SetPixel(X, Y: Integer; Value: TColor);
+    { Copia com mistura: base de Draw, StretchDraw, DrawAlpha, DrawAdd e DrawSub. Estica por
+      vizinho mais proximo e recorta nas bordas.
+      @param(Mode bmCopy, bmAlpha, bmAdd ou bmSub)
+      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Alpha intensidade, 0..255 (ignorada em bmCopy))
+      @returns(False se nada foi desenhado) }
     function DoBlit(Mode: TBlendMode; const DestRect, SrcRect: TRect;
       Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
+    { Copia girada com mistura: base de DrawRotate e variantes (mapeamento inverso, vizinho mais
+      proximo).
+      @param(Mode bmCopy, bmAlpha, bmAdd ou bmSub)
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo)
+      @param(W largura do destino)
+      @param(H altura do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(CenterX pivo horizontal como fracao do retangulo)
+      @param(CenterY pivo vertical como fracao do retangulo)
+      @param(Transparent True = pula os pixels da cor transparente)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado) }
     function DoRotate(Mode: TBlendMode; X, Y, W, H: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle, Alpha: Integer): Boolean;
+    { Desenha um retangulo de cantos arredondados (com RX/RY do tamanho do retangulo vira elipse),
+      como o RoundRect do GDI.
+      @param(X1 esquerda)
+      @param(Y1 topo)
+      @param(X2 direita (exclusiva))
+      @param(Y2 base (exclusiva))
+      @param(RX largura da elipse dos cantos)
+      @param(RY altura da elipse dos cantos)
+      @param(CorBorda cor do contorno)
+      @param(CorFundo cor do preenchimento)
+      @param(Preencher False = so o contorno) }
     procedure Forma(X1, Y1, X2, Y2, RX, RY: Integer; CorBorda, CorFundo: TColor;
       Preencher: Boolean);
   public
+    { Cria uma superficie vazia (0 x 0) com cor transparente Preto. }
     constructor Create;
+    { Muda o tamanho e pinta tudo de preto.
+      @param(AWidth largura (negativo = 0))
+      @param(AHeight altura (negativo = 0)) }
     procedure SetSize(AWidth, AHeight: Integer);
+    { Pinta a superficie inteira de uma cor. Sem uso no jogo atual.
+      @param(Color a cor) }
     procedure Fill(Color: TColor);
-    { carrega um BMP (1/4/8/16/24/32 bits) para a superficie; False se o arquivo nao existe/invalido }
+    { Carrega um BMP (1/4/8/16/24/32 bits, RLE e BITFIELDS) para a superficie, trocando o tamanho.
+      @param(Arquivo caminho do BMP (resolvido por ResolverCaminho))
+      @returns(False se o arquivo nao existe ou e invalido (a superficie fica 0 x 0))
+      @raises(Exception BMP corrompido ou num formato nao suportado) }
     function CarregarBMP(const Arquivo: string): Boolean;
+    { @param(Y linha (sem conferencia de faixa))
+      @returns(o endereco do primeiro pixel da linha (ARGB)) }
     function ScanLine(Y: Integer): PCardinal;
-    { Draw: copia SrcRect de Image para (X,Y) }
+    { Copia uma regiao de outra superficie para (X, Y), no mesmo tamanho.
+      @param(X esquerda do destino)
+      @param(Y topo do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @returns(False se nada foi desenhado) }
     function Draw(X, Y: Integer; const SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean): Boolean; overload;
+    { Copia outra superficie inteira para (X, Y).
+      @param(X esquerda do destino)
+      @param(Y topo do destino)
+      @param(Image superficie de origem (nil = nada))
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @returns(False se nada foi desenhado) }
     function Draw(X, Y: Integer; Image: TSuperficie; Transparent: Boolean): Boolean; overload;
+    { Copia uma regiao de outra superficie esticando para o retangulo de destino.
+      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @returns(False se nada foi desenhado) }
     function StretchDraw(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean): Boolean;
     { Alpha: 0..255 }
+    { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
+      forem diferentes), misturando com o fundo pela opacidade Alpha.
+      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
     function DrawAlpha(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean; Alpha: Integer): Boolean;
+    { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
+      forem diferentes), somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
     function DrawAdd(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean; Alpha: Integer): Boolean;
+    { Copia uma regiao de outra superficie para um retangulo desta (esticando se os tamanhos
+      forem diferentes), subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(DestRect retangulo de destino (largura ou altura negativa espelha))
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado (imagem vazia ou fora da tela)) }
     function DrawSub(const DestRect, SrcRect: TRect; Image: TSuperficie;
       Transparent: Boolean; Alpha: Integer): Boolean;
-    { Angle: 0..255 = 0..360 graus. CenterX/CenterY: pivo como fracao do retangulo (0.5 = centro). }
+    { Desenha uma regiao de outra superficie girada em torno de um pivo, copiando.
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo do retangulo de destino)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical como fracao do retangulo)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @returns(False se nada foi desenhado) }
     function DrawRotate(X, Y, Width, Height: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle: Integer): Boolean;
+    { Desenha uma regiao de outra superficie girada em torno de um pivo, misturando com o fundo pela opacidade Alpha. Sem uso no jogo atual.
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo do retangulo de destino)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical como fracao do retangulo)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado) }
     function DrawRotateAlpha(X, Y, Width, Height: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle, Alpha: Integer): Boolean;
+    { Desenha uma regiao de outra superficie girada em torno de um pivo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo do retangulo de destino)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical como fracao do retangulo)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado) }
     function DrawRotateAdd(X, Y, Width, Height: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle, Alpha: Integer): Boolean;
+    { Desenha uma regiao de outra superficie girada em torno de um pivo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo do retangulo de destino)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(SrcRect regiao de Image)
+      @param(Image superficie de origem)
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical como fracao do retangulo)
+      @param(Transparent True = pula os pixels da cor transparente de Image)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255)
+      @returns(False se nada foi desenhado) }
     function DrawRotateSub(X, Y, Width, Height: Integer; const SrcRect: TRect;
       Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean;
       Angle, Alpha: Integer): Boolean;
     { primitivas (X2/Y2 exclusivos, como no Delphi) }
+
+    { Pinta um retangulo (recortado nas bordas).
+      @param(R retangulo (Right e Bottom exclusivos, como no Delphi))
+      @param(Cor a cor) }
     procedure PreencherRect(const R: TRect; Cor: TColor);
+    { Desenha o contorno de um retangulo, com 1 pixel de espessura.
+      @param(R retangulo (Right e Bottom exclusivos))
+      @param(Cor a cor) }
     procedure Moldura(const R: TRect; Cor: TColor);
+    { Retangulo de cantos arredondados, preenchido, como o RoundRect do GDI.
+      @param(X1 esquerda)
+      @param(Y1 topo)
+      @param(X2 direita (exclusiva))
+      @param(Y2 base (exclusiva))
+      @param(RX largura da elipse dos cantos)
+      @param(RY altura da elipse dos cantos)
+      @param(CorBorda cor do contorno)
+      @param(CorFundo cor do preenchimento) }
     procedure RoundRect(X1, Y1, X2, Y2, RX, RY: Integer; CorBorda, CorFundo: TColor);
+    { Elipse inscrita no retangulo.
+      @param(X1 esquerda)
+      @param(Y1 topo)
+      @param(X2 direita (exclusiva))
+      @param(Y2 base (exclusiva))
+      @param(CorBorda cor do contorno)
+      @param(CorFundo cor do preenchimento)
+      @param(Preencher False = so o contorno) }
     procedure Elipse(X1, Y1, X2, Y2: Integer; CorBorda, CorFundo: TColor; Preencher: Boolean);
-    { texto da fonte do atlas (sombra e feita por quem chama); Tam = tamanho em pontos }
+    { Escreve um texto com a fonte do atlas, com anti-serrilhado (a sombra e feita por quem chama).
+      @param(X esquerda)
+      @param(Y topo da celula do texto)
+      @param(S texto em UTF-8)
+      @param(Tam tamanho da fonte em pontos)
+      @param(Cor cor do texto) }
     procedure Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor);
+    { @param(S texto em UTF-8)
+      @param(Tam tamanho da fonte)
+      @returns(a largura do texto em pixels) }
     function LarguraTexto(const S: string; Tam: Integer): Integer;
     property Width: Integer read FWidth;
     property Height: Integer read FHeight;
@@ -93,32 +269,122 @@ type
     FTransparentColor: TColor;
     FPatternWidth, FPatternHeight: Integer;
     FPatterns: array of TRect;
+    { @param(Value nova cor transparente (vale tambem para a superficie interna)) }
     procedure SetTransparentColor(Value: TColor);
+    { Divide a superficie numa grade de padroes (quadros) de FPatternWidth x FPatternHeight,
+      da esquerda para a direita e de cima para baixo (0 = a imagem inteira). }
     procedure MontarPadroes;
+    { @returns(quantos padroes (quadros) a imagem tem) }
     function GetPatternCount: Integer;
+    { @param(I numero do padrao)
+      @returns(o retangulo do padrao na superficie; vazio fora da faixa) }
     function GetPatternRect(I: Integer): TRect;
+    { @returns(a largura de um padrao (ou da imagem inteira)) }
     function GetWidth: Integer;
+    { @returns(a altura de um padrao (ou da imagem inteira)) }
     function GetHeight: Integer;
   public
+    { Cria uma imagem vazia, transparente, com cor transparente Branco. }
     constructor Create;
+    { Libera a superficie interna. }
     destructor Destroy; override;
-    { carrega um BMP; PW/PH = tamanho de cada quadro da folha (0 = imagem inteira) }
+    { Carrega um BMP e divide em padroes (quadros).
+      @param(Arquivo caminho do BMP)
+      @param(Transparente True = a cor CorTransp nao e desenhada)
+      @param(CorTransp cor transparente)
+      @param(PW largura de cada quadro da folha (0 = imagem inteira))
+      @param(PH altura de cada quadro da folha (0 = imagem inteira)) }
     procedure CarregarArquivo(const Arquivo: string; Transparente: Boolean; CorTransp: TColor;
       PW: Integer = 0; PH: Integer = 0);
-    { preenche com a regiao [X1,X2) x [Y1,Y2) de Src, opcionalmente espelhada na horizontal }
+    { Preenche a imagem com uma regiao de outra superficie (um unico padrao).
+      @param(Src superficie de origem)
+      @param(X1 esquerda da regiao)
+      @param(Y1 topo da regiao)
+      @param(X2 direita da regiao (exclusiva))
+      @param(Y2 base da regiao (exclusiva))
+      @param(Mirror True = espelha na horizontal)
+      @param(Transparente True = a cor CorTransp nao e desenhada)
+      @param(CorTransp cor transparente) }
     procedure AtribuirRegiao(Src: TSuperficie; X1, Y1, X2, Y2: Integer; Mirror: Boolean;
       Transparente: Boolean; CorTransp: TColor);
+    { Desenha um padrao (quadro) da imagem em (X, Y).
+      @param(Surface superficie de destino)
+      @param(X esquerda)
+      @param(Y topo)
+      @param(PatternIndex numero do padrao (fora da faixa = nada)) }
     procedure Draw(Surface: TSuperficie; X, Y, PatternIndex: Integer);
+    { Desenha um padrao (quadro) da imagem esticado no retangulo.
+      @param(Surface superficie de destino)
+      @param(DestRect retangulo de destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada)) }
     procedure StretchDraw(Surface: TSuperficie; const DestRect: TRect; PatternIndex: Integer);
+    { Desenha um padrao (quadro) da imagem esticado no retangulo, misturando com o fundo pela opacidade Alpha.
+      @param(Surface superficie de destino)
+      @param(DestRect retangulo de destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(Alpha intensidade, 0..255) }
     procedure DrawAlpha(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
+    { Desenha um padrao (quadro) da imagem esticado no retangulo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(Surface superficie de destino)
+      @param(DestRect retangulo de destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(Alpha intensidade, 0..255) }
     procedure DrawAdd(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
+    { Desenha um padrao (quadro) da imagem esticado no retangulo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(Surface superficie de destino)
+      @param(DestRect retangulo de destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(Alpha intensidade, 0..255) }
     procedure DrawSub(Surface: TSuperficie; const DestRect: TRect; PatternIndex, Alpha: Integer);
+    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, copiando.
+      @param(Surface superficie de destino)
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical)
+      @param(Angle angulo, 0..255 = 0..360 graus) }
     procedure DrawRotate(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
       CenterX, CenterY: Double; Angle: Integer);
+    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, misturando com o fundo pela opacidade Alpha. Sem uso no jogo atual.
+      @param(Surface superficie de destino)
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255) }
     procedure DrawRotateAlpha(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
       CenterX, CenterY: Double; Angle, Alpha: Integer);
+    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, somando as cores ao fundo (clareia), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(Surface superficie de destino)
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255) }
     procedure DrawRotateAdd(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
       CenterX, CenterY: Double; Angle, Alpha: Integer);
+    { Desenha um padrao (quadro) da imagem girado em torno de um pivo, subtraindo as cores do fundo (escurece), proporcionalmente a Alpha. Sem uso no jogo atual.
+      @param(Surface superficie de destino)
+      @param(X esquerda do retangulo de destino (antes de girar))
+      @param(Y topo)
+      @param(Width largura do destino)
+      @param(Height altura do destino)
+      @param(PatternIndex numero do padrao (fora da faixa = nada))
+      @param(CenterX pivo horizontal como fracao do retangulo (0.5 = centro))
+      @param(CenterY pivo vertical)
+      @param(Angle angulo, 0..255 = 0..360 graus)
+      @param(Alpha intensidade, 0..255) }
     procedure DrawRotateSub(Surface: TSuperficie; X, Y, Width, Height, PatternIndex: Integer;
       CenterX, CenterY: Double; Angle, Alpha: Integer);
     property Surface: TSuperficie read FSurface;
@@ -136,24 +402,40 @@ type
     FLista: TList;
     FNomes: TStringList;     // nome -> indice (em Objects), ordenada, sem diferenciar maiusculas
     FVazia: TImagem;         // devolvida por PorNome quando o nome nao existe (nao desenha nada)
+    { @param(Indice numero da imagem (sem conferencia de faixa))
+      @returns(a imagem) }
     function GetItem(Indice: Integer): TImagem;
+    { @returns(quantas imagens a lista tem) }
     function GetCount: Integer;
   public
+    { Cria uma lista vazia. }
     constructor Create;
+    { Libera todas as imagens da lista. }
     destructor Destroy; override;
+    { Acrescenta uma imagem vazia ao fim da lista.
+      @param(Nome nome para PorNome ('' = sem nome))
+      @returns(a imagem nova (a lista e a dona)) }
     function Adicionar(const Nome: string = ''): TImagem;
-    { da mais um nome a imagem Indice }
+    { Da mais um nome a uma imagem (um nome repetido e ignorado).
+      @param(Nome nome ('' = ignora))
+      @param(Indice numero da imagem (fora da faixa = ignora)) }
     procedure Apelidar(const Nome: string; Indice: Integer);
-    { indice da imagem com esse nome; -1 se nao existir }
+    { @param(Nome nome da imagem (sem diferenciar maiusculas))
+      @returns(o numero da imagem, ou -1 se nao existir) }
     function IndiceDe(const Nome: string): Integer;
-    { imagem com esse nome; se nao existir, uma imagem vazia (desenhar nao faz nada) }
+    { @param(Nome nome da imagem (sem diferenciar maiusculas))
+      @returns(a imagem; se nao existir, uma imagem vazia (desenhar nao faz nada)) }
     function PorNome(const Nome: string): TImagem;
     property Count: Integer read GetCount;
     property Items[Indice: Integer]: TImagem read GetItem; default;
   end;
 
 { Conversoes de cor }
+{ @param(C cor TColor ($00BBGGRR))
+  @returns(o pixel opaco $FFRRGGBB) }
 function CorParaPixel(C: TColor): Cardinal;
+{ @param(P pixel $AARRGGBB)
+  @returns(a cor TColor ($00BBGGRR), sem o alfa) }
 function PixelParaCor(P: Cardinal): TColor;
 
 implementation
@@ -174,15 +456,33 @@ type
     FWidth, FHeight: Integer;
     FPix: array of Cardinal;
     FOnChange: TNotifyEvent;
+    { @returns(o proprio objeto (mantem a sintaxe Picture.Graphic do codigo original)) }
     function GetGraphic: TLeitorBMP;
+    { @returns(True se a imagem nao tem pixels) }
     function GetEmpty: Boolean;
+    { Avisa OnChange, se houver. }
     procedure Changed;
   public
+    { Copia outra imagem (nil = limpa). Sem uso no jogo atual.
+      @param(Source um TLeitorBMP ou nil) }
     procedure Assign(Source: TPersistent); override;
+    { Esvazia a imagem. }
     procedure Clear;
+    { Muda o tamanho e pinta tudo de preto.
+      @param(AWidth largura)
+      @param(AHeight altura) }
     procedure SetSize(AWidth, AHeight: Integer);
+    { Le um arquivo BMP.
+      @param(FileName caminho do arquivo)
+      @raises(Exception arquivo inexistente, corrompido ou num formato nao suportado) }
     procedure LoadFromFile(const FileName: string);
+    { Le um BMP de 1, 4, 8, 16, 24 ou 32 bits (sem compressao, RLE4/RLE8 ou BITFIELDS, cabecalho
+      OS/2 ou Windows) da posicao atual ate o fim do stream. O alfa de 32 bits e ignorado.
+      @param(Stream origem)
+      @raises(ELeitorBMP arquivo invalido ou formato nao suportado) }
     procedure LoadFromStream(Stream: TStream);
+    { @param(Y linha (0 = topo; sem conferencia de faixa))
+      @returns(o endereco do primeiro pixel da linha) }
     function ScanLine(Y: Integer): PCardinal;
     property Graphic: TLeitorBMP read GetGraphic;
     property Empty: Boolean read GetEmpty;
@@ -262,17 +562,24 @@ end;
 
 { ---- leitor de BMP ---- }
 
+{ @param(P endereco)
+  @returns(o word little-endian em P) }
 function Le16(P: PByte): Integer; inline;
 begin
   Result := P[0] or (P[1] shl 8);
 end;
 
+{ @param(P endereco)
+  @returns(o inteiro de 32 bits little-endian em P) }
 function Le32(P: PByte): Integer; inline;
 begin
   Result := Integer(Cardinal(P[0]) or (Cardinal(P[1]) shl 8) or (Cardinal(P[2]) shl 16) or (Cardinal(P[3]) shl 24));
 end;
 
-{ amplia um campo de mascara (ex.: 5 bits) para 8 bits }
+{ Amplia um campo de mascara de bits (ex.: 5 bits do RGB565) para 0..255.
+  @param(V pixel lido)
+  @param(Mascara mascara do campo (0 = sempre 0))
+  @returns(o componente em 8 bits) }
 function CampoPara8(V: Cardinal; Mascara: Cardinal): Cardinal;
 var
   Sh, Bits: Integer;
@@ -308,11 +615,17 @@ var
   Linha: PCardinal;
   V: Cardinal;
 
+  { @param(R vermelho)
+    @param(G verde)
+    @param(B azul)
+    @returns(o pixel opaco $FFRRGGBB) }
   function Pix(R, G, B: Cardinal): Cardinal;
   begin
     Result := $FF000000 or (R shl 16) or (G shl 8) or B;
   end;
 
+  { Descompacta os pixels RLE do BMP (de baixo para cima) usando a paleta.
+    @param(Is4 True = RLE4; False = RLE8) }
   procedure DecodificaRLE(Is4: Boolean);
   var
     Pos, Px, Py, N, B1, B2, J, Dx, Dy, Idx: Integer;
@@ -521,11 +834,18 @@ type
 var
   GMaskCache: TStringList = nil;
 
+{ @param(Tam tamanho da fonte)
+  @param(S texto)
+  @returns(a chave do cache de mascaras) }
 function ChaveTexto(Tam: Integer; const S: string): string;
 begin
   Result := IntToStr(Tam) + '|' + S;
 end;
 
+{ Mascara de um texto, guardada num cache (limpo ao passar de 600 textos).
+  @param(Tam tamanho da fonte)
+  @param(S texto em UTF-8)
+  @returns(a mascara (o cache e o dono)) }
 function GetTextMask(Tam: Integer; const S: string): TTextMask;
 var
   Key: string;
@@ -926,6 +1246,10 @@ var
   CY, DYf, Ins: Double;
   FC, PC: Cardinal;
 
+  { Pinta um pixel, se estiver dentro da superficie.
+    @param(PX coluna)
+    @param(PY linha)
+    @param(C pixel ARGB) }
   procedure Put(PX, PY: Integer; C: Cardinal);
   begin
     if (PX >= 0) and (PY >= 0) and (PX < FWidth) and (PY < FHeight) then

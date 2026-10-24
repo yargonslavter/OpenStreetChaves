@@ -27,12 +27,16 @@ var
   Log: TStringList;
   Raiz, Arquivo: string;
 
+{ Mostra uma linha no console e guarda no relatorio (GeraFonte.log).
+  @param(S a linha) }
 procedure Escreve(const S: string);
 begin
   WriteLn(S);
   Log.Add(S);
 end;
 
+{ @returns(a pasta do jogo (a que tem o Chaves.exe, subindo ate 8 niveis a partir do executavel);
+  sem achar, a pasta do executavel) }
 function AcharRaiz: string;
 var
   Dir: string;
@@ -48,11 +52,16 @@ begin
   Result := ExtractFilePath(ParamStr(0));
 end;
 
+{ @param(Codigo codigo Unicode (ate $FFFF))
+  @returns(o caractere em UTF-8) }
 function Utf8De(Codigo: Cardinal): string;
 begin
   Result := UTF8Encode(UnicodeString(WideChar(Codigo)));
 end;
 
+{ Desenha as letras 32..126 e 160..255 num tamanho de fonte e acrescenta ao atlas (avanco,
+  deslocamento e cobertura recortada).
+  @param(Tam tamanho da fonte) }
 procedure GeraTamanho(Tam: Integer);
 var
   Cod: Cardinal;
@@ -101,7 +110,9 @@ begin
   end;
 end;
 
-{ compara, para todos os textos do jogo, o desenho do sistema com o do atlas }
+{ Compara, para todos os textos e tamanhos, o desenho do sistema com o montado pelo atlas e
+  escreve o resultado no relatorio.
+  @param(Textos textos a conferir) }
 procedure Confere(Textos: TStringList);
 var
   T, I, Dif, MaxDif, Erros, Total, WA, HA, WB, HB, J, D, Maior: Integer;

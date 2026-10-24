@@ -44,6 +44,10 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
   e `CNN.rot` (`[Acao]`, `[Quadro]`), executados por `ChavesRoteiro`; `ChavesGolpes.pas` caiu de 6.696 para ~840 linhas.
   Com `CONFERIR_ROTEIRO` (em `ChavesGolpes.pas`) o jogo roda tambem o codigo antigo (`ChavesGolpesAntigo.inc`), com
   os mesmos sorteios, e anota as diferencas em `conferencia.log`.
+- A IA (`TJogo.cpu`) virou roteiro `[IA]` (`Comum.rot` e `CNN.rot`); o jogo so calcula as entradas (distancias,
+  ameaca de projetil, dificuldade). A conferencia virou a unidade `ChavesConferencia` (reaproveitavel).
+- As regras de personagem de `L7_Acertos` viraram a secao `[Acerto]` dos `CNN.rot`, e o tremor ao cair (Sr. Barriga e
+  Nhonho) virou `[Geral] TremeAoCair` no `CNN.ini`: o codigo da luta nao cita mais nenhum personagem.
 - A LCL saiu tambem do `.lpr` e do `.lpi`; o UTF-8 como padrao (que a LCL ligava) ficou em `ChavesUTF8.pas`.
 
 ## Proximos passos

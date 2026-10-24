@@ -1,5 +1,3 @@
-unit ChavesTextos;
-
 { Textos do jogo, lidos de Dados/Textos/<idioma>.ini (PT.ini = idioma 1, ES.ini = idioma 2).
 
   Formato (UTF-8, sem BOM de preferencia):
@@ -13,6 +11,8 @@ unit ChavesTextos;
   O arquivo e lido sem o TIniFile de proposito: o TIniFile apara espacos nas pontas e o
   jogo depende deles para alinhar alguns textos. }
 
+unit ChavesTextos;
+
 {$mode delphi}{$H+}
 
 interface
@@ -20,14 +20,27 @@ interface
 uses
   Classes, SysUtils, ChavesDados;
 
-{ Substitui o conteudo das listas pelo texto do idioma (1 = portugues, 2 = espanhol). }
+{ Le Dados/Textos/PT.ini ou ES.ini e substitui o conteudo das listas pelos textos
+  do idioma. A secao [Interface] fica guardada para TextoInterface.
+  @param(Idioma 1 = portugues, 2 = espanhol)
+  @param(Nomes recebe a secao [Nomes] (nomes dos lutadores))
+  @param(Texto recebe a secao [Texto] (textos gerais das telas))
+  @param(Config recebe a secao [Config] (tela de configuracao))
+  @param(Frases recebe a secao [Frases] (frases da abertura e de vitoria))
+  @param(Dialogo recebe a secao [Dialogo] (falas antes da luta))
+  @param(Finais recebe a secao [Finais] (textos dos finais))
+  @param(Cenarios recebe a secao [Cenarios] (nomes dos cenarios)) }
 procedure CarregarTextos(Idioma: Integer; Nomes, Texto, Config, Frases, Dialogo,
   Finais, Cenarios: TStrings);
 
-{ Texto da secao [Interface] do idioma carregado por ultimo ('' se nao existir). }
+{ Texto da secao [Interface] do idioma carregado por ultimo.
+  @param(Chave nome do texto)
+  @returns(o texto, ou '' se nao existir) }
 function TextoInterface(const Chave: string): string;
 
-{ Acrescenta a Dest todos os textos da secao [Interface] (usado pela ferramenta GeraFonte). }
+{ Acrescenta a Dest todos os textos da secao [Interface] (usado pela ferramenta
+  GeraFonte para saber quais letras gerar).
+  @param(Dest lista que recebe os textos (o conteudo anterior e mantido)) }
 procedure ListarInterface(Dest: TStrings);
 
 implementation
@@ -35,8 +48,12 @@ implementation
 var
   Interface_: TStringList;     // Chave=Texto da secao [Interface]
 
-{ Separa "chave=valor": a chave sem espacos nas pontas, o valor exatamente como esta
-  (tirando um par de aspas que envolva o valor inteiro). }
+{ Separa uma linha "chave=valor": a chave sem espacos nas pontas e o valor exatamente
+  como esta, tirando um par de aspas que envolva o valor inteiro.
+  @param(L linha do arquivo)
+  @param(Chave recebe a chave)
+  @param(Valor recebe o valor)
+  @returns(False se a linha nao tem '=' depois de pelo menos um caractere) }
 function SepararLinha(const L: string; out Chave, Valor: string): Boolean;
 var
   P: Integer;
@@ -50,6 +67,10 @@ begin
     Valor := Copy(Valor, 2, Length(Valor) - 2);
 end;
 
+{ Coloca um texto na posicao Indice da lista, criando linhas vazias ate la.
+  @param(Dest lista de destino (nil = ignora))
+  @param(Indice posicao (negativo = ignora))
+  @param(Valor texto) }
 procedure Guardar(Dest: TStrings; Indice: Integer; const Valor: string);
 begin
   if (Dest = nil) or (Indice < 0) then Exit;

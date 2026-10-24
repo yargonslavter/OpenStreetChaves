@@ -12,6 +12,7 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   - `ChavesTextos.pas` - lê os textos de `Dados/Textos/<idioma>.ini`;
   - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`) e leitor de BMP;
   - `ChavesRoteiro.pas` - interpretador dos roteiros `.rot` dos lutadores (Pascal simplificado);
+  - `ChavesConferencia.pas` - compara código antigo e roteiro novo (diretiva `CONFERIR_ROTEIRO`, `conferencia.log`);
   - `ChavesFonte.pas` - texto pelo atlas de glifos (`Fontes/ComicSansMS.atlas`), usado também pela GeraFonte;
   - `ChavesSom.pas` - áudio (`TBancoSom`, mixer sobre o áudio do SDL);
   - `Comum_*.inc` - partes compartilhadas (desenho, recursos, sprites, início, quadro, entrada, SDL);
@@ -35,8 +36,9 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
     `[CentroX]`, `[Corpo]` e `[Ataque]` (centro do sprite e caixas de colisão de cada quadro, lidos por
     `ChavesGolpes`).
   - `Lutadores/Comum.rot` e `Lutadores/CNN.rot` - roteiros dos lutadores, em Pascal simplificado: `[Acao]`
-    (`AcaoJogador`: quando cada ação pode começar) e `[Quadro]` (`AtualizaQuadro`: sprite de cada quadro, efeitos,
-    sons e movimento de cada golpe). `Comum.rot` tem o que vale para todos (andar, golpes básicos, defesa, apanhar)
+    (`AcaoJogador`: quando cada ação pode começar), `[Quadro]` (`AtualizaQuadro`: sprite de cada quadro, efeitos,
+    sons e movimento de cada golpe), `[IA]` (quando o computador usa cada golpe) e `[Acerto]` (o que muda quando
+    o golpe acerta: combo, giro, recuo, lançamento, golpes encadeados). `Comum.rot` tem o que vale para todos (andar, golpes básicos, defesa, apanhar)
     e cada `CNN.rot` os golpes especiais do personagem. A sintaxe está explicada no começo de `Comum.rot`; um erro aparece ao abrir o
     jogo, com o arquivo e a linha.
   - `Cenarios/Cenario-NN.ini` - dados de cada cenário: animações do fundo (`[AnimacaoN]`, com os personagens
@@ -66,6 +68,29 @@ O estado atual (`Estado`, constantes `CHS_*` em `ChavesConst`) decide qual `Esta
   P2 = W A S D + R T Y U.
 - Controles: o host lê gamepads (`SDL_GameController`) e joysticks genéricos (`SDL_Joystick`) e entrega os bits ao jogo
   (`EntradaControle`); eles são somados aos do teclado em `TecP1` / `TecP2`.
+
+## Documentação do código
+Cada rotina tem um comentário no padrão do [PasDoc](https://pasdoc.github.io), logo antes da declaração
+(na `interface` da unit, na declaração da classe para métodos, ou antes da própria rotina quando ela só existe
+na `implementation`):
+
+```pascal
+{ Monta um nome de arquivo trocando a sequencia de '#' por N com zeros a esquerda.
+  @param(Padrao nome com uma sequencia de '#')
+  @param(N numero a colocar no lugar dos '#')
+  @returns(o nome montado)
+  @raises(ERoteiro quando ha erro) }
+function ArquivoNN(const Padrao: string; N: Integer): string;
+```
+
+Regras: o texto vem antes da declaração; `@param(Nome descrição)` para cada parâmetro (os `out`/`var` dizem
+"recebe ..."); `@returns(...)` para funções; `@raises(Classe quando)` para exceções; sem `}` dentro do texto
+(fecharia o comentário) e `@@` para escrever um `@`. Comentários de seção (`{ --- luta --- }`) ficam separados
+por uma linha em branco.
+
+Para gerar o HTML: instale o PasDoc e rode `tools/Documentacao/gerar.sh` (ou `gerar.bat` no Windows); o resultado
+fica em `tools/Documentacao/html/index.html`. O PasDoc mostra o que está na `interface` e nas classes (inclusive os
+métodos privados de `TJogo`); as rotinas internas da `implementation` ficam documentadas só no código.
 
 ## Dicas
 - Não é preciso instalar nenhum pacote do Lazarus além do próprio Lazarus.

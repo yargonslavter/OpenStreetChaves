@@ -1,5 +1,3 @@
-unit ChavesFonte;
-
 { ChavesFonte.pas - texto a partir de um ATLAS de glifos pre-renderizados (sem fonte do sistema, sem LCL).
 
   O original desenhava com a fonte "Comic Sans MS" do Windows. Aqui cada letra, em cada um dos
@@ -11,6 +9,8 @@ unit ChavesFonte;
     nome da fonte (1 byte de tamanho + texto), numero de tamanhos (word) e, para cada tamanho:
     tamanho (word), altura da celula (word), numero de glifos (word) e por glifo:
     codigo Unicode (dword), avanco, xoff, yoff (smallint), largura, altura (word), cobertura (w*h bytes). }
+
+unit ChavesFonte;
 
 {$mode delphi}{$H+}
 
@@ -30,17 +30,50 @@ type
   end;
 
 { leitura }
+{ Carrega um atlas de glifos (arquivo 'CHFNT1' gerado pela ferramenta GeraFonte),
+  substituindo o atlas atual.
+  @param(Arquivo caminho do arquivo da fonte)
+  @returns(True se carregou pelo menos um tamanho; em erro o atlas fica vazio) }
 function FonteCarregar(const Arquivo: string): Boolean;
+{ Diz se ha um atlas carregado.
+  @returns(True se ha pelo menos um tamanho de fonte) }
 function FonteDisponivel: Boolean;
-{ True se o atlas carregado e da fonte pedida (comparacao sem diferenciar maiusculas) }
+{ Diz se o atlas carregado e da fonte pedida (sem diferenciar maiusculas).
+  @param(NomeFonte nome da fonte, por exemplo 'Comic Sans MS')
+  @returns(True se ha atlas e o nome bate) }
 function FonteServe(const NomeFonte: string): Boolean;
+{ Desenha um texto como mascara de cobertura (0 = fundo, 255 = tinta cheia), somando
+  as larguras de avanco dos glifos como o GDI do original. Letras que faltam viram '?'.
+  @param(Tam tamanho da fonte; usa o tamanho exato ou o mais proximo do atlas)
+  @param(S texto em UTF-8)
+  @param(W recebe a largura da mascara (no minimo 1))
+  @param(H recebe a altura da mascara (a altura da celula do tamanho; no minimo 1))
+  @param(Dados recebe W*H bytes, linha a linha) }
 procedure FonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dados: TMascara);
+{ Largura de um texto, em pixels, somando os avancos dos glifos.
+  @param(Tam tamanho da fonte)
+  @param(S texto em UTF-8)
+  @returns(a largura; 0 sem atlas) }
 function FonteLargura(Tam: Integer; const S: string): Integer;
+{ Altura da celula de um tamanho de fonte.
+  @param(Tam tamanho da fonte (exato ou o mais proximo))
+  @returns(a altura em pixels; 0 sem atlas) }
 function FonteAltura(Tam: Integer): Integer;
 
 { gravacao (usada so pela ferramenta GeraFonte) }
+
+{ Comeca um atlas novo, vazio (so para a ferramenta GeraFonte).
+  @param(NomeFonte nome gravado no arquivo) }
 procedure FonteIniciar(const NomeFonte: string);
+{ Acrescenta um glifo ao atlas em montagem, criando o tamanho se preciso
+  (so para a ferramenta GeraFonte).
+  @param(Tam tamanho da fonte)
+  @param(AlturaCelula altura da celula, usada so quando o tamanho e criado)
+  @param(G o glifo (codigo, metricas e cobertura)) }
 procedure FonteAdicionar(Tam, AlturaCelula: Integer; const G: TGlifo);
+{ Grava o atlas em montagem no formato 'CHFNT1' (zlib), ordenando os glifos por codigo
+  (so para a ferramenta GeraFonte). Cria a pasta se preciso.
+  @param(Arquivo caminho do arquivo a gravar) }
 procedure FonteSalvar(const Arquivo: string);
 
 implementation
@@ -68,6 +101,9 @@ begin
   Result := (Length(GTam) > 0) and SameText(NomeFonte, GNome);
 end;
 
+{ Procura no atlas o tamanho de fonte pedido.
+  @param(Tam tamanho desejado)
+  @returns(o indice em GTam do tamanho exato ou do mais proximo; -1 sem atlas) }
 function AcharTamanho(Tam: Integer): Integer;
 var
   I, Melhor, D, DMelhor: Integer;
@@ -87,6 +123,10 @@ begin
   Result := Melhor;        // tamanho exato, ou o mais proximo
 end;
 
+{ Busca binaria de um glifo pelo codigo Unicode.
+  @param(T tamanho de fonte (glifos ordenados por codigo))
+  @param(Codigo codigo Unicode)
+  @returns(o indice do glifo, ou -1) }
 function AcharGlifo(const T: TTamanho; Codigo: Cardinal): Integer;
 var
   Lo, Hi, Mid: Integer;
@@ -102,7 +142,10 @@ begin
   Result := -1;
 end;
 
-{ proximo codigo Unicode de uma string UTF-8 (byte invalido vale como Latin-1) }
+{ Le o proximo codigo Unicode de uma string UTF-8. Um byte invalido vale como Latin-1.
+  @param(S texto)
+  @param(I posicao atual (1..Length); avanca para o proximo caractere)
+  @returns(o codigo Unicode) }
 function ProximoCodigo(const S: string; var I: Integer): Cardinal;
 var
   B: Byte;
@@ -125,6 +168,10 @@ begin
   Result := C;
 end;
 
+{ Glifo de um codigo, trocando por '?' se a letra nao existir no atlas.
+  @param(T tamanho de fonte)
+  @param(Codigo codigo Unicode)
+  @returns(o indice do glifo, ou -1 se nem o '?' existir) }
 function GlifoDe(const T: TTamanho; Codigo: Cardinal): Integer;
 begin
   Result := AcharGlifo(T, Codigo);

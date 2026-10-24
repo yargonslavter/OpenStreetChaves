@@ -35,11 +35,16 @@ var
   K1, K2, E1, E2: Byte;
   R: TRect;
 
+  { @param(Idx numero do efeito sonoro a tocar) }
   procedure Som(Idx: Integer);
   begin
     TocarSom(Idx);
   end;
 
+  { Desenha um retrato, se existir.
+    @param(Indice numero em ImgRetrato)
+    @param(PX esquerda)
+    @param(PY topo) }
   procedure Retrato(Indice, PX, PY: Integer);
   begin
     if Indice < ImgRetrato.Count then

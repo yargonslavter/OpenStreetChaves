@@ -46,7 +46,10 @@ end;
 { Le a configuracao da tela F1 da secao Secao (valores ausentes ou invalidos mantem os atuais). }
 procedure TJogo.LerConfiguracao(Ini: TCustomIniFile; const Secao: string);
 
-  { liga/desliga gravado como 0 ou 1; outro valor mantem o atual }
+  { Le um liga/desliga gravado como 0 ou 1.
+    @param(Chave nome da chave)
+    @param(Atual valor atual (vale se a chave faltar ou tiver outro valor))
+    @returns(o valor lido) }
   function ZeroOuUm(const Chave: string; Atual: Boolean): Boolean;
   var
     V: Integer;

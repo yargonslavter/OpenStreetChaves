@@ -1,10 +1,10 @@
-unit ChavesTipos;
-
 { Tipos e variaveis globais do Street Chaves.
   Recuperado por engenharia reversa do executavel original (Delphi 5).
   Os nomes foram dados pelo uso no codigo original; o endereco original de cada um
   esta no arquivo NOMES.md. Nomes "Indef_XXXX" / "Campo_N" ainda nao tem significado
   confirmado (XXXX = fim do endereco original, N = deslocamento no registro). }
+
+unit ChavesTipos;
 
 {$mode delphi}{$H+}
 

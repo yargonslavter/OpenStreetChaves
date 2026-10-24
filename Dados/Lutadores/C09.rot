@@ -2,7 +2,11 @@
 ;   [Acao]  parte de AcaoJogador so deste personagem (os golpes especiais e suas condicoes),
 ;           executada depois do [Acao] de Comum.rot.
 ;   [Quadro] parte de AtualizaQuadro so deste personagem (a animacao e os efeitos de cada golpe),
-;           executada depois do [Quadro] de Comum.rot. A sintaxe esta explicada em Comum.rot.
+;           executada depois do [Quadro] de Comum.rot.
+;   [IA]     quando o computador usa cada golpe especial deste personagem (depois do [IA] de
+;           Comum.rot). A sintaxe e as entradas estao explicadas em Comum.rot.
+;   [Acerto] quando um golpe deste personagem acerta o oponente (combo, giro, recuo, lancamento,
+;           golpes encadeados).
 
 [Acao]
 var Cont: Integer;
@@ -197,4 +201,28 @@ begin
     P.NoAr := True;
   end;
 end;
+
+[IA]
+if not P.Defendendo then
+begin
+  if (Ameaca = 0) and (Dist < 200) then
+    if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
+  if Dist < 100 then
+    if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
+  if Dist < 150 then
+    if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
+  if (Ameaca = 0) and (Dist < 100) then
+    if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+  if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
+end;
+
+[Acerto]
+// quando um golpe deste personagem acerta (depois do dano, da reacao e do recuo padrao do oponente):
+// tempo do combo, giro, recuo e lancamento do oponente, e golpes que continuam em outra acao.
+if (P.Acao = acEspecial5) and (P.QuadroAcao >= 14) then
+begin
+  if O.Lado = ldDireita then O.VelAngular := -20;
+  if O.Lado = ldEsquerda then O.VelAngular := 20;
+end;
+if (P.Acao = acEspecial5) and (P.QuadroAcao >= 15) then O.Recuo := 25;
 

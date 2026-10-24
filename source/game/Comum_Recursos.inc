@@ -32,7 +32,9 @@ var
   I, V, Qtd: Integer;
   Nome, Padrao: string;
 
-  { secao com Nome=arquivo,transparente: a ordem das linhas e o numero da imagem }
+  { Carrega uma secao Nome=arquivo,transparente: a ordem das linhas e o numero da imagem.
+    @param(Lista lista que recebe as imagens)
+    @param(Secao nome da secao em Dados/Recursos.ini) }
   procedure ListaComNomes(Lista: TListaImagens; const Secao: string);
   var
     J: Integer;
@@ -188,6 +190,7 @@ begin
           CenarioAlternativo := Ini.ReadInteger('Geral', 'CenarioAlternativo', 0);
           CenarioRaro := Ini.ReadInteger('Geral', 'CenarioRaro', 0);
           MusicaCPU := Ini.ReadInteger('Geral', 'MusicaCPU', 0);
+          TremeAoCair := Ini.ReadBool('Geral', 'TremeAoCair', False);
           for K := 1 to High(Golpes) do
           begin
             V := Ini.ReadString('Golpes', IntToStr(K), '');
@@ -413,6 +416,8 @@ var
   Desloc, Cont, Ini, Col, W, H: Integer;
   C1, C2: TColor;
 
+  { @param(C cor de um pixel)
+    @returns(True se R, G e B sao todos <= 100 (coluna separadora de quadros)) }
   function Escuro(C: TColor): Boolean;
   begin
     Result := ((C and $FF) <= 100) and (((C shr 8) and $FF) <= 100) and (((C shr 16) and $FF) <= 100);
@@ -476,6 +481,9 @@ var
   Esconde: set of Byte;
   D: TDesenhoCenario;
 
+  { @param(I posicao na lista separada por virgulas)
+    @param(Padrao valor se faltar ou nao for numero)
+    @returns(o numero) }
   function Parte(I, Padrao: Integer): Integer;
   begin
     if I < Partes.Count then Result := StrToIntDef(Partes[I], Padrao) else Result := Padrao;
