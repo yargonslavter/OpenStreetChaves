@@ -5,6 +5,15 @@ Repositório dedicado para engenharia reversa e melhoria do antigo jogo brasilei
 O jogo original (Delphi 5 + DelphiX, `Chaves.exe`). Este projeto o reconstrói em
 Lazarus/Free Pascal, mantendo a fidelidade ao original, e o migra para **SDL2** para ficar portável.
 
+# Screenshots
+
+| | |
+|:---:|:---:|
+| ![Tela de abertura](source/screenshot_1.png) | ![Abertura: Chaves e Seu Madruga](source/screenshot_2.png) |
+| Tela de abertura | Abertura animada |
+| ![Seleção de lutador](source/screenshot_3.png) | ![Luta: Chaves contra o Professor Girafales](source/screenshot_4.png) |
+| Seleção de lutador | Luta |
+
 ## Estado desta versão (build atual)
 
 O jogo roda **100% em SDL2**: janela, desenho, som e entrada. O programa principal não usa mais a LCL
@@ -13,7 +22,7 @@ nem formulários.
 | Parte | Como é feito agora |
 |-------|--------------------|
 | Janela e vídeo | SDL2: o jogo desenha num buffer 400x300 (ARGB) em software e o SDL o apresenta (escala com barras pretas; F11 / Alt+Enter = tela cheia) |
-| Gráficos | `ChavesGfx.pas`: superfícies, imagens e listas de imagens próprias (cópia normal, alfa, soma, subtração, rotação), BMP lido sem bibliotecas |
+| Gráficos | `ChavesGfx.pas`: superfícies, imagens e listas de imagens próprias (cópia normal, esticada, alfa, rotação), BMP lido sem bibliotecas |
 | Texto | Atlas de glifos pré-renderizados (`Fontes/ComicSansMS.atlas`), sem depender de fonte do sistema em tempo de execução |
 | Som | `ChavesSom.pas`: mixer próprio sobre o áudio do SDL (sem MCI, sem SDL2_mixer) |
 | Entrada | Teclado por código físico do SDL (`SDL_SCANCODE_*`) e controles (gamepads e joysticks genéricos) para os jogadores 1 e 2 |
