@@ -22,11 +22,11 @@ begin
   ImgEfeitos.PorNome('Sombra').Draw(Sup, SX, SY, 0);
 
   // parado/andando/agachado no chao: vira para o oponente
-  if (Acao = 1) or (Acao = 2) or (Acao = 7) then
+  if (Acao = acParado) or (Acao = acAndando) or (Acao = acAgachado) then
     if P.VelY = 0 then
     begin
-      if P.X < O.X then P.Lado := 1;
-      if P.X >= O.X then P.Lado := 2;
+      if P.X < O.X then P.Lado := ldDireita;
+      if P.X >= O.X then P.Lado := ldEsquerda;
     end;
 
   if MostrarCaixas then
@@ -47,19 +47,19 @@ begin
 
   // tremida ao apanhar
   Jitter := 0;
-  if (P.Acao = 17) or (P.Acao = 18) then Jitter := Random(10) - 5;
-  if (P.Acao = 19) and (PausaImpacto > 0) then Jitter := Random(14) - 7;
-  if ((P.Acao = 17) or (P.Acao = 18) or (P.Acao = 19)) and (PausaImpacto > 15) then Jitter := Random(20) - 10;
+  if (P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) then Jitter := Random(10) - 5;
+  if (P.Acao = acDerrubado) and (PausaImpacto > 0) then Jitter := Random(14) - 7;
+  if ((P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) or (P.Acao = acDerrubado)) and (PausaImpacto > 15) then Jitter := Random(20) - 10;
 
   // giro (derrubado): so gira se nao estiver em pausa
   if (PausaImpacto = 0) and (FlashTela = 0) then P.Angulo := P.Angulo + P.VelAngular;
-  if (P.Acao <> 12) and (P.Acao <> 19) then
+  if (P.Acao <> acPulo) and (P.Acao <> acDerrubado) then
   begin
     P.Angulo := 0;
     P.VelAngular := 0;
   end;
 
-  if (P.Lado = 1) and (ImgLutador.Count > P.Quadro) then
+  if (P.Lado = ldDireita) and (ImgLutador.Count > P.Quadro) then
   begin
     Item := ImgLutador[P.Quadro];
     W := Item.Width;
@@ -76,7 +76,7 @@ begin
     end;
   end;
 
-  if (P.Lado = 2) and (ImgLutadorInvert.Count > P.Quadro) then
+  if (P.Lado = ldEsquerda) and (ImgLutadorInvert.Count > P.Quadro) then
   begin
     Item := ImgLutadorInvert[P.Quadro];
     W := ImgLutador[P.Quadro].Width;
@@ -167,255 +167,8 @@ begin
     E := @Efeitos[I];
     if E.Tipo = 0 then Continue;
 
-    { ---- sprite e estagio conforme o tipo e o quadro de animacao ---- }
-    if E.Tipo = 1 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 1;
-      if E.Quadro = 1 then E.Sprite := 2;
-      if E.Quadro = 3 then E.Sprite := 3;
-    end;
-    if E.Tipo = 2 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 4;
-      if E.Quadro = 3 then E.Sprite := 5;
-      if E.Quadro = 6 then E.Sprite := 6;
-      if E.Quadro = 9 then E.Sprite := 7;
-      if E.Quadro = 12 then E.Sprite := 8;
-      if (FlashTela = 0) and (PausaImpacto = 0) then E.Y := E.Y - 1;
-    end;
-    if E.Tipo = 3 then
-    begin
-      E.Sprite := 10;
-      if E.Quadro >= E.Duracao - 20 then E.Estagio := True;
-    end;
-    if E.Tipo = 4 then
-    begin
-      E.Sprite := 11;
-      if E.Quadro >= E.Duracao - 20 then E.Estagio := True;
-    end;
-    if E.Tipo = 5 then
-    begin
-      if E.Quadro >= E.Duracao - 10 then E.Estagio := True;
-    end;
-    if E.Tipo = 6 then
-    begin
-      E.Sprite := 12;
-    end;
-    if E.Tipo = 7 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 13;
-      if E.Quadro = 1 then E.Sprite := 13;
-      if E.Quadro = 2 then E.Sprite := 14;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 8 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 15;
-      if E.Quadro = 2 then E.Sprite := 16;
-      if E.Quadro = 5 then E.Sprite := 17;
-      if E.Quadro = 5 then E.Estagio := True;
-    end;
-    if E.Tipo = 9 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 18;
-      if E.Quadro = 1 then E.Sprite := 18;
-      if E.Quadro = 2 then E.Sprite := 19;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 10 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 20;
-      if E.Quadro = 2 then E.Sprite := 21;
-      if E.Quadro = 4 then E.Sprite := 22;
-      if E.Quadro = 6 then E.Sprite := 23;
-      if E.Quadro = 8 then E.Sprite := 24;
-      if E.Quadro = 10 then E.Sprite := 25;
-      if E.Quadro = 12 then E.Sprite := 26;
-    end;
-    if E.Tipo = 11 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 27;
-      if E.Quadro = 3 then E.Sprite := 28;
-      if E.Quadro = 6 then E.Sprite := 29;
-      if E.Quadro = 9 then E.Sprite := 30;
-      if E.Quadro = 12 then E.Sprite := 31;
-    end;
-    if E.Tipo = 12 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 32;
-      if E.Quadro = 1 then E.Sprite := 32;
-      if E.Quadro = 2 then E.Sprite := 33;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 13 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 34;
-      if E.Quadro = 1 then E.Sprite := 34;
-      if E.Quadro = 2 then E.Sprite := 35;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 14 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 36;
-      if E.Quadro = 2 then E.Sprite := 37;
-      if E.Quadro = 4 then E.Sprite := 38;
-    end;
-    if E.Tipo = 15 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 39;
-      if E.Quadro = 1 then E.Sprite := 39;
-      if E.Quadro = 2 then E.Sprite := 40;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 16 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 41;
-      if E.Quadro = 2 then E.Sprite := 42;
-      if E.Quadro = 4 then E.Sprite := 43;
-    end;
-    if E.Tipo = 17 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 44;
-      if E.Quadro = 4 then E.Sprite := 45;
-      if E.Quadro = 8 then E.Sprite := 46;
-    end;
-    if E.Tipo = 18 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 47;
-      if E.Quadro = 1 then E.Sprite := 47;
-      if E.Quadro = 2 then E.Sprite := 48;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 19 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 49;
-      if E.Quadro = 1 then E.Sprite := 49;
-      if E.Quadro = 2 then E.Sprite := 50;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 20 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 51;
-      if E.Quadro = 1 then E.Sprite := 51;
-      if E.Quadro = 2 then E.Sprite := 52;
-      if E.Quadro = 3 then E.Quadro := 0;
-    end;
-    if E.Tipo = 23 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 57;
-      if E.Quadro = 2 then E.Sprite := 58;
-      if E.Quadro = 4 then E.Sprite := 57;
-      if E.Quadro = 6 then E.Sprite := 58;
-      if E.Quadro = 8 then E.Sprite := 57;
-      if E.Quadro = 10 then E.Sprite := 58;
-      if E.Quadro = 12 then E.Sprite := 57;
-      if E.Quadro = 14 then E.Sprite := 58;
-      if E.Quadro = 16 then E.Sprite := 57;
-      if E.Quadro = 18 then E.Sprite := 58;
-      if E.Quadro = 20 then E.Sprite := 57;
-      if E.Quadro = 22 then E.Sprite := 79;
-      if E.Quadro = 24 then E.Sprite := 60;
-    end;
-    if E.Tipo = 24 then
-    begin
-      if E.Quadro < E.Duracao - 10 then E.Sprite := 61;
-      if E.Quadro >= E.Duracao - 10 then E.Sprite := 62;
-    end;
-    if E.Tipo = 25 then
-    begin
-      if E.Quadro < 12 then E.Sprite := 63;
-      if (E.Quadro >= 12) and (E.Quadro < 24) then E.Sprite := 64;
-      if E.Quadro >= 24 then E.Sprite := 65;
-    end;
-    if E.Tipo = 26 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 66;
-      if E.Quadro = 1 then E.Sprite := 66;
-      if E.Quadro = 4 then E.Sprite := 67;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 27 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 68;
-      if E.Quadro = 1 then E.Sprite := 68;
-      if E.Quadro = 4 then E.Sprite := 69;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 28 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 70;
-      if E.Quadro = 1 then E.Sprite := 70;
-      if E.Quadro = 3 then E.Sprite := 71;
-      if E.Quadro = 4 then E.Quadro := 0;
-    end;
-    if E.Tipo = 29 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 72;
-      if E.Quadro = 2 then E.Sprite := 72;
-      if E.Quadro = 4 then E.Sprite := 73;
-      if E.Quadro = 5 then E.Sprite := 74;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 30 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 75;
-      if E.Quadro = 1 then E.Sprite := 75;
-      if E.Quadro = 4 then E.Sprite := 76;
-      if E.Quadro = 5 then E.Quadro := 0;
-      if E.Contagem >= E.LimiteContagem - 10 then E.Sprite := 77;
-      if E.Contagem >= E.LimiteContagem - 7 then E.Sprite := 78;
-      if E.Contagem >= E.LimiteContagem - 4 then E.Sprite := 79;
-    end;
-    if E.Tipo = 31 then
-    begin
-      if E.Quadro = 2 then E.Sprite := 72;
-      if E.Quadro = 4 then E.Sprite := 73;
-      if E.Quadro = 5 then E.Sprite := 74;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 32 then
-    begin
-      if E.Quadro < 2 then E.Sprite := 72;
-      if E.Quadro = 2 then E.Sprite := 72;
-      if E.Quadro = 4 then E.Sprite := 73;
-      if E.Quadro = 5 then E.Sprite := 74;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 33 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 80;
-      if E.Quadro = 1 then E.Sprite := 80;
-      if E.Quadro = 2 then E.Sprite := 81;
-      if E.Quadro = 4 then E.Sprite := 82;
-      if E.Quadro = 5 then E.Sprite := 83;
-      if E.Quadro = 6 then E.Quadro := 0;
-    end;
-    if E.Tipo = 34 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 84;
-      if E.Quadro = 3 then E.Sprite := 85;
-      if E.Quadro = 6 then E.Sprite := 86;
-      if E.Quadro = 9 then E.Sprite := 87;
-      if E.Quadro = 12 then E.Sprite := 88;
-      if E.Quadro = 15 then E.Sprite := 89;
-      if E.Quadro = 18 then E.Sprite := 90;
-    end;
-    if E.Tipo = 35 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 91;
-      if E.Quadro = 2 then E.Sprite := 92;
-      if E.Quadro = 4 then E.Sprite := 93;
-      if E.Quadro = 6 then E.Sprite := 94;
-      if E.Quadro = 8 then E.Sprite := 95;
-    end;
-    if E.Tipo = 36 then
-    begin
-      if E.Quadro = 0 then E.Sprite := 96;
-      if E.Quadro = 2 then E.Sprite := 97;
-      if E.Quadro = 4 then E.Sprite := 98;
-      if E.Quadro = 6 then E.Sprite := 99;
-      if E.Quadro = 8 then E.Sprite := 100;
-    end;
+    { ---- sprite e estagio conforme o tipo e o quadro de animacao (Dados/Efeitos.ini) ---- }
+    AnimarEfeito(E);
 
     { ---- caixas de colisao dos efeitos que as tem ---- }
     if (E.Tipo = 8) and (E.Quadro = 2) then DefineCaixaEfeito(I, -45, -150, 45, 0);
@@ -447,9 +200,9 @@ begin
       begin
         E.PodeAcertar := True;
         Inc(E.Contagem);
-        if Lutador[E.Dono].Acao <> 29 then E.Tipo := 0;
+        if Lutador[E.Dono].Acao <> acEspecial5 then E.Tipo := 0;
       end;
-    if (E.Tipo = 30) and (Lutador[E.Dono].Acao <> 26) then E.Tipo := 0;
+    if (E.Tipo = 30) and (Lutador[E.Dono].Acao <> acEspecial2) then E.Tipo := 0;
     if (E.Tipo = 34) and (E.Quadro >= 14) then E.PodeAcertar := False;
     if E.Tipo = 24 then
     begin
@@ -478,8 +231,8 @@ begin
     { ---- deslocamento ---- }
     if (FlashTela = 0) and (PausaImpacto = 0) then
     begin
-      if E.Lado = 1 then E.X := E.Vel + E.X;
-      if E.Lado = 2 then E.X := E.X - E.Vel;
+      if E.Lado = ldDireita then E.X := E.Vel + E.X;
+      if E.Lado = ldEsquerda then E.X := E.X - E.Vel;
       if E.Tipo = 19 then E.Y := E.Vel + E.Y;
       if E.Tipo = 20 then E.Y := Random(13) + (E.Y - 7);
     end;
@@ -497,9 +250,9 @@ begin
       Pisca := not E.Estagio or (E.Estagio and (ContPisca mod 2 = 0));
       if Pisca then
       begin
-        if E.Lado = 1 then
+        if E.Lado = ldDireita then
           ImgEfeitos[E.Sprite].Draw(Sup, Round(E.X) - CameraX - W2, Round(E.Y) - CameraY - H2, 0);
-        if E.Lado = 2 then
+        if E.Lado = ldEsquerda then
           ImgEfeitosInvert[E.Sprite].Draw(Sup, Round(E.X) - CameraX - W2, Round(E.Y) - CameraY - H2, 0);
       end;
     end;
@@ -508,7 +261,7 @@ begin
     if E.Tipo = 5 then
     begin
       if not E.Estagio or (E.Estagio and (ContPisca mod 2 = 0)) then
-        texto(Round(E.X) - CameraX, Round(E.Y) - CameraY, Linha(MemoTexto, 5), ACentro, 10, VerdeBonus);
+        texto(Round(E.X) - CameraX, Round(E.Y) - CameraY, Linha(TxtGeral, 5), ACentro, 10, VerdeBonus);
       if FlashTela = 0 then E.Y := E.Y - 5;
     end;
 
@@ -560,10 +313,10 @@ begin
         if P.Defendendo and E.PodeAcertar and (E.Dano > 0) and (K <> E.Dono) then
         begin
           P.QuadroAcao := 1;
-          SomPendente := 10;
+          SomPendente := sndDefesa;
           CriaEfeito(14, '', 0, E.X, E.Y);
-          if P.Lado = 1 then Empurra(K, -10);
-          if P.Lado = 2 then Empurra(K, 10);
+          if P.Lado = ldDireita then Empurra(K, -10);
+          if P.Lado = ldEsquerda then Empurra(K, 10);
           if (AvisoEntrada = 0) and not RelogioParado then
           begin
             P.Vida := P.Vida - E.DanoDefesa * NivelDano;
@@ -571,8 +324,8 @@ begin
           end;
           if P.Vida <= 0 then
           begin
-            SomPendente := 9;
-            AcaoJogador(K, 10);
+            SomPendente := sndAcertoEspecial;
+            AcaoJogador(K, cmDerrubar);
           end;
           if not E.Terminando then E.Tipo := 0;
           E.PodeAcertar := False;
@@ -580,11 +333,11 @@ begin
         end;
 
         { acertou quem estava desprotegido }
-        if E.PodeAcertar and (E.Dano > 0) and not P.Vencedor and (K <> E.Dono) and not P.Defendendo then
+        if E.PodeAcertar and (E.Dano > 0) and not P.Invulneravel and (K <> E.Dono) and not P.Defendendo then
         begin
-          if P.X < O.X then P.Lado := 1;
-          if P.X >= O.X then P.Lado := 2;
-          SomPendente := 9;
+          if P.X < O.X then P.Lado := ldDireita;
+          if P.X >= O.X then P.Lado := ldEsquerda;
+          SomPendente := sndAcertoEspecial;
           CriaEfeito(1, '', 0, E.X, E.Y);
           if Flash and (Random(3) = 0) then FlashVermelho := 4;
           if (Sangue and (Random(3) = 0)) or CheatSatanas then
@@ -599,8 +352,8 @@ begin
             if P.CargaPoder < CargaMax then P.CargaPoder := 1 * GanhoCarga + P.CargaPoder;
             P.AtrasoBarra := 20;
           end;
-          if E.Variante or (P.VelY <> 0) or (P.Vida <= 0) then AcaoJogador(K, 10);
-          AcaoJogador(K, 9);
+          if E.Variante or (P.VelY <> 0) or (P.Vida <= 0) then AcaoJogador(K, cmDerrubar);
+          AcaoJogador(K, cmApanharBaixo);
           P.Recuo := 8;
           if not PrimeiroAtaque then
           begin
@@ -620,14 +373,14 @@ begin
           if E.Tipo = 20 then
           begin
             P.VelY := -20;
-            P.Vencedor := False;
+            P.Invulneravel := False;
             P.Recuo := 6;
           end;
           if (E.Tipo = 8) or (E.Tipo = 20) then
           begin
-            P.Acao := 19;
-            if P.Lado = 1 then P.VelAngular := -20;
-            if P.Lado = 2 then P.VelAngular := 20;
+            P.Acao := acDerrubado;
+            if P.Lado = ldDireita then P.VelAngular := -20;
+            if P.Lado = ldEsquerda then P.VelAngular := 20;
           end;
           if not E.Terminando then E.Tipo := 0;
           E.PodeAcertar := False;
@@ -642,7 +395,7 @@ begin
             if E.Tipo = 3 then P.Vida := 20 * NivelDano + P.Vida;
             if E.Tipo = 4 then P.Vida := 30 * NivelDano + P.Vida;
           end;
-          SomPendente := 11;
+          SomPendente := sndItem;
           CriaEfeito(5, '', 0, E.X, E.Y);
           E.Tipo := 0;
         end;

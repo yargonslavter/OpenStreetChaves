@@ -21,7 +21,7 @@ unit ChavesSom;
 interface
 
 uses
-  Classes, SysUtils, ctypes, sdl2, DXClass;
+  Classes, SysUtils, ctypes, sdl2, ChavesDados;
 
 type
   TAmostra = class
@@ -225,7 +225,7 @@ var
   Disp: Integer;
 begin
   Limpar;
-  Nome := DXResolvePath(Arquivo);
+  Nome := ResolverCaminho(Arquivo);
   if (Arquivo = '') or not FileExists(Nome) then Exit;
   if SDL_InitSubSystem(SDL_INIT_AUDIO) <> 0 then Exit;
   Mem := TMemoryStream.Create;

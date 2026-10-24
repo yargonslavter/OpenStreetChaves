@@ -17,7 +17,7 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
 | 0 | Infra SDL (`ChavesSDL.pas`): janela, quadro de teste (`--demo`), teclado, F11 | Feita |
 | 1 | Jogo atual dentro da janela SDL | Feita |
 | 2 | Extrair o jogo do formulario (`TJogo` em `ChavesJogo.pas`, estados em `game/Estado*.inc`) | Feita |
-| 3 | Superficie e imagens sem LCL (`ChavesGfx.pas`; BMP lido por `DXBmp`) | Feita |
+| 3 | Superficie e imagens sem LCL (`ChavesGfx.pas`, com leitor de BMP proprio) | Feita |
 | 4 | Texto sem fonte do sistema (atlas de glifos `ComicSansMS.atlas`, ferramenta `tools/GeraFonte`) | Feita |
 | 5 | Audio SDL (`ChavesSom.pas`: mixer proprio sobre o callback de audio; sem MCI nem TTimer) | Feita |
 | 6 | Entrada SDL: teclado por `SDL_SCANCODE_*` (sem VK_), gamepad/joystick P1 e P2 | Feita (falta remapear controle e toque) |
@@ -28,16 +28,25 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
 - Removidos: `DXInput` (virou `MapaP1/MapaP2` + leitura de teclas/controles no `TJogo`), `DXSounds` (virou `ChavesSom`),
   `DXDraws` (virou `ChavesGfx`), `DXTexto` (a ferramenta `GeraFonte` mantem uma copia), `TDXTimer` (virou `QuadroAtivo`),
   `TDXBrush/TDXPen/TDXFont`, `DXHiResMs` e os codigos `VK_*`.
-- Restam em `source/legacy/` (a incorporar ao resto do codigo): `DXTipos`, `DXClass`, `DXBmp`, `DXFonte`.
+- Incorporados ao jogo (a pasta `source/legacy` deixou de existir): `DXTipos` -> `TColor`/`RGBToColor` em `ChavesConst`,
+  `DXClass.DXResolvePath` -> `ResolverCaminho` em `ChavesDados` (a colecao por nome nao era usada), `DXBmp` -> leitor de BMP
+  dentro de `ChavesGfx`, `DXFonte` -> `ChavesFonte`.
+- `TTextoLista` (imitava o `TMemo`) virou `TStringList` direto: campos `TxtNomes`, `TxtGeral`, `TxtConfig`, `TxtFrases`,
+  `TxtDialogo`, `TxtFinais`, `TxtCenarios`, recarregados por `TJogo.CarregarIdioma`.
+- Constantes da luta (`ac*`, `cm*`, `pn*`, `ld*`, `fg*`, `pulo*`, `snd*`) em `ChavesTipos.pas` no lugar dos numeros.
+- Comandos dos lutadores (`golpe` e `sequenciagolpe`, ~1.650 linhas) viraram dados: secoes `[Sequencias]` e `[Botoes]`
+  de `Dados/Lutadores/CNN.ini`, interpretadas por `TJogo.RegraVale` (equivalencia conferida por simulacao).
+- `AcaoJogador`, `AtualizaQuadro` e `cpu` reformatados a partir do codigo descompilado (6.851 -> 3.261 linhas):
+  parenteses e `begin/end` desnecessarios removidos, condicoes simplificadas (`P.Acao in [...]`) e as variaveis
+  `r7..r265` da IA eliminadas. Conferido por analise do codigo (mesmos comandos, na mesma ordem, inclusive os
+  `Random`) e por tabela-verdade de cada condicao alterada.
+- A LCL saiu tambem do `.lpr` e do `.lpi`; o UTF-8 como padrao (que a LCL ligava) ficou em `ChavesUTF8.pas`.
 
 ## Proximos passos
-1. Incorporar/renomear o que sobrou de `legacy/` (`DXTipos` -> cores, `DXClass.DXResolvePath` -> util, `DXBmp`/`DXFonte`
-   -> `ChavesGfx`), e trocar `TTextoLista` (imita `TMemo`) por `TStringList` direto.
-2. Remapeamento do controle na tela F2 e controles de toque (Android).
-3. Build de teste em Linux e macOS (o codigo ja nao usa APIs do Windows; faltam as bibliotecas SDL2 de cada sistema).
-4. Fidelidade/resolucao: melhorar a resolucao do jogo (o atlas de fonte e os sprites foram feitos para 400x300).
-5. Decisao de licenca do atlas da Comic Sans MS (distribuir ou trocar por fonte livre, ex.: Comic Neue, OFL).
-6. Apagar de `3party/SDL2` as units nao usadas (`sdl2_gfx`, `sdl2_image`, `sdl2_mixer`, `sdl2_net`, `sdl2_ttf`) se nao forem necessarias.
+1. Remapeamento do controle na tela F2 e controles de toque (Android).
+2. Build de teste em Linux e macOS (o codigo ja nao usa APIs do Windows; faltam as bibliotecas SDL2 de cada sistema).
+3. Fidelidade/resolucao: desenho 3x (logica continua 400x300; so o desenho usa sprites 3x maiores).
+4. Decisao de licenca do atlas da Comic Sans MS (distribuir ou trocar por fonte livre, ex.: Comic Neue, OFL).
 
 ## Pontos de atencao
 - O buffer do jogo e ARGB 32 bits (0xAARRGGBB), o mesmo formato da textura SDL: nao ha conversao.

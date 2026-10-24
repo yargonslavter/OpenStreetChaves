@@ -4,13 +4,13 @@ constructor TJogo.Create(AOwner: TComponent);
 begin
   inherited Create(AOwner);
   IniciarEntrada;
-  MemoNomes := TTextoLista.Create;
-  MemoTexto := TTextoLista.Create;
-  MemoConfig := TTextoLista.Create;
-  MemoFrases := TTextoLista.Create;
-  MemoDialogo := TTextoLista.Create;
-  MemoFinais := TTextoLista.Create;
-  MemoCenarios := TTextoLista.Create;
+  TxtNomes := TStringList.Create;
+  TxtGeral := TStringList.Create;
+  TxtConfig := TStringList.Create;
+  TxtFrases := TStringList.Create;
+  TxtDialogo := TStringList.Create;
+  TxtFinais := TStringList.Create;
+  TxtCenarios := TStringList.Create;
   FVolumes := TStringList.Create;
   ModoTela := 1;
 end;
@@ -18,13 +18,13 @@ end;
 destructor TJogo.Destroy;
 begin
   FreeAndNil(FFrameSheet);
-  MemoNomes.Free;
-  MemoTexto.Free;
-  MemoConfig.Free;
-  MemoFrases.Free;
-  MemoDialogo.Free;
-  MemoFinais.Free;
-  MemoCenarios.Free;
+  TxtNomes.Free;
+  TxtGeral.Free;
+  TxtConfig.Free;
+  TxtFrases.Free;
+  TxtDialogo.Free;
+  TxtFinais.Free;
+  TxtCenarios.Free;
   FVolumes.Free;
   ImgRetrato.Free;
   ImgEfeitos.Free;
@@ -80,7 +80,7 @@ begin
   CriaComponentes;
   FFrameSheet := nil;
   { o original procurava os arquivos na pasta corrente: vamos para a pasta do jogo }
-  Nome := DXResolvePath(PastaDados + ArqRecursos);
+  Nome := ResolverCaminho(PastaDados + ArqRecursos);
   if FileExists(Nome) then SetCurrentDir(ExtractFilePath(ExtractFileDir(Nome)));
 
   Randomize;
@@ -193,12 +193,11 @@ begin
   if Idioma > 2 then Idioma := 2;
 
   { textos no idioma escolhido }
-  CarregarTextos(Idioma, MemoNomes.Lines, MemoTexto.Lines, MemoConfig.Lines,
-    MemoFrases.Lines, MemoDialogo.Lines, MemoFinais.Lines, MemoCenarios.Lines);
+  CarregarIdioma;
 
   Fichas := 0;                    // fichas (creditos)
-  Lutador[1].Personagem := 1;
-  Lutador[2].Personagem := 2;
+  Lutador[1].Personagem := pnChaves;
+  Lutador[2].Personagem := pnSeuMadruga;
   Lutador[1].Ativo := False;
   Lutador[2].Ativo := False;
   Lutador[1].Escolheu := False;

@@ -41,7 +41,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir)"/>
-      <OtherUnitFiles Value="../../legacy;../../game"/>
+      <OtherUnitFiles Value="../../game"/>
       <UnitOutputDirectory Value="build/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

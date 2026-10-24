@@ -12,18 +12,10 @@ unit ChavesJogo;
 interface
 
 uses
-  Classes, SysUtils, Types, Math, IniFiles, DXTipos,
-  sdl2, DXClass, ChavesGfx, ChavesSom, ChavesConst, ChavesTipos, ChavesTextos, ChavesGolpes, ChavesDados;
+  Classes, SysUtils, Types, Math, IniFiles,
+  sdl2, ChavesGfx, ChavesSom, ChavesConst, ChavesTipos, ChavesTextos, ChavesGolpes, ChavesDados;
 
 type
-  { Lista de linhas com a mesma interface do antigo TMemo (propriedade Lines) }
-  TTextoLista = class(TStringList)
-  private
-    function GetLines: TStrings;
-  public
-    property Lines: TStrings read GetLines;
-  end;
-
   { Um desenho das animacoes do cenario (Dados/Cenarios/Cenario-NN.ini, secoes [AnimacaoN]) }
   TDesenhoCenario = record
     De, Ate: Integer;          // faixa de ContPisca em que aparece; De = -1: sempre; Ate = -1: sem fim
@@ -41,7 +33,23 @@ type
     S: string;     // sequencia de teclas (letras explicadas em Dados/Lutadores/Cnn.ini)
   end;
 
-  { Dados de cada personagem (Dados/Lutadores/Cnn.ini, secoes [Geral] e [Golpes]) }
+  { Termo de uma regra de comando (Dados/Lutadores/Cnn.ini, secoes [Sequencias] e [Botoes]) }
+  TTermoComando = record
+    Tipo: Char;      // 'B','F','T','C' seta (baixo, frente, tras, cima); 'b'/'t' TempoBaixo/TempoTras >= Valor;
+                     // 'H' no chao; 'P' passo da sequencia = Valor; 'A' no ar; 's'/'k' CargaSoco/CargaChute >= Valor
+    Nega: Boolean;   // '!' na frente: o termo vale quando a condicao e falsa
+    Valor: Integer;
+  end;
+  { Regra: todos os termos valem -> avanca a sequencia (De>Para) ou executa o comando do botao }
+  TRegraComando = record
+    Termos: array of TTermoComando;
+    Botao: Byte;           // [Botoes]: 1 soco fraco, 2 chute fraco, 3 soco forte, 4 chute forte
+    Comando: Byte;         // [Botoes]: comando de AcaoJogador (cm*)
+    De, Para: Byte;        // [Sequencias]: passos da sequencia de teclas
+  end;
+  TRegrasComando = array of TRegraComando;
+
+  { Dados de cada personagem (Dados/Lutadores/Cnn.ini, secoes [Geral], [Golpes], [Sequencias] e [Botoes]) }
   TDadosLutador = record
     AlturaSprite: Integer;
     Velocidade: Double;                 // velocidade de caminhada
@@ -50,18 +58,37 @@ type
     Cenario, CenarioAlternativo, CenarioRaro: Integer;   // cenario quando e o adversario
     MusicaCPU: Integer;                 // musica quando controlado pelo computador (0 = sorteada)
     Golpes: array[1..5] of TGolpeInfo;
+    Sequencias: TRegrasComando;         // teclas dos especiais (lidas por sequenciagolpe)
+    Botoes: TRegrasComando;             // botao -> comando (lidas por golpe)
+  end;
+
+  { Final de personagem (Dados/Finais.ini): comandos com condicao de tempo, executados a cada quadro }
+  TTermoFinal = record
+    Tipo: Char;                 // 'T' = tempo da cena; 'R' = sorteio (Random(K) = 0)
+    Op: string;
+    K: Integer;
+  end;
+  TComandoFinal = record
+    Grupos: array of array of TTermoFinal;   // vale se algum grupo tiver todos os termos; vazio = sempre
+    Nome: string;                            // cenario, lutador, desenha, fala, imagem, preto, explosao, efeito
+    Args: array of string;
+  end;
+  TFinal = record
+    Legenda: Integer;           // primeira linha das legendas em [Finais] dos textos
+    Comandos: array of TComandoFinal;
   end;
 
   { TJogo }
   TJogo = class(TComponent)
   private
-    MemoNomes: TTextoLista;
-    MemoTexto: TTextoLista;
-    MemoConfig: TTextoLista;
-    MemoFrases: TTextoLista;
-    MemoDialogo: TTextoLista;
-    MemoFinais: TTextoLista;
-    MemoCenarios: TTextoLista;
+    { textos do idioma atual (Dados/Textos/XX.ini), lidos por CarregarIdioma; acesso por Linha() }
+    TxtNomes: TStringList;
+    TxtGeral: TStringList;
+    TxtConfig: TStringList;
+    TxtFrases: TStringList;
+    TxtDialogo: TStringList;
+    TxtFinais: TStringList;
+    TxtCenarios: TStringList;
     { tela, imagens e sons: criados em CriaComponentes e preenchidos por CarregarRecursos (Comum_Recursos.inc) }
     Tela: TSuperficie;                 // buffer 400x300 onde o jogo desenha cada quadro
     DeslocX: Integer;                  // deslocamento horizontal da imagem na janela (teclas , e .)
@@ -96,6 +123,7 @@ type
     FMusicaCenario: array of Integer;   // musica propria de cada cenario (0 = nenhuma)
     FQtdLutadores: Integer;       // personagens existentes (1..FQtdLutadores)
     FLutadores: array of TDadosLutador; // dados de cada personagem (indice 1..FQtdLutadores)
+    FFinais: array of TFinal;     // finais de cada personagem (indice 1..)
     FVolumes: TStringList;        // Chave=volume: Dados/Som.ini e, por cima, Chaves.ini ([Volume])
     { cenario carregado (carregarcenario) }
     FDesenhos: array of TDesenhoCenario;   // animacoes, na ordem de desenho
@@ -115,6 +143,7 @@ type
     procedure carregarcenario(Numero: Integer);
     procedure LerDadosCenario(Numero: Integer);
     procedure LerDadosLutadores(const Padrao: string);
+    procedure LerRegrasComando(Ini: TCustomIniFile; const Secao: string; out Regras: TRegrasComando);
     procedure LerVolumes;
     function VolumeDe(const Arquivo: string): Integer;
     function MusicaDeCenario(Musica: Integer): Boolean;
@@ -134,7 +163,8 @@ type
     function BitsTeclado(const Mapa: array of Integer): Byte;
     procedure IniciarEntrada;
     function NomeTecla(Scan: Integer): string;
-    function Linha(Memo: TTextoLista; I: Integer): string;
+    function Linha(Lista: TStrings; I: Integer): string;
+    procedure CarregarIdioma;
     function ArqLutador(N: Integer): string;      // folha de sprites do personagem N
     function ArqCenario(N: Integer): string;      // imagem do cenario N
     function SufixoIdioma: string;                // '-PT' ou '-ES' (imagens com versao por idioma)
@@ -153,6 +183,7 @@ type
     { --- luta (Estado7_Golpes.inc e Estado7_Luta.inc) --- }
     function seta(Jog: Byte; const Dir: string): Boolean;
     procedure sequencia(Jog, De, Para: Byte);
+    function RegraVale(Jog: Byte; const R: TRegraComando): Boolean;
     procedure golpe(Jog, Botao: Byte);
     procedure sequenciagolpe(Jog: Byte);
     procedure cpu(Jog: Byte);
@@ -187,6 +218,8 @@ type
     procedure Estado12_Iniciais;
     procedure F10_Fala(R: TRect; const Img: string; X, Y: Integer);
     procedure F10_Explosao;
+    procedure LerFinais(const Arquivo: string);
+    procedure ExecutarFinal(const F: TFinal; T: Integer);
     procedure RodapeDoQuadro;
     procedure MemorizaTeclas;
     procedure TeclaAbaixo(Key: Integer);
@@ -214,11 +247,6 @@ type
   end;
 
 implementation
-
-function TTextoLista.GetLines: TStrings;
-begin
-  Result := Self;
-end;
 
 function RGB(R, G, B: Integer): TColor;
 begin

@@ -11,15 +11,15 @@ unit DXTexto;
 interface
 
 uses
-  DXTipos;
+  ChavesFonte;
 
 { Desenha S com a fonte dada e devolve a cobertura (0 = fundo, 255 = tinta cheia) }
 procedure DXTextoMascara(const FontName: string; Size, Style: Integer; const S: string;
-  out W, H: Integer; out Dados: TDXMascara);
+  out W, H: Integer; out Dados: TMascara);
 { Igual, mas com Margem pixels extras de cada lado (o texto sai em (Margem, 0)); serve para
   capturar partes do glifo que passam da largura de avanco. Usada so pela ferramenta GeraFonte. }
 procedure DXTextoMascaraMargem(const FontName: string; Size, Style: Integer; const S: string;
-  Margem: Integer; out W, H: Integer; out Dados: TDXMascara);
+  Margem: Integer; out W, H: Integer; out Dados: TMascara);
 function DXTextoLargura(const FontName: string; Size, Style: Integer; const S: string): Integer;
 function DXTextoAltura(const FontName: string; Size, Style: Integer; const S: string): Integer;
 
@@ -71,7 +71,7 @@ begin
 end;
 
 procedure DXTextoMascaraMargem(const FontName: string; Size, Style: Integer; const S: string;
-  Margem: Integer; out W, H: Integer; out Dados: TDXMascara);
+  Margem: Integer; out W, H: Integer; out Dados: TMascara);
 var
   B: TBitmap;
   Intf: TLazIntfImage;
@@ -103,7 +103,7 @@ begin
 end;
 
 procedure DXTextoMascara(const FontName: string; Size, Style: Integer; const S: string;
-  out W, H: Integer; out Dados: TDXMascara);
+  out W, H: Integer; out Dados: TMascara);
 begin
   DXTextoMascaraMargem(FontName, Size, Style, S, 0, W, H, Dados);
 end;

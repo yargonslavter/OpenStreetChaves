@@ -23,7 +23,7 @@ unit ChavesSDL;
 interface
 
 uses
-  Classes, SysUtils, DXTipos, DXClass, sdl2, ChavesConst, ChavesTipos, ChavesJogo, DXFonte, ChavesDados;
+  Classes, SysUtils, sdl2, ChavesConst, ChavesTipos, ChavesJogo, ChavesFonte, ChavesDados;
 
 type
   { Tecla recebida: Scan = codigo fisico do SDL (SDL_SCANCODE_*) }
@@ -185,13 +185,13 @@ end;
 { Cria o jogo (sem formulario) e liga as pontes com o SDL }
 procedure TAppSDL.IniciarJogo;
 begin
-  if not DXFonteDisponivel then
+  if not FonteDisponivel then
   begin
     Erro('Arquivo Fontes\ComicSansMS.atlas nao encontrado (ou invalido).' + LineEnding +
       'Gere-o uma vez com a ferramenta source\tools\GeraFonte (precisa da fonte Comic Sans MS no Windows).');
     Halt(1);
   end;
-  if not FileExists(DXResolvePath(PastaDados + ArqRecursos)) then
+  if not FileExists(ResolverCaminho(PastaDados + ArqRecursos)) then
   begin
     Erro('Arquivo Dados\' + ArqRecursos + ' nao encontrado.' + LineEnding +
       'A pasta Dados (ao lado do executavel) traz a lista de imagens e sons do jogo.');

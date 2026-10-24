@@ -13,6 +13,126 @@ interface
 uses
   ChavesConst;
 
+const
+  { ---- Acao do lutador (TLutador.Acao) ----
+    Ar = no ar (pulando); Ag = agachado. As acoes acEspecial1..7 sao os golpes especiais e mudam
+    de sentido conforme o personagem (o roteiro de cada uma fica em AtualizaQuadro). }
+  acParado = 1;
+  acAndando = 2;
+  acSocoFraco = 3;
+  acChuteFraco = 4;
+  acSocoForte = 5;
+  acChuteForte = 6;
+  acAgachado = 7;
+  acAgSocoFraco = 8;
+  acAgChuteFraco = 9;
+  acAgSocoForte = 10;
+  acAgChuteForte = 11;
+  acPulo = 12;
+  acArSocoFraco = 13;
+  acArChuteFraco = 14;
+  acArSocoForte = 15;
+  acArChuteForte = 16;
+  acApanhaAlto = 17;      // levou golpe alto (recua)
+  acApanhaBaixo = 18;     // levou golpe baixo (recua)
+  acDerrubado = 19;       // voando para tras depois de um golpe forte
+  acQuicando = 20;        // bateu no chao e quica antes de levantar
+  acDefesa = 21;          // defesa em pe (perde para golpe baixo)
+  acDefesaBaixa = 22;     // defesa agachado (perde para golpe no ar)
+  acVitoria = 23;         // pose de vitoria
+  acPose = 24;            // pose do comando cmPose (nenhuma parte do jogo pede esse comando)
+  acEspecial1 = 25;       // em geral: comandos cmEsp1Fraco/Forte
+  acEspecial2 = 26;       // em geral: cmEsp2Fraco/Forte
+  acEspecial3 = 27;       // em geral: cmEsp3Fraco/Forte
+  acEspecial4 = 28;       // em geral: cmEsp4Fraco/Forte
+  acEspecial5 = 29;       // em geral: especial final (cmEspFinal)
+  acEspecial6 = 30;       // continuacao ou especial final de alguns personagens
+  acEspecial7 = 31;       // continuacao (Seu Madruga)
+
+  { ---- Comandos de AcaoJogador (o que o jogador, a IA ou a luta pedem) ----
+    Os especiais seguem o padrao 16/17 = especial 1 fraco/forte ... 22/23 = especial 4, 24 = final.
+    Excecoes: Seu Madruga usa 23 para o final; Jaiminho usa 22..25 no especial 4 e 26 no final. }
+  cmEsquerda = 1;
+  cmDireita = 2;
+  cmSocoFraco = 3;
+  cmChuteFraco = 4;
+  cmSocoForte = 5;
+  cmChuteForte = 6;
+  cmAgachar = 7;
+  cmApanharAlto = 8;
+  cmApanharBaixo = 9;
+  cmDerrubar = 10;
+  cmBaterNoChao = 11;
+  cmDefender = 12;
+  cmDefenderBaixo = 13;
+  cmVitoria = 14;
+  cmPose = 15;
+  cmEsp1Fraco = 16;
+  cmEsp1Forte = 17;
+  cmEsp2Fraco = 18;
+  cmEsp2Forte = 19;
+  cmEsp3Fraco = 20;
+  cmEsp3Forte = 21;
+  cmEsp4Fraco = 22;
+  cmEsp4Forte = 23;
+  cmEspFinal = 24;
+  cmEspExtra1 = 25;
+  cmEspExtra2 = 26;
+  MaxComando = 26;
+  { nomes usados nos arquivos de dados (secao [Botoes] de Dados/Lutadores/CNN.ini) }
+  NomesComando: array[1..MaxComando] of string = (
+    'Esquerda', 'Direita', 'SocoFraco', 'ChuteFraco', 'SocoForte', 'ChuteForte', 'Agachar',
+    'ApanharAlto', 'ApanharBaixo', 'Derrubar', 'BaterNoChao', 'Defender', 'DefenderBaixo',
+    'Vitoria', 'Pose', 'Esp1Fraco', 'Esp1Forte', 'Esp2Fraco', 'Esp2Forte', 'Esp3Fraco',
+    'Esp3Forte', 'Esp4Fraco', 'Esp4Forte', 'EspFinal', 'EspExtra1', 'EspExtra2');
+
+  { ---- Personagens (TLutador.Personagem; mesma ordem de Dados/Lutadores/CNN.ini) ---- }
+  pnChaves = 1;
+  pnSeuMadruga = 2;
+  pnChiquinha = 3;
+  pnQuico = 4;
+  pnDonaFlorinda = 5;
+  pnProfGirafales = 6;
+  pnSrBarriga = 7;
+  pnBruxa = 8;
+  pnPaty = 9;
+  pnNhonho = 10;
+  pnGodines = 11;
+  pnSrFurtado = 12;
+  pnJaiminho = 13;
+  pnDonaNeves = 14;
+  pnGloria = 15;
+
+  { ---- Lado (para onde o lutador ou efeito esta virado) ---- }
+  ldDireita = 1;
+  ldEsquerda = 2;
+
+  { ---- Forca do golpe (TLutador.ForcaGolpe; nos especiais escolhe a versao do golpe) ---- }
+  fgNenhum = 0;
+  fgFraco = 1;
+  fgForte = 2;
+  fgEspecial = 3;         // especial final (alguns personagens usam 3 e 4 como versoes de um especial)
+
+  { ---- Direcao do pulo (TLutador.DirPulo) ---- }
+  puloNenhum = 0;
+  puloReto = 1;
+  puloEsquerda = 2;
+  puloDireita = 3;
+
+  { ---- Sons da luta (indice em SomEfeitos: N = Sons/Som-(N+1).wav; SomPendente := N toca) ----
+    So os de uso geral; os demais (vozes e sons de cada especial) continuam com o numero. }
+  sndTempoEsgotado = 4;
+  sndGolpeFraco = 5;      // golpe fraco saindo
+  sndGolpeForte = 6;      // golpe forte saindo
+  sndAcertoFraco = 7;
+  sndAcertoForte = 8;
+  sndAcertoEspecial = 9;  // tambem ao pegar o item bonus
+  sndDefesa = 10;
+  sndItem = 11;           // comida que recupera energia
+  sndQueda = 12;          // lutador bate no chao
+  sndPoder = 13;          // ganhou um estoque de golpe especial
+  sndEspFinal = 19;       // inicio do especial final
+
 type
   { Lutador: 176 bytes, indices 1..2 (jogador 1 e 2). Offsets conforme o original. }
   TLutador = packed record
@@ -42,11 +162,11 @@ type
     GolpeAtivo: Boolean;  // True = o golpe atual ainda pode acertar
     EhChute: Boolean;  // True = o golpe atual e um chute
     NoAr: Boolean;  // True = esta pulando/no ar
-    Acao: Byte;  // acao atual (1 parado, 2 andando, 3.. golpes, 12 pulo, 17/18 apanhando, 19.. etc.)
+    Acao: Byte;  // acao atual (constantes ac*)
     Quadro: Byte;  // indice do sprite atual (P1 1..49, P2 51..99)
-    Lado: Byte;  // 1 = virado para a direita, 2 = para a esquerda
-    DirPulo: Byte;  // direcao do pulo (1 parado, 2 esquerda, 3 direita)
-    ForcaGolpe: Byte;  // forca do golpe atual (1 fraco, 2 forte, 3 especial) - escolhe o som/efeito
+    Lado: Byte;  // ldDireita ou ldEsquerda
+    DirPulo: Byte;  // direcao do pulo (constantes pulo*)
+    ForcaGolpe: Byte;  // forca do golpe atual (constantes fg*) - escolhe o som/efeito
     DanoGolpe: Byte;  // dano do golpe atual
     DanoDefesa: Byte;  // dano se o oponente estiver defendendo
     Recuo: Byte;  // velocidade de empurrao ao apanhar
@@ -65,9 +185,9 @@ type
     MsgBonus: Byte;  // mensagem de bonus (1 = Primeiro Ataque, 2 = Bonus)
     TempoMsgBonus: Byte;  // quadros restantes da mensagem
     DesenhaPorCima: Boolean;  // True = este lutador e desenhado por cima do outro
-    Vencedor: Boolean;  // True = venceu o round
+    Invulneravel: Boolean;  // True = golpes nao pegam (caindo/levantando; o vencedor do round tambem fica assim)
     Defendendo: Boolean;  // True = esta defendendo
-    Campo_148: Boolean;
+    AndandoFrente: Boolean;  // True = andando para o lado do oponente (False = recuando)
     Acertos: Byte;  // combo: acertos seguidos
     TempoAcertos: Byte;  // quadros restantes do combo
     MaxAcertos: Byte;  // maior combo da luta

@@ -18,13 +18,17 @@ unit ChavesDados;
 interface
 
 uses
-  Classes, SysUtils, IniFiles, DXClass;
+  Classes, SysUtils, IniFiles;
 
 const
   PastaDados = 'Dados/';
   ArqJogo = 'Jogo.ini';
   ArqRecursos = 'Recursos.ini';
   ArqConfiguracao = 'Chaves.ini';
+
+{ Resolve um caminho relativo de recurso: tenta a pasta atual, depois sobe a partir da pasta do
+  executavel (ate 8 niveis). Devolve o proprio nome se nao achar. }
+function ResolverCaminho(const Arquivo: string): string;
 
 { Abre Dados/Nome (procurando a partir da pasta do jogo). Sempre devolve um objeto: se o arquivo
   nao existir, o INI fica vazio e cada leitura devolve o valor padrao pedido. Quem chama libera. }
@@ -44,14 +48,39 @@ function CodigoIdioma(Idioma: Integer): string;
 { Separa "a,b,c" em partes (sem espacos nas pontas). }
 procedure SepararLista(const S: string; Partes: TStrings);
 
+{ Compara A com B pelo operador Op ('=', '<', '>', '<=', '>=', '<>'). }
+function CompararInt(A: Integer; const Op: string; B: Integer): Boolean;
+
 implementation
 
 var
   FmtPonto: TFormatSettings;
 
+function ResolverCaminho(const Arquivo: string): string;
+var
+  Dir: string;
+  I: Integer;
+begin
+  Result := Arquivo;
+  if Arquivo = '' then Exit;
+  if FileExists(Arquivo) then Exit;
+  if (ExtractFileDrive(Arquivo) <> '') or (Arquivo[1] in ['/', '\']) then Exit;
+  Dir := ExtractFilePath(ParamStr(0));
+  for I := 1 to 8 do
+  begin
+    if FileExists(Dir + Arquivo) then
+    begin
+      Result := Dir + Arquivo;
+      Exit;
+    end;
+    Dir := ExtractFilePath(ExcludeTrailingPathDelimiter(Dir));
+    if Dir = '' then Break;
+  end;
+end;
+
 function AbrirDados(const Nome: string): TMemIniFile;
 begin
-  Result := TMemIniFile.Create(DXResolvePath(PastaDados + Nome));
+  Result := TMemIniFile.Create(ResolverCaminho(PastaDados + Nome));
 end;
 
 function LerDecimal(Ini: TCustomIniFile; const Secao, Chave: string; Padrao: Double): Double;
@@ -89,6 +118,17 @@ end;
 function CodigoIdioma(Idioma: Integer): string;
 begin
   if Idioma = 2 then Result := 'ES' else Result := 'PT';
+end;
+
+function CompararInt(A: Integer; const Op: string; B: Integer): Boolean;
+begin
+  if Op = '=' then Result := A = B
+  else if Op = '<' then Result := A < B
+  else if Op = '>' then Result := A > B
+  else if Op = '<=' then Result := A <= B
+  else if Op = '>=' then Result := A >= B
+  else if Op = '<>' then Result := A <> B
+  else Result := False;
 end;
 
 procedure SepararLista(const S: string; Partes: TStrings);

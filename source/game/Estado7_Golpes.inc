@@ -13,13 +13,13 @@ begin
   if ((K and 1) <> 0) and (Dir = 'CIMA') then Result := True;
   if (K and 4) <> 0 then      // esquerda
   begin
-    if (Lutador[Jog].Lado = 1) and (Dir = 'TRAS') then Result := True;
-    if (Lutador[Jog].Lado = 2) and (Dir = 'FRENTE') then Result := True;
+    if (Lutador[Jog].Lado = ldDireita) and (Dir = 'TRAS') then Result := True;
+    if (Lutador[Jog].Lado = ldEsquerda) and (Dir = 'FRENTE') then Result := True;
   end;
   if (K and 8) <> 0 then      // direita
   begin
-    if (Lutador[Jog].Lado = 2) and (Dir = 'TRAS') then Result := True;
-    if (Lutador[Jog].Lado = 1) and (Dir = 'FRENTE') then Result := True;
+    if (Lutador[Jog].Lado = ldEsquerda) and (Dir = 'TRAS') then Result := True;
+    if (Lutador[Jog].Lado = ldDireita) and (Dir = 'FRENTE') then Result := True;
   end;
 end;
 
@@ -33,808 +33,61 @@ begin
   end;
 end;
 
+{ Vale se todos os termos da regra valem agora (Dados/Lutadores/CNN.ini, [Sequencias] e [Botoes]). }
+function TJogo.RegraVale(Jog: Byte; const R: TRegraComando): Boolean;
+var
+  P: PLutador;
+  I: Integer;
+  V: Boolean;
+begin
+  P := @Lutador[Jog];
+  Result := True;
+  for I := 0 to High(R.Termos) do
+  begin
+    case R.Termos[I].Tipo of
+      'B': V := seta(Jog, 'BAIXO');
+      'F': V := seta(Jog, 'FRENTE');
+      'T': V := seta(Jog, 'TRAS');
+      'C': V := seta(Jog, 'CIMA');
+      'b': V := P.TempoBaixo >= R.Termos[I].Valor;
+      't': V := P.TempoTras >= R.Termos[I].Valor;
+      'H': V := ChaoY = P.Y;
+      'P': V := P.SeqEstado = R.Termos[I].Valor;
+      'A': V := P.VelY <> 0;
+      's': V := P.CargaSoco >= R.Termos[I].Valor;
+      'k': V := P.CargaChute >= R.Termos[I].Valor;
+    else
+      V := False;
+    end;
+    if R.Termos[I].Nega then V := not V;
+    if not V then
+    begin
+      Result := False;
+      Exit;
+    end;
+  end;
+end;
+
+{ Botao apertado (1 soco fraco, 2 chute fraco, 3 soco forte, 4 chute forte): executa, em ordem, os
+  comandos das regras [Botoes] do personagem que valem agora. }
 procedure TJogo.golpe(Jog, Botao: Byte);
 var
   P: PLutador;
+  I: Integer;
 begin
   P := @Lutador[Jog];
-  if FlashTela = 0 then
-  begin
-    if (P.Personagem) = 1 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-    if (P.Personagem) = 2 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 10) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 10) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-    end;
-    if (P.Personagem) = 3 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-    if (P.Personagem) = 4 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 9) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 9) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 11) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-    end;
-    if (P.Personagem) = 5 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.CargaChute) >= 6) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.CargaChute) >= 6) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-    if (P.Personagem) = 6 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 7) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-    end;
-    if (P.Personagem) = 7 then
-    begin
-      if (Botao = 1) and ((P.CargaSoco) >= 6) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.CargaSoco) >= 6) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 1) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 1) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-    if (P.Personagem) = 8 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 2) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) and ((P.VelY) <> 0) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-    end;
-    if (P.Personagem) = 9 then
-    begin
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-    end;
-    if (P.Personagem) = 10 then
-    begin
-      if (Botao = 1) and ((P.CargaSoco) >= 6) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.CargaSoco) >= 6) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 1) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 1) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 4) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-    if (P.Personagem) = 11 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-    end;
-    if (P.Personagem) = 12 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-    end;
-    if (P.Personagem) = 13 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 25);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 10) then
-      begin
-        AcaoJogador(Jog, 26);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 10) then
-      begin
-        AcaoJogador(Jog, 26);
-      end;
-    end;
-    if (P.Personagem) = 14 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 5) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-    end;
-    if (P.Personagem) = 15 then
-    begin
-      if (Botao = 1) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 16);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 17);
-      end;
-      if (Botao = 1) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 18);
-      end;
-      if (Botao = 3) and ((P.SeqEstado) = 3) then
-      begin
-        AcaoJogador(Jog, 19);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 20);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 6) then
-      begin
-        AcaoJogador(Jog, 21);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 2) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
-      if (Botao = 2) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-      if (Botao = 4) and ((P.SeqEstado) = 8) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
-    end;
-  end;
+  if FlashTela <> 0 then Exit;
+  if (P.Personagem < 1) or (P.Personagem > High(FLutadores)) then Exit;
+  with FLutadores[P.Personagem] do
+    for I := 0 to High(Botoes) do
+      if (Botoes[I].Botao = Botao) and RegraVale(Jog, Botoes[I]) then
+        AcaoJogador(Jog, Botoes[I].Comando);
 end;
 
 procedure TJogo.sequenciagolpe(Jog: Byte);
 var
   P: PLutador;
+  I: Integer;
 begin
   P := @Lutador[Jog];
   if seta(Jog, 'BAIXO') then
@@ -861,827 +114,12 @@ begin
   begin
     P.TempoTras := (P.TempoTras)-1;
   end;
-  if (P.Personagem) = 1 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
-    begin
-      sequencia(Jog, 0, 4);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 10) and (((ChaoY)) = P.Y) then
-    begin
-      sequencia(Jog, 1, 4);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 6);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-  end;
-  if (P.Personagem) = 2 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 3, 7);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 9);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 9, 10);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 2, 10);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 9, 10);
-    end;
-  end;
-  if (P.Personagem) = 3 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 7);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 8);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-  end;
-  if (P.Personagem) = 4 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 4, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 7, 2);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 4);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 7);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 7);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 9);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 10);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 10, 11);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 11);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 10, 11);
-    end;
-  end;
-  if (P.Personagem) = 5 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 1);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
-    begin
-      sequencia(Jog, 0, 4);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 5) and (((ChaoY)) = P.Y) then
-    begin
-      sequencia(Jog, 1, 4);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 5);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-  end;
-  if (P.Personagem) = 6 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 6);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 7);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 7);
-    end;
-  end;
-  if (P.Personagem) = 7 then
-  begin
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and ((P.TempoTras) >= 6) then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
-    begin
-      sequencia(Jog, 0, 2);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
-    begin
-      sequencia(Jog, 3, 2);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-  end;
-  if (P.Personagem) = 8 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 1);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 7);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-  end;
-  if (P.Personagem) = 9 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if not seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 7);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-  end;
-  if (P.Personagem) = 10 then
-  begin
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') and ((P.TempoTras) >= 6) then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
-    begin
-      sequencia(Jog, 0, 2);
-    end;
-    if seta(Jog, 'CIMA') and not seta(Jog, 'BAIXO') and ((P.TempoBaixo) >= 6) then
-    begin
-      sequencia(Jog, 3, 2);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if not seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
-    begin
-      sequencia(Jog, 1, 5);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-  end;
-  if (P.Personagem) = 11 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-  end;
-  if (P.Personagem) = 12 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 2);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 6, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 7);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-  end;
-  if (P.Personagem) = 13 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 5, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 0, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 4);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 8, 5);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
-    begin
-      sequencia(Jog, 0, 7);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') and ((P.TempoTras) >= 6) then
-    begin
-      sequencia(Jog, 7, 7);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'FRENTE') then
-    begin
-      sequencia(Jog, 8, 9);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 9, 10);
-    end;
-  end;
-  if (P.Personagem) = 14 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 2);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 0, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 3, 3);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 6);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 6, 8);
-    end;
-  end;
-  if (P.Personagem) = 15 then
-  begin
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 0, 1);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 1, 1);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 2);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 1, 3);
-    end;
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 5, 3);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 0, 4);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 4, 4);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 4, 5);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 2, 5);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 5, 6);
-    end;
-    if seta(Jog, 'BAIXO') and not seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 7);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 3, 8);
-    end;
-    if seta(Jog, 'BAIXO') and seta(Jog, 'FRENTE') and not seta(Jog, 'TRAS') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-    if seta(Jog, 'FRENTE') and not seta(Jog, 'BAIXO') then
-    begin
-      sequencia(Jog, 7, 8);
-    end;
-  end;
+  { regras [Sequencias] do personagem, em ordem }
+  if (P.Personagem >= 1) and (P.Personagem <= High(FLutadores)) then
+    with FLutadores[P.Personagem] do
+      for I := 0 to High(Sequencias) do
+        if RegraVale(Jog, Sequencias[I]) then
+          sequencia(Jog, Sequencias[I].De, Sequencias[I].Para);
   if ((P.SeqTempo) > 0) and (PausaImpacto = 0) and (FlashTela = 0) then
   begin
     P.SeqTempo := (P.SeqTempo)-1;
@@ -1700,7 +138,6 @@ var
   Dist, DistProj, OppY, S_18, I: Integer;
   Ameaca: Byte;
   Fator: Double;
-  r7, r9, r11, r13, r17, r19, r21, r25, r28, r31, r34, r42, r45, r48, r51, r54, r58, r61, r64, r67, r70, r75, r78, r81, r84, r87, r92, r95, r98, r101, r104, r109, r112, r115, r118, r123, r126, r129, r132, r137, r140, r143, r146, r149, r154, r157, r160, r163, r168, r171, r174, r177, r182, r185, r188, r191, r196, r199, r202, r205, r208, r213, r216, r219, r222, r225, r230, r233, r236, r239, r242, r247, r250, r253, r256, r259, r262, r265: Integer;
 begin
   P := @Lutador[Jog];
   O := @Lutador[3 - Jog];
@@ -1719,7 +156,6 @@ begin
   end;
   Fator := (8 - NivelJogo) * 0.6 + 1.3 - Fase * 0.1;
   if Random(13) = 0 then
-  begin
     case Random(6) of
       0: P.DistanciaIA := 100;
       1: P.DistanciaIA := 150;
@@ -1728,759 +164,245 @@ begin
       4: P.DistanciaIA := 300;
       5: P.DistanciaIA := 350;
     end;
-  end;
   if Abs(Dist - P.DistanciaIA) <= 50 then P.DistanciaIA := Dist;
   if not P.Defendendo and (Ameaca = 0) then
   begin
-    if (Dist >= P.DistanciaIA) and ((P.Lado) = 1) then
-    begin
-      AcaoJogador(Jog, 2);
-    end;
-    if (Dist < P.DistanciaIA) and ((P.Lado) = 1) then
-    begin
-      AcaoJogador(Jog, 1);
-    end;
-    if (Dist >= P.DistanciaIA) and ((P.Lado) = 2) then
-    begin
-      AcaoJogador(Jog, 1);
-    end;
-    if (Dist < P.DistanciaIA) and ((P.Lado) = 2) then
-    begin
-      AcaoJogador(Jog, 2);
-    end;
+    if (Dist >= P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmDireita);
+    if (Dist < P.DistanciaIA) and (P.Lado = ldDireita) then AcaoJogador(Jog, cmEsquerda);
+    if (Dist >= P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmEsquerda);
+    if (Dist < P.DistanciaIA) and (P.Lado = ldEsquerda) then AcaoJogador(Jog, cmDireita);
   end;
   if not P.Defendendo and (Ameaca = 0) and (Dist <= 80) then
   begin
-    r7 := Random(Round(8 * Fator));
-    if r7 = 0 then
-    begin
-      AcaoJogador(Jog, 3);
-    end;
-    r9 := Random(Round(8 * Fator));
-    if r9 = 0 then
-    begin
-      AcaoJogador(Jog, 4);
-    end;
-    r11 := Random(Round(9 * Fator));
-    if r11 = 0 then
-    begin
-      AcaoJogador(Jog, 5);
-    end;
-    r13 := Random(Round(9 * Fator));
-    if r13 = 0 then
-    begin
-      AcaoJogador(Jog, 6);
-    end;
+    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
+    if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
+    if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
+    if Random(Round(9 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
     if Random(Round(4 * Fator)) = 0 then
     begin
-      AcaoJogador(Jog, 7);
-      r17 := Random(Round(2 * Fator));
-      if r17 = 0 then
-      begin
-        AcaoJogador(Jog, 3);
-      end;
-      r19 := Random(Round(2 * Fator));
-      if r19 = 0 then
-      begin
-        AcaoJogador(Jog, 4);
-      end;
-      r21 := Random(Round(3 * Fator));
-      if r21 = 0 then
-      begin
-        AcaoJogador(Jog, 5);
-      end;
-      if Random(Round(3 * Fator)) = 0 then
-      begin
-        AcaoJogador(Jog, 6);
-      end;
+      AcaoJogador(Jog, cmAgachar);
+      if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmSocoFraco);
+      if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, cmChuteFraco);
+      if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmSocoForte);
+      if Random(Round(3 * Fator)) = 0 then AcaoJogador(Jog, cmChuteForte);
     end;
   end;
   if not P.Defendendo then
   begin
-    if (P.Personagem) = 1 then
+    if P.Personagem = pnChaves then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r25 := Random(Round(7 * Fator));
-        if r25 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r28 := Random(Round(30 * Fator));
-        if r28 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r31 := Random(Round(40 * Fator));
-        if r31 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
-      if (Dist < 150) and (((ChaoY)) > O.Y) then
-      begin
-        r34 := Random(Round(50 * Fator));
-        if r34 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
+      if (Dist < 150) and (ChaoY > O.Y) then
+        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, Random(2)+22);
-      end;
-      if (Dist < 150) and (((ChaoY)) > O.Y) and (Random(Round(50 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Dist < 150) and (ChaoY > O.Y) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 2 then
+    if P.Personagem = pnSeuMadruga then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r42 := Random(Round(8 * Fator));
-        if r42 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r45 := Random(Round(30 * Fator));
-        if r45 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r48 := Random(Round(20 * Fator));
-        if r48 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if Dist < 200 then
       begin
-        S_18 := ((ChaoY))-100;
-        if ((S_18)) > P.Y then
-        begin
-          r51 := Random(Round(10 * Fator));
-          if r51 = 0 then
-          begin
-            AcaoJogador(Jog, Random(2)+20);
-          end;
-        end;
+        S_18 := ChaoY - 100;
+        if S_18 > P.Y then
+          if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       end;
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r54 := Random(Round(40 * Fator));
-        if r54 = 0 then
-        begin
-          AcaoJogador(Jog, 22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(55 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 23);
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 250) and (Random(Round(55 * Fator)) = 0) then AcaoJogador(Jog, cmEsp4Forte);
     end;
-    if (P.Personagem) = 3 then
+    if P.Personagem = pnChiquinha then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r58 := Random(Round(8 * Fator));
-        if r58 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r61 := Random(Round(45 * Fator));
-        if r61 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(45 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r64 := Random(Round(18 * Fator));
-        if r64 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(18 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r67 := Random(Round(20 * Fator));
-        if r67 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 150) then
-      begin
-        r70 := Random(Round(40 * Fator));
-        if r70 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 4 then
+    if P.Personagem = pnQuico then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r75 := Random(Round(8 * Fator));
-        if r75 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r78 := Random(Round(40 * Fator));
-        if r78 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r81 := Random(Round(35 * Fator));
-        if r81 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(35 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r84 := Random(Round(40 * Fator));
-        if r84 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 100 then
-      begin
-        r87 := Random(Round(10 * Fator));
-        if r87 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 5 then
+    if P.Personagem = pnDonaFlorinda then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r92 := Random(Round(8 * Fator));
-        if r92 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r95 := Random(Round(50 * Fator));
-        if r95 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 150) then
-      begin
-        r98 := Random(Round(30 * Fator));
-        if r98 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 300) then
-      begin
-        r101 := Random(Round(40 * Fator));
-        if r101 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 100 then
-      begin
-        r104 := Random(Round(10 * Fator));
-        if r104 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 6 then
+    if P.Personagem = pnProfGirafales then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r109 := Random(Round(6 * Fator));
-        if r109 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r112 := Random(Round(30 * Fator));
-        if r112 = 0 then
-        begin
-          AcaoJogador(Jog, Random(4)+16);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(4) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r115 := Random(Round(18 * Fator));
-        if r115 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(18 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r118 := Random(Round(35 * Fator));
-        if r118 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(45 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(35 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(45 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 7 then
+    if P.Personagem = pnSrBarriga then
     begin
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r123 := Random(Round(40 * Fator));
-        if r123 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r126 := Random(Round(10 * Fator));
-        if r126 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 150) then
-      begin
-        r129 := Random(Round(30 * Fator));
-        if r129 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r132 := Random(Round(30 * Fator));
-        if r132 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 8 then
+    if P.Personagem = pnBruxa then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r137 := Random(Round(7 * Fator));
-        if r137 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r140 := Random(Round(30 * Fator));
-        if r140 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if Dist < 200 then
       begin
-        S_18 := ((ChaoY))-100;
-        if ((S_18)) > P.Y then
-        begin
-          r143 := Random(Round(5 * Fator));
-          if r143 = 0 then
-          begin
-            AcaoJogador(Jog, Random(2)+18);
-          end;
-        end;
+        S_18 := ChaoY - 100;
+        if S_18 > P.Y then
+          if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       end;
       if (Ameaca = 0) and (Dist < 150) then
-      begin
-        r146 := Random(Round(20 * Fator));
-        if r146 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist > 100) then
-      begin
-        r149 := Random(Round(30 * Fator));
-        if r149 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist > 100) and (Random(Round(40 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist > 100) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 9 then
+    if P.Personagem = pnPaty then
     begin
       if (Ameaca = 0) and (Dist < 200) then
-      begin
-        r154 := Random(Round(30 * Fator));
-        if r154 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if Dist < 100 then
-      begin
-        r157 := Random(Round(5 * Fator));
-        if r157 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if Dist < 150 then
-      begin
-        r160 := Random(Round(5 * Fator));
-        if r160 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(5 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r163 := Random(Round(30 * Fator));
-        if r163 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 10 then
+    if P.Personagem = pnNhonho then
     begin
       if Dist < 200 then
-      begin
-        r168 := Random(Round(20 * Fator));
-        if r168 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 300) then
-      begin
-        r171 := Random(Round(40 * Fator));
-        if r171 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if Dist < 100 then
-      begin
-        r174 := Random(Round(20 * Fator));
-        if r174 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 200 then
-      begin
-        r177 := Random(Round(40 * Fator));
-        if r177 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 11 then
+    if P.Personagem = pnGodines then
     begin
       if Dist < 200 then
-      begin
-        r182 := Random(Round(20 * Fator));
-        if r182 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if Dist < 300 then
-      begin
-        r185 := Random(Round(40 * Fator));
-        if r185 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if Dist < 300 then
-      begin
-        r188 := Random(Round(30 * Fator));
-        if r188 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 200 then
-      begin
-        r191 := Random(Round(40 * Fator));
-        if r191 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 200) and (Random(Round(40 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 12 then
+    if P.Personagem = pnSrFurtado then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r196 := Random(Round(8 * Fator));
-        if r196 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r199 := Random(Round(50 * Fator));
-        if r199 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(50 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 80) then
-      begin
-        r202 := Random(Round(15 * Fator));
-        if r202 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(15 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 150) then
-      begin
-        r205 := Random(Round(20 * Fator));
-        if r205 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 200 then
       begin
-        S_18 := ((ChaoY))-100;
-        if ((S_18)) > P.Y then
-        begin
-          r208 := Random(Round(10 * Fator));
-          if r208 = 0 then
-          begin
-            AcaoJogador(Jog, Random(2)+20);
-          end;
-        end;
+        S_18 := ChaoY - 100;
+        if S_18 > P.Y then
+          if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       end;
-      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 22);
-      end;
+      if (Ameaca = 0) and (Dist < 250) and (Random(Round(60 * Fator)) = 0) then AcaoJogador(Jog, cmEsp4Fraco);
     end;
-    if (P.Personagem) = 13 then
+    if P.Personagem = pnJaiminho then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r213 := Random(Round(8 * Fator));
-        if r213 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 120) then
-      begin
-        r216 := Random(Round(40 * Fator));
-        if r216 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(40 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 90) then
-      begin
-        r219 := Random(Round(15 * Fator));
-        if r219 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(15 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist > 130) then
-      begin
-        r222 := Random(Round(20 * Fator));
-        if r222 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist > 120 then
-      begin
-        r225 := Random(Round(20 * Fator));
-        if r225 = 0 then
-        begin
-          AcaoJogador(Jog, Random(4)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 270) and (Random(Round(50 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 26);
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(4) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 270) and (Random(Round(50 * Fator)) = 0) then AcaoJogador(Jog, cmEspExtra2);
     end;
-    if (P.Personagem) = 14 then
+    if P.Personagem = pnDonaNeves then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r230 := Random(Round(6 * Fator));
-        if r230 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 160) then
-      begin
-        r233 := Random(Round(8 * Fator));
-        if r233 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(8 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 1) and (DistProj < 170) then
-      begin
-        r236 := Random(Round(7 * Fator));
-        if r236 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(7 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 120) then
-      begin
-        r239 := Random(Round(2 * Fator));
-        if r239 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(2 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if Dist < 80 then
-      begin
-        r242 := Random(Round(10 * Fator));
-        if r242 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 120) and (Random(Round(30 * Fator)) = 0) then
-      begin
-        AcaoJogador(Jog, 24);
-      end;
+        if Random(Round(10 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
+      if (Ameaca = 0) and (Dist < 120) and (Random(Round(30 * Fator)) = 0) then AcaoJogador(Jog, cmEspFinal);
     end;
-    if (P.Personagem) = 15 then
+    if P.Personagem = pnGloria then
     begin
       if (Ameaca = 1) and (DistProj > 140) then
-      begin
-        r247 := Random(Round(6 * Fator));
-        if r247 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist > 160) then
-      begin
-        r250 := Random(Round(12 * Fator));
-        if r250 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+16);
-        end;
-      end;
+        if Random(Round(12 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp1Fraco);
       if (Ameaca = 0) and (Dist < 100) then
-      begin
-        r253 := Random(Round(20 * Fator));
-        if r253 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+18);
-        end;
-      end;
+        if Random(Round(20 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp2Fraco);
       if (Ameaca = 0) and (Dist < 120) then
-      begin
-        r256 := Random(Round(25 * Fator));
-        if r256 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
-      if (Ameaca = 0) and (Dist < 80) and ((((ChaoY))-50) > OppY) then
-      begin
-        r259 := Random(Round(6 * Fator));
-        if r259 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+20);
-        end;
-      end;
+        if Random(Round(25 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
+      if (Ameaca = 0) and (Dist < 80) and (ChaoY - 50 > OppY) then
+        if Random(Round(6 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp3Fraco);
       if (Ameaca = 0) and (Dist < 140) then
-      begin
-        r262 := Random(Round(22 * Fator));
-        if r262 = 0 then
-        begin
-          AcaoJogador(Jog, Random(2)+22);
-        end;
-      end;
+        if Random(Round(22 * Fator)) = 0 then AcaoJogador(Jog, Random(2) + cmEsp4Fraco);
       if (Ameaca = 0) and (Dist < 120) then
-      begin
-        r265 := Random(Round(30 * Fator));
-        if r265 = 0 then
-        begin
-          AcaoJogador(Jog, 24);
-        end;
-      end;
+        if Random(Round(30 * Fator)) = 0 then AcaoJogador(Jog, cmEspFinal);
     end;
   end;
 end;
@@ -2499,21 +421,21 @@ var
 
   procedure DefesaHumana;
   begin
-    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then AcaoJogador(Jog, 12);
-    if seta(Jog, 'TRAS') and seta(Jog, 'BAIXO') then AcaoJogador(Jog, 13);
+    if seta(Jog, 'TRAS') and not seta(Jog, 'BAIXO') then AcaoJogador(Jog, cmDefender);
+    if seta(Jog, 'TRAS') and seta(Jog, 'BAIXO') then AcaoJogador(Jog, cmDefenderBaixo);
   end;
 
   procedure Pular;
   begin
     P.VelY := -32;
     P.NoAr := True;
-    P.Acao := 12;
+    P.Acao := acPulo;
     P.QuadroAcao := 0;
     P.DuracaoAcao := 99;
     P.Defendendo := False;
-    if P.Lado = 1 then P.DirPulo := 3;
-    if P.Lado = 2 then P.DirPulo := 2;
-    if Random(8) = 0 then P.DirPulo := 1;
+    if P.Lado = ldDireita then P.DirPulo := puloDireita;
+    if P.Lado = ldEsquerda then P.DirPulo := puloEsquerda;
+    if Random(8) = 0 then P.DirPulo := puloReto;
   end;
 
 begin
@@ -2552,14 +474,14 @@ begin
     if O.GolpeAtivo and (Dist <= 160) then
     begin
       if (ChaoY - 30) >= O.Y then
-        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, 12);
+        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefender);
       if (ChaoY - 30) <= O.Y then
-        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, 13);
-      if P.Acao = 21 then AcaoJogador(Jog, 12);
-      if P.Acao = 22 then AcaoJogador(Jog, 13);
+        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
+      if P.Acao = acDefesa then AcaoJogador(Jog, cmDefender);
+      if P.Acao = acDefesaBaixa then AcaoJogador(Jog, cmDefenderBaixo);
     end;
     // pulo (parado ou andando)
-    if (P.Acao = 1) or (P.Acao = 2) then
+    if (P.Acao = acParado) or (P.Acao = acAndando) then
     begin
       if (Ameaca = 1) and (DistProj <= 130) and ((P.Y - 120) < ProjY) and (Random(Round(5 * Fator)) <= 3) then
         Pular
@@ -2568,8 +490,8 @@ begin
     end;
     // projetil chegando
     if (Ameaca = 1) and (DistProj <= 120) and ((P.Y - 120) < ProjY) then
-      if Random(Round(0.4 * Fator)) = 0 then AcaoJogador(Jog, 12);
+      if Random(Round(0.4 * Fator)) = 0 then AcaoJogador(Jog, cmDefender);
     if (Ameaca = 1) and (DistProj <= 100) and ((P.Y - 120) >= ProjY) then
-      if Random(Round(2.5 * Fator)) = 0 then AcaoJogador(Jog, 13);
+      if Random(Round(2.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
   end;
 end;

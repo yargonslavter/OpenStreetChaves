@@ -15,7 +15,7 @@ program GeraFonte;
 {$APPTYPE CONSOLE}
 
 uses
-  Interfaces, Classes, SysUtils, DXTipos, DXTexto, DXFonte, ChavesTextos;
+  Interfaces, Classes, SysUtils, ChavesFonte, DXTexto, ChavesTextos;
 
 const
   NomeFonte = 'Comic Sans MS';
@@ -58,8 +58,8 @@ var
   Cod: Cardinal;
   S: string;
   W, H, X, Y, Margem, X0, X1, Y0, Y1, Avanco, Alt: Integer;
-  Dados: TDXMascara;
-  G: TDXGlifo;
+  Dados: TMascara;
+  G: TGlifo;
 begin
   Alt := DXTextoAltura(NomeFonte, Tam, 0, 'Hg');
   Margem := Tam * 2 + 8;
@@ -97,7 +97,7 @@ begin
         for X := 0 to G.W - 1 do
           G.Dados[Y * G.W + X] := Dados[(Y0 + Y) * W + X0 + X];
     end;
-    DXFonteAdicionar(Tam, Alt, G);
+    FonteAdicionar(Tam, Alt, G);
   end;
 end;
 
@@ -105,7 +105,7 @@ end;
 procedure Confere(Textos: TStringList);
 var
   T, I, Dif, MaxDif, Erros, Total, WA, HA, WB, HB, J, D, Maior: Integer;
-  A, B: TDXMascara;
+  A, B: TMascara;
   S: string;
   Pior: string;
 begin
@@ -121,7 +121,7 @@ begin
       if S = '' then Continue;
       Inc(Total);
       DXTextoMascara(NomeFonte, Tamanhos[T], 0, S, WA, HA, A);
-      DXFonteMascara(Tamanhos[T], S, WB, HB, B);
+      FonteMascara(Tamanhos[T], S, WB, HB, B);
       if (WA <> WB) or (HA <> HB) then
       begin
         Inc(Erros);
@@ -180,13 +180,13 @@ begin
     Halt(1);
   end;
 
-  DXFonteIniciar(NomeFonte);
+  FonteIniciar(NomeFonte);
   for T := 0 to High(Tamanhos) do
   begin
     Escreve('gerando tamanho ' + IntToStr(Tamanhos[T]) + ' ...');
     GeraTamanho(Tamanhos[T]);
   end;
-  DXFonteSalvar(Arquivo);
+  FonteSalvar(Arquivo);
   with TFileStream.Create(Arquivo, fmOpenRead) do
   try
     Escreve(Format('Atlas gravado: %s (%d KB)', [Arquivo, Size div 1024]));
@@ -195,7 +195,7 @@ begin
   end;
 
   { le de volta (caminho do jogo) e confere }
-  if not DXFonteCarregar(Arquivo) then
+  if not FonteCarregar(Arquivo) then
   begin
     Escreve('ERRO: nao consegui ler o atlas de volta.');
     Log.SaveToFile(Raiz + 'GeraFonte.log');

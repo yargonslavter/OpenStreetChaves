@@ -104,11 +104,11 @@ e os deslocamentos do registro nao mudam).
 | 104 | `GolpeAtivo` | Boolean | True = o golpe atual ainda pode acertar |
 | 105 | `EhChute` | Boolean | True = o golpe atual e um chute |
 | 106 | `NoAr` | Boolean | True = esta pulando/no ar |
-| 107 | `Acao` | Byte | acao atual (1 parado, 2 andando, 3.. golpes, 12 pulo, 17/18 apanhando, 19.. etc.) |
+| 107 | `Acao` | Byte | acao atual: constantes `ac*` em `ChavesTipos.pas` |
 | 108 | `Quadro` | Byte | indice do sprite atual (P1 1..49, P2 51..99) |
-| 109 | `Lado` | Byte | 1 = virado para a direita, 2 = para a esquerda |
-| 110 | `DirPulo` | Byte | direcao do pulo (1 parado, 2 esquerda, 3 direita) |
-| 111 | `ForcaGolpe` | Byte | forca do golpe atual (1 fraco, 2 forte, 3 especial) - escolhe o som/efeito |
+| 109 | `Lado` | Byte | `ldDireita` (1) ou `ldEsquerda` (2) |
+| 110 | `DirPulo` | Byte | direcao do pulo: `puloNenhum`, `puloReto`, `puloEsquerda`, `puloDireita` |
+| 111 | `ForcaGolpe` | Byte | forca do golpe atual (`fgFraco`, `fgForte`, `fgEspecial`) - escolhe o som/efeito |
 | 112 | `DanoGolpe` | Byte | dano do golpe atual |
 | 113 | `DanoDefesa` | Byte | dano se o oponente estiver defendendo |
 | 114 | `Recuo` | Byte | velocidade de empurrao ao apanhar |
@@ -124,9 +124,9 @@ e os deslocamentos do registro nao mudam).
 | 143 | `MsgBonus` | Byte | mensagem de bonus (1 = Primeiro Ataque, 2 = Bonus) |
 | 144 | `TempoMsgBonus` | Byte | quadros restantes da mensagem |
 | 145 | `DesenhaPorCima` | Boolean | True = este lutador e desenhado por cima do outro |
-| 146 | `Vencedor` | Boolean | True = venceu o round |
+| 146 | `Invulneravel` | Boolean | True = golpes nao pegam (caindo/levantando; o vencedor do round tambem). Antes chamado `Vencedor` |
 | 147 | `Defendendo` | Boolean | True = esta defendendo |
-| 148 | `Campo_148` | Boolean |  |
+| 148 | `AndandoFrente` | Boolean | True = andando na direcao do oponente. Antes `Campo_148` |
 | 149 | `Acertos` | Byte | combo: acertos seguidos |
 | 150 | `TempoAcertos` | Byte | quadros restantes do combo |
 | 151 | `MaxAcertos` | Byte | maior combo da luta |
@@ -145,6 +145,14 @@ e os deslocamentos do registro nao mudam).
 | 173 | `AntBaixo` | Boolean |  |
 | 174 | `AntEsq` | Boolean |  |
 | 175 | `AntDir` | Boolean |  |
+
+## Constantes da luta (`ChavesTipos.pas`)
+
+- `ac*`: acoes do lutador (`TLutador.Acao`); `acEspecial1..7` mudam de sentido por personagem.
+- `cm*`: comandos de `AcaoJogador` (pedidos pelo jogador, pela IA e pela luta).
+- `pn*`: personagens (1..15, mesma ordem de `Dados/Lutadores/CNN.ini`).
+- `ld*`, `fg*`, `pulo*`: lado, forca do golpe e direcao do pulo.
+- `snd*`: sons de uso geral da luta (indice N = `Sons/Som-(N+1).wav`).
 
 ## Registro `TEfeito` (56 bytes, 80 posicoes em `Efeitos`)
 

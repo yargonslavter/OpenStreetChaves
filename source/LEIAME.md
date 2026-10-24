@@ -10,15 +10,13 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
 - `source/game/` - lógica do jogo:
   - `ChavesTipos`, `ChavesConst`, `ChavesGolpes` - tipos, constantes e golpes;
   - `ChavesTextos.pas` - lê os textos de `Dados/Textos/<idioma>.ini`;
-  - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`);
+  - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`) e leitor de BMP;
+  - `ChavesFonte.pas` - texto pelo atlas de glifos (`Fontes/ComicSansMS.atlas`), usado também pela GeraFonte;
   - `ChavesSom.pas` - áudio (`TBancoSom`, mixer sobre o áudio do SDL);
   - `Comum_*.inc` - partes compartilhadas (desenho, recursos, sprites, início, quadro, entrada, SDL);
   - `Estado0..12_*.inc` - um arquivo por estado do jogo (resolução, abertura, configuração, teclas, seleção,
     adversários, preparação da luta, luta, golpes, recordes, continuar, final, aviso, iniciais);
   - `ChavesDados.pas` - leitura dos arquivos de dados (`Dados/*.ini`, `Chaves.ini`).
-- `source/legacy/` - o que sobrou da antiga camada DelphiX (a ser incorporado ao resto do código):
-  `DXTipos` (cor), `DXClass` (coleção por nome e resolução de caminhos), `DXBmp` (leitor de BMP),
-  `DXFonte` (texto pelo atlas de glifos).
 - `source/3party/SDL2/` - SDL2-for-Pascal (ligação estática com `SDL2.dll`). Só `sdl2.pas` e seus `.inc` são usados;
   `sdl2_gfx/image/mixer/net/ttf` não são usados pelo jogo.
 - `source/tools/GeraFonte/` - ferramenta separada (usa a LCL) que gera `Fontes/ComicSansMS.atlas` a partir da fonte
@@ -31,11 +29,17 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
     usa as imagens pelo nome (`ImgIcone.PorNome('Mesa')`), não pela posição.
   - `Lutadores/CNN.ini` - dados de cada personagem: `[Geral]` (altura do sprite, velocidade, chefe, quem nunca
     enfrenta, cenários e música quando é o adversário) e `[Golpes]` (lista da tecla G), editados à mão;
-    `[CentroX]`, `[Corpo]` e `[Ataque]` gerados por `source/tools/ExtraiDados/extrai_lutadores.py` (ainda
-    não lidos pelo jogo).
+    `[Sequencias]` (setas que avançam a sequência de cada golpe especial) e `[Botoes]` (botão + passo da
+    sequência -> comando), lidos por `golpe`/`sequenciagolpe`;
+    `[CentroX]`, `[Corpo]` e `[Ataque]` (centro do sprite e caixas de colisão de cada quadro, lidos por
+    `ChavesGolpes`).
   - `Cenarios/Cenario-NN.ini` - dados de cada cenário: animações do fundo (`[AnimacaoN]`, com os personagens
     que as escondem e a faixa de `ContPisca` de cada quadro), item que quebra (`[Item]`) e voador (`[Voador]`).
     O limite da câmera vem do tamanho da imagem do cenário. `[Geral] Musica` = música própria do cenário.
+  - `Efeitos.ini` - os 36 tipos de efeito da luta (fagulhas, sangue, projéteis...): o que cada um define ao
+    ser criado (duração, dano, caixa, velocidade, sorteios) e as regras de animação (`AnimN`) de cada quadro.
+  - `Finais.ini` - roteiro do final de cada personagem: linhas `condição de tempo: comando` (carregar cenário
+    e lutadores, desenhar, falas, tela preta, explosão, efeitos) e a primeira linha das legendas.
   - `Som.ini` - volume de cada som (em % do arquivo), com medidas e sugestões comentadas; busca pelo
     nome do arquivo, depois pela pasta, depois `Padrao`. A seção `[Volume]` do `Chaves.ini` ajusta só aquele
     computador e vale mais que o `Som.ini`.

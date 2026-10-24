@@ -1,5 +1,5 @@
 { ChavesConst.pas - constantes compartilhadas: cores, alinhamentos de texto, limites do jogo.
-  Cores sao TColor (formato $00BBGGRR do Lazarus). Cores calculadas em tempo de execucao
+  Cores sao TColor (formato $00BBGGRR, como no Delphi/Lazarus). Cores calculadas em tempo de execucao
   (piscando, degrade) continuam usando RGB(...) no codigo. }
 
 unit ChavesConst;
@@ -8,8 +8,11 @@ unit ChavesConst;
 
 interface
 
-uses
-  DXTipos;
+type
+  { cor no formato $00BBGGRR (o mesmo do Delphi/Lazarus) }
+  TColor = type Longint;
+
+function RGBToColor(R, G, B: Byte): TColor; inline;
 
 const
   { ---- Estados do jogo ---- }
@@ -60,5 +63,10 @@ const
   MaxEfeitos = 80;      // vagas na tabela de efeitos (fagulhas, projeteis, textos...)
 
 implementation
+
+function RGBToColor(R, G, B: Byte): TColor;
+begin
+  Result := TColor(R or (G shl 8) or (B shl 16));
+end;
 
 end.

@@ -41,19 +41,19 @@ begin
       Dec(AvisoVelocidade);
     end;
     if MostrarNivel then
-      texto(200, 285, Linha(MemoTexto, 18) + IntToStr(NivelJogo), ACentro, 10, Branco);
+      texto(200, 285, Linha(TxtGeral, 18) + IntToStr(NivelJogo), ACentro, 10, Branco);
     if MostrarCreditos then
     begin
-      texto(300, 285, Linha(MemoTexto, 19), AEsq, 10, Branco);
+      texto(300, 285, Linha(TxtGeral, 19), AEsq, 10, Branco);
       texto(395, 285, IntToStr(Fichas), ADir, 10, Branco);
     end;
     { aviso "alguem entrou no combate" durante a demonstracao }
     if (AvisoEntrada > 0) and (Estado = CHS_LUTA) then
     begin
       barraredonda(80, 100, 320, 170, 10, Branco, Preto);
-      texto(200, 100, Linha(MemoTexto, 10), ACentro, 15, RosaClaro);
-      texto(200, 120, Linha(MemoTexto, 11), ACentro, 15, RosaClaro);
-      texto(200, 140, Linha(MemoTexto, 12), ACentro, 15, RosaClaro);
+      texto(200, 100, Linha(TxtGeral, 10), ACentro, 15, RosaClaro);
+      texto(200, 120, Linha(TxtGeral, 11), ACentro, 15, RosaClaro);
+      texto(200, 140, Linha(TxtGeral, 12), ACentro, 15, RosaClaro);
       RelogioParado := True;
       Dec(AvisoEntrada);
       if AvisoEntrada = 0 then

@@ -8,106 +8,129 @@
       <Unit>
         <Filename Value="StreetChaves.lpr"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <CursorPos X="11" Y="11"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="28"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="ChavesJogo.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="181"/>
         <CursorPos X="16" Y="215"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="22"/>
       </Unit>
       <Unit>
         <Filename Value="ChavesSDL.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="132"/>
         <CursorPos X="46" Y="146"/>
-        <UsageCount Value="23"/>
+        <UsageCount Value="24"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ChavesUTF8.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="21"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesConst.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2"/>
         <CursorPos X="11" Y="18"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="28"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesTipos.pas"/>
         <IsPartOfProject Value="True"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
-        <UsageCount Value="27"/>
+        <UsageCount Value="28"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesTextos.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="27"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="28"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesGolpes.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="41"/>
         <CursorPos X="46" Y="66"/>
-        <UsageCount Value="27"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy\DXTipos.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="30"/>
-        <CursorPos X="29" Y="67"/>
-        <UsageCount Value="21"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy\DXBmp.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy\DXFonte.pas"/>
-        <IsPartOfProject Value="True"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="55"/>
-        <CursorPos X="25" Y="30"/>
-        <UsageCount Value="21"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy\DXClass.pas"/>
-        <IsPartOfProject Value="True"/>
-        <UsageCount Value="27"/>
-        <DefaultSyntaxHighlighter Value="Delphi"/>
+        <UsageCount Value="28"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesGfx.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="580"/>
         <CursorPos X="46" Y="603"/>
-        <UsageCount Value="21"/>
+        <UsageCount Value="22"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesSom.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="game\ChavesFonte.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="20"/>
       </Unit>
       <Unit>
         <Filename Value="game\ChavesDados.pas"/>
         <IsPartOfProject Value="True"/>
-        <UsageCount Value="21"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy\DXTipos.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="30"/>
+        <CursorPos X="29" Y="67"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy\DXBmp.pas"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="22"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy\DXFonte.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="55"/>
+        <CursorPos X="25" Y="30"/>
+        <UsageCount Value="22"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
+      </Unit>
+      <Unit>
+        <Filename Value="legacy\DXClass.pas"/>
+        <IsVisibleTab Value="True"/>
+        <UsageCount Value="28"/>
+        <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="legacy\DXDraws.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="1361"/>
         <CursorPos X="53" Y="1378"/>
@@ -116,11 +139,13 @@
       </Unit>
       <Unit>
         <Filename Value="legacy\DXSounds.pas"/>
+        <IsVisibleTab Value="True"/>
         <UsageCount Value="26"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
       <Unit>
         <Filename Value="legacy\DXTexto.pas"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="28"/>
         <CursorPos X="68" Y="55"/>
@@ -128,6 +153,7 @@
       </Unit>
       <Unit>
         <Filename Value="legacy\DXInput.pas"/>
+        <IsVisibleTab Value="True"/>
         <UsageCount Value="26"/>
         <DefaultSyntaxHighlighter Value="Delphi"/>
       </Unit>
@@ -136,6 +162,7 @@
         <ComponentName Value="Form1"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="125"/>
         <CursorPos X="51" Y="143"/>
@@ -144,6 +171,7 @@
       </Unit>
       <Unit>
         <Filename Value="game\Comum_Sprites.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="98"/>
         <CursorPos X="73" Y="118"/>
@@ -151,6 +179,7 @@
       </Unit>
       <Unit>
         <Filename Value="game\Comum_Quadro.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="30"/>
         <CursorPos X="67" Y="49"/>
@@ -159,11 +188,13 @@
       </Unit>
       <Unit>
         <Filename Value="game\Comum_Util.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
       </Unit>
       <Unit>
         <Filename Value="C:\lazarus\lcl\include\application.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="2258"/>
         <CursorPos Y="2273"/>
@@ -171,6 +202,7 @@
       </Unit>
       <Unit>
         <Filename Value="C:\lazarus\lcl\include\customform.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="907"/>
         <CursorPos Y="923"/>
@@ -178,6 +210,7 @@
       </Unit>
       <Unit>
         <Filename Value="game\Comum_Recursos.inc"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="10"/>
       </Unit>

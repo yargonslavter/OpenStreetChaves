@@ -19,7 +19,7 @@ begin
   begin
     barra(0, 0, LarguraTela, AlturaTela, RGB(120, 120, 250));
     Ab.PorNome('Vencedores').Draw(Sup, 110, 10, 0);
-    texto(200, 210, Linha(MemoTexto, 13), ACentro, 16, RGB(250, 200, 0));
+    texto(200, 210, Linha(TxtGeral, 13), ACentro, 16, RGB(250, 200, 0));
   end;
 
   if (TempoEstado >= 100) and (TempoEstado <= 370) then
@@ -95,7 +95,7 @@ begin
     texto(320, 140, Versao, AEsq, 8, Branco);
   if TempoEstado > 440 then
   begin
-    S := Linha(MemoTexto, 22);
+    S := Linha(TxtGeral, 22);
     if TempoEstado < 500 then
     begin
       if Odd(TempoEstado) then
@@ -106,8 +106,8 @@ begin
     if TempoEstado >= 500 then
       texto(200, 170, S, ACentro, 12, AzulTitulo);
     Ab.PorNome('Cybergamba').Draw(Sup, 5, 280, 0);
-    texto(200, 253, Linha(MemoTexto, 26), ACentro, 8, Branco);
-    texto(200, 267, Linha(MemoTexto, 31), ACentro, 8, Branco);
+    texto(200, 253, Linha(TxtGeral, 26), ACentro, 8, Branco);
+    texto(200, 267, Linha(TxtGeral, 31), ACentro, 8, Branco);
   end;
 
   if Fichas > 0 then
@@ -133,9 +133,9 @@ begin
     FaseIntro := 72;
     FaseFim := 0;
     Lutador[1].Ativo := False;
-    Lutador[1].Acao := 1;
+    Lutador[1].Acao := acParado;
     Lutador[2].Ativo := False;
-    Lutador[2].Acao := 1;
+    Lutador[2].Acao := acParado;
     zerardados(1);
     zerardados(2);
     PausaImpacto := 0;
@@ -162,9 +162,9 @@ begin
   end;
 
   if (ContPisca < 12) and (Fichas = 0) then
-    texto(200, 235, Linha(MemoTexto, 6), ACentro, 10, Branco);
+    texto(200, 235, Linha(TxtGeral, 6), ACentro, 10, Branco);
   if (ContPisca < 12) and (Fichas > 0) then
-    texto(200, 235, Linha(MemoTexto, 7), ACentro, 10, Branco);
+    texto(200, 235, Linha(TxtGeral, 7), ACentro, 10, Branco);
   //Cor := 0;
   //if Cor = 1 then Y0 := 0;
 end;
@@ -192,7 +192,7 @@ begin
       Lutador[1].Escolheu := False;
       Lutador[1].Pontos := 0;
       Lutador[1].RoundsVencidos := 0;
-      Lutador[1].Personagem := 1;
+      Lutador[1].Personagem := pnChaves;
       Dec(Fichas);
       Estado := CHS_SELECAO;
       FaseSelecao := 1;
@@ -208,7 +208,7 @@ begin
       Lutador[2].Escolheu := False;
       Lutador[2].Pontos := 0;
       Lutador[2].RoundsVencidos := 0;
-      Lutador[2].Personagem := 2;
+      Lutador[2].Personagem := pnSeuMadruga;
       Dec(Fichas);
       Estado := CHS_SELECAO;
       FaseSelecao := 1;

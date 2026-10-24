@@ -18,7 +18,7 @@ unit ChavesTextos;
 interface
 
 uses
-  Classes, SysUtils, DXClass, ChavesDados;
+  Classes, SysUtils, ChavesDados;
 
 { Substitui o conteudo das listas pelo texto do idioma (1 = portugues, 2 = espanhol). }
 procedure CarregarTextos(Idioma: Integer; Nomes, Texto, Config, Frases, Dialogo,
@@ -82,7 +82,7 @@ begin
 
   Arquivo := TStringList.Create;
   try
-    L := DXResolvePath(PastaDados + 'Textos/' + CodigoIdioma(Idioma) + '.ini');
+    L := ResolverCaminho(PastaDados + 'Textos/' + CodigoIdioma(Idioma) + '.ini');
     if FileExists(L) then Arquivo.LoadFromFile(L);
     Atual := nil;
     NaInterface := False;

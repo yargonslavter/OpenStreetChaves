@@ -8,8 +8,8 @@ var
 begin
   Sel := AzulSelecao;
   barra(0, 0, LarguraTela, AlturaTela, Preto);
-  texto(200, 5, Linha(MemoConfig, 23), ACentro, 15, Branco);
-  for I := 1 to 8 do texto(50, 60 + 20 * I, Linha(MemoConfig, 23 + I), AEsq, 11, Branco);
+  texto(200, 5, Linha(TxtConfig, 23), ACentro, 15, Branco);
+  for I := 1 to 8 do texto(50, 60 + 20 * I, Linha(TxtConfig, 23 + I), AEsq, 11, Branco);
   for I := 1 to 8 do
   begin
     K := MapaP1[I - 1];
@@ -21,10 +21,10 @@ begin
     else texto(200, Y + 80, NomeTecla(K), AEsq, 11, Branco);
   end;
   if (CursorMenu >= 1) and (CursorMenu <= 8) then
-    texto(50, 60 + 20 * CursorMenu, Linha(MemoConfig, 23 + CursorMenu), AEsq, 11, Sel);
+    texto(50, 60 + 20 * CursorMenu, Linha(TxtConfig, 23 + CursorMenu), AEsq, 11, Sel);
   if CursorMenu < 1 then CursorMenu := 1;
   if CursorMenu > 9 then CursorMenu := 9;
-  texto(200, 280, Linha(MemoConfig, 32), ACentro, 11, Branco);
+  texto(200, 280, Linha(TxtConfig, 32), ACentro, 11, Branco);
 end;
 
 { Teclado do estado TECLAS: F2 volta a abertura; as demais teclas sao capturadas para a acao CursorMenu (1..8) }

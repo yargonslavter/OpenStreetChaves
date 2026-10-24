@@ -9,7 +9,7 @@ begin
     barra(0, L * 5, LarguraTela, L * 5 + 5, RGB(L * 3 + 10, L * 3 + 50, L * 3 + 30));
   if (ContagemSeg > 0) or (ContagemTick > 0) then
   begin
-    texto(200, 20, Linha(MemoTexto, 24), ACentro, 35, RGB(255, 120, 120));
+    texto(200, 20, Linha(TxtGeral, 24), ACentro, 35, RGB(255, 120, 120));
     Cor := RGB(255, ContagemSeg * 25, ContagemSeg * 25);
     if ContagemSeg > 3 then texto(320, 70, IntToStr(ContagemSeg), ACentro, 120, Cor);
     if (ContagemSeg <= 3) and (ContPisca < 8) then texto(320, 70, IntToStr(ContagemSeg), ACentro, 120, Cor);
@@ -25,7 +25,7 @@ begin
   if (ContagemSeg = 0) and (ContagemTick = 0) then
   begin
     // fim de jogo
-    texto(200, 110, Linha(MemoTexto, 23), ACentro, 36, Vermelho);
+    texto(200, 110, Linha(TxtGeral, 23), ACentro, 36, Vermelho);
     if ContPisca < 15 then barra(0, ContPisca * 10, LarguraTela, AlturaTela - ContPisca * 10, Branco);
     Inc(ContPisca);
     if ContPisca > 150 then

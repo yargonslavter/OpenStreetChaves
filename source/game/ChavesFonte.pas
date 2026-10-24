@@ -1,6 +1,6 @@
-unit DXFonte;
+unit ChavesFonte;
 
-{ DXFonte.pas - texto a partir de um ATLAS de glifos pre-renderizados (sem fonte do sistema, sem LCL).
+{ ChavesFonte.pas - texto a partir de um ATLAS de glifos pre-renderizados (sem fonte do sistema, sem LCL).
 
   O original desenhava com a fonte "Comic Sans MS" do Windows. Aqui cada letra, em cada um dos
   tamanhos usados pelo jogo, ja vem desenhada (cobertura de 8 bits) num arquivo gerado uma unica
@@ -17,28 +17,31 @@ unit DXFonte;
 interface
 
 uses
-  Classes, SysUtils, DXTipos;
+  Classes, SysUtils;
 
 type
-  TDXGlifo = record
+  { cobertura de um texto: W x H bytes, 0 = fundo, 255 = tinta cheia }
+  TMascara = array of Byte;
+
+  TGlifo = record
     Codigo: Cardinal;
     Avanco, XOff, YOff, W, H: Integer;
-    Dados: TDXMascara;
+    Dados: TMascara;
   end;
 
 { leitura }
-function DXFonteCarregar(const Arquivo: string): Boolean;
-function DXFonteDisponivel: Boolean;
+function FonteCarregar(const Arquivo: string): Boolean;
+function FonteDisponivel: Boolean;
 { True se o atlas carregado e da fonte pedida (comparacao sem diferenciar maiusculas) }
-function DXFonteServe(const NomeFonte: string): Boolean;
-procedure DXFonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dados: TDXMascara);
-function DXFonteLargura(Tam: Integer; const S: string): Integer;
-function DXFonteAltura(Tam: Integer): Integer;
+function FonteServe(const NomeFonte: string): Boolean;
+procedure FonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dados: TMascara);
+function FonteLargura(Tam: Integer; const S: string): Integer;
+function FonteAltura(Tam: Integer): Integer;
 
 { gravacao (usada so pela ferramenta GeraFonte) }
-procedure DXFonteIniciar(const NomeFonte: string);
-procedure DXFonteAdicionar(Tam, AlturaCelula: Integer; const G: TDXGlifo);
-procedure DXFonteSalvar(const Arquivo: string);
+procedure FonteIniciar(const NomeFonte: string);
+procedure FonteAdicionar(Tam, AlturaCelula: Integer; const G: TGlifo);
+procedure FonteSalvar(const Arquivo: string);
 
 implementation
 
@@ -48,19 +51,19 @@ uses
 type
   TTamanho = record
     Tam, Altura: Integer;
-    Glifos: array of TDXGlifo;      // ordenados por Codigo
+    Glifos: array of TGlifo;      // ordenados por Codigo
   end;
 
 var
   GNome: string = '';
   GTam: array of TTamanho;
 
-function DXFonteDisponivel: Boolean;
+function FonteDisponivel: Boolean;
 begin
   Result := Length(GTam) > 0;
 end;
 
-function DXFonteServe(const NomeFonte: string): Boolean;
+function FonteServe(const NomeFonte: string): Boolean;
 begin
   Result := (Length(GTam) > 0) and SameText(NomeFonte, GNome);
 end;
@@ -128,7 +131,7 @@ begin
   if Result < 0 then Result := AcharGlifo(T, Ord('?'));
 end;
 
-function DXFonteAltura(Tam: Integer): Integer;
+function FonteAltura(Tam: Integer): Integer;
 var
   K: Integer;
 begin
@@ -137,7 +140,7 @@ begin
   Result := GTam[K].Altura;
 end;
 
-function DXFonteLargura(Tam: Integer; const S: string): Integer;
+function FonteLargura(Tam: Integer; const S: string): Integer;
 var
   K, I, G: Integer;
 begin
@@ -152,10 +155,10 @@ begin
   end;
 end;
 
-procedure DXFonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dados: TDXMascara);
+procedure FonteMascara(Tam: Integer; const S: string; out W, H: Integer; out Dados: TMascara);
 var
   K, I, G, Pen, X, Y, TX, TY: Integer;
-  P: ^TDXGlifo;
+  P: ^TGlifo;
   V: Byte;
 begin
   Dados := nil;
@@ -167,7 +170,7 @@ begin
     SetLength(Dados, 1);
     Exit;
   end;
-  W := DXFonteLargura(Tam, S);
+  W := FonteLargura(Tam, S);
   if W < 1 then W := 1;
   H := GTam[K].Altura;
   if H < 1 then H := 1;
@@ -198,7 +201,7 @@ end;
 
 { ---- arquivo ---- }
 
-function DXFonteCarregar(const Arquivo: string): Boolean;
+function FonteCarregar(const Arquivo: string): Boolean;
 var
   F: TFileStream;
   Magic: array[0..5] of AnsiChar;
@@ -207,7 +210,7 @@ var
   NTam, NGl, T, K, L, N: Integer;
   Buf: array[0..65535] of Byte;
   Nome: AnsiString;
-  G: ^TDXGlifo;
+  G: ^TGlifo;
 begin
   Result := False;
   GTam := nil;
@@ -269,13 +272,13 @@ begin
   end;
 end;
 
-procedure DXFonteIniciar(const NomeFonte: string);
+procedure FonteIniciar(const NomeFonte: string);
 begin
   GNome := NomeFonte;
   GTam := nil;
 end;
 
-procedure DXFonteAdicionar(Tam, AlturaCelula: Integer; const G: TDXGlifo);
+procedure FonteAdicionar(Tam, AlturaCelula: Integer; const G: TGlifo);
 var
   K, N: Integer;
 begin
@@ -294,15 +297,15 @@ begin
   GTam[K].Glifos[N] := G;
 end;
 
-procedure DXFonteSalvar(const Arquivo: string);
+procedure FonteSalvar(const Arquivo: string);
 var
   F: TFileStream;
   M: TMemoryStream;
   C: TCompressionStream;
   T, K, I, J: Integer;
-  Tmp: TDXGlifo;
+  Tmp: TGlifo;
   Nome: AnsiString;
-  G: ^TDXGlifo;
+  G: ^TGlifo;
 begin
   M := TMemoryStream.Create;
   try

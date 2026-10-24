@@ -66,7 +66,7 @@ begin
     FQtdCenarios := Ini.ReadInteger('Cenarios', 'Quantidade', 12);
     SetLength(FMusicaCenario, FQtdCenarios + 1);
     for I := 1 to FQtdCenarios do
-      with TMemIniFile.Create(DXResolvePath(ArquivoNN(FPadraoDadosCenario, I))) do
+      with TMemIniFile.Create(ResolverCaminho(ArquivoNN(FPadraoDadosCenario, I))) do
       try
         FMusicaCenario[I] := ReadInteger('Geral', 'Musica', 0);
       finally
@@ -86,6 +86,8 @@ begin
       carregarefeitos(ArquivoNN(Padrao, I));
     Linhas.Clear;
     Ini.ReadSectionValues('Efeitos.Nomes', Linhas);
+    LerEfeitos(ResolverCaminho(Ini.ReadString('Efeitos', 'Dados', '')));
+    LerFinais(ResolverCaminho(Ini.ReadString('Finais', 'Dados', '')));
     for I := 0 to Linhas.Count - 1 do
     begin
       V := StrToIntDef(Linhas.ValueFromIndex[I], 0) - 1;
@@ -160,11 +162,12 @@ var
   V: string;
 begin
   SetLength(FLutadores, FQtdLutadores + 1);
+  PrepararQuadrosLutadores(FQtdLutadores);
   Partes := TStringList.Create;
   try
     for P := 1 to FQtdLutadores do
     begin
-      Ini := TMemIniFile.Create(DXResolvePath(ArquivoNN(Padrao, P)));
+      Ini := TMemIniFile.Create(ResolverCaminho(ArquivoNN(Padrao, P)));
       try
         with FLutadores[P] do
         begin
@@ -191,10 +194,126 @@ begin
             Golpes[K].S := Trim(Copy(V, N + 1, MaxInt));
           end;
         end;
+        { teclas dos golpes especiais e botoes -> comandos }
+        LerRegrasComando(Ini, 'Sequencias', FLutadores[P].Sequencias);
+        LerRegrasComando(Ini, 'Botoes', FLutadores[P].Botoes);
+        { centro do sprite e caixas de colisao de cada quadro (lidos por ChavesGolpes) }
+        LerQuadrosLutador(P, Ini);
       finally
         Ini.Free;
       end;
     end;
+  finally
+    Partes.Free;
+  end;
+end;
+
+{ Le as regras 1=, 2=, ... de [Sequencias] ("termos: De>Para") ou [Botoes] ("botao, termos: Comando"),
+  na ordem dos numeros, ate o primeiro que faltar. Uma regra com algum termo desconhecido e ignorada
+  inteira (nunca vale), para um erro de digitacao nao disparar golpes a toa. }
+procedure TJogo.LerRegrasComando(Ini: TCustomIniFile; const Secao: string; out Regras: TRegrasComando);
+const
+  Setas: array[0..3] of string = ('Baixo', 'Frente', 'Tras', 'Cima');
+  TiposSeta = 'BFTC';
+  Botoes: array[1..4] of string = ('SocoFraco', 'ChuteFraco', 'SocoForte', 'ChuteForte');
+  { termos com valor: nome, tipo e operador }
+  NomesValor: array[0..4] of string = ('TempoBaixo', 'TempoTras', 'CargaSoco', 'CargaChute', 'Passo');
+  TiposValor = 'btskP';
+  OpsValor: array[0..4] of string = ('>=', '>=', '>=', '>=', '=');
+var
+  Partes: TStringList;
+  K, N, I, J, Q, Dois: Integer;
+  Linha, Esq, Dir, S: string;
+  R: TRegraComando;
+  T: TTermoComando;
+  Ok, Achou: Boolean;
+begin
+  Regras := nil;
+  Q := 0;
+  Partes := TStringList.Create;
+  try
+    K := 1;
+    repeat
+      Linha := Trim(Ini.ReadString(Secao, IntToStr(K), ''));
+      if Linha = '' then Break;
+      Inc(K);
+      Dois := LastDelimiter(':', Linha);
+      if Dois = 0 then Continue;
+      Esq := Copy(Linha, 1, Dois - 1);
+      Dir := Trim(Copy(Linha, Dois + 1, MaxInt));
+      R.Termos := nil;
+      R.Botao := 0;
+      R.Comando := 0;
+      R.De := 0;
+      R.Para := 0;
+      Ok := True;
+      { resultado }
+      if Secao = 'Sequencias' then
+      begin
+        N := Pos('>', Dir);
+        I := StrToIntDef(Trim(Copy(Dir, 1, N - 1)), -1);
+        J := StrToIntDef(Trim(Copy(Dir, N + 1, MaxInt)), -1);
+        if (N = 0) or (I < 0) or (I > 255) or (J < 0) or (J > 255) then Ok := False
+        else
+        begin
+          R.De := I;
+          R.Para := J;
+        end;
+      end
+      else
+      begin
+        for I := 1 to MaxComando do
+          if SameText(Dir, NomesComando[I]) then R.Comando := I;
+        if R.Comando = 0 then Ok := False;
+      end;
+      { termos }
+      SepararLista(Esq, Partes);
+      for I := 0 to Partes.Count - 1 do
+      begin
+        S := Partes[I];
+        if S = '' then Continue;
+        T.Nega := S[1] = '!';
+        if T.Nega then S := Trim(Copy(S, 2, MaxInt));
+        T.Tipo := #0;
+        T.Valor := 0;
+        Achou := False;
+        for J := 1 to 4 do
+          if SameText(S, Botoes[J]) and not T.Nega and (R.Botao = 0) and (Secao = 'Botoes') then
+          begin
+            R.Botao := J;
+            Achou := True;
+          end;
+        if Achou then Continue;
+        for J := 0 to 3 do
+          if SameText(S, Setas[J]) then T.Tipo := TiposSeta[J + 1];
+        if SameText(S, 'NoChao') then T.Tipo := 'H';
+        if SameText(S, 'NoAr') then T.Tipo := 'A';
+        for J := 0 to 4 do
+          if SameText(Copy(S, 1, Length(NomesValor[J]) + Length(OpsValor[J])), NomesValor[J] + OpsValor[J]) then
+          begin
+            N := StrToIntDef(Trim(Copy(S, Length(NomesValor[J]) + Length(OpsValor[J]) + 1, MaxInt)), -1);
+            if N >= 0 then
+            begin
+              T.Tipo := TiposValor[J + 1];
+              T.Valor := N;
+            end;
+          end;
+        if T.Tipo = #0 then
+          Ok := False
+        else
+        begin
+          SetLength(R.Termos, Length(R.Termos) + 1);
+          R.Termos[High(R.Termos)] := T;
+        end;
+      end;
+      if (Secao = 'Botoes') and (R.Botao = 0) then Ok := False;
+      if Ok then
+      begin
+        SetLength(Regras, Q + 1);
+        Regras[Q] := R;
+        Inc(Q);
+      end;
+    until False;
   finally
     Partes.Free;
   end;
@@ -364,7 +483,7 @@ begin
   ItemBonus.Icone := 0;
   FVoadorModo := 0;
   Partes := TStringList.Create;
-  Ini := TMemIniFile.Create(DXResolvePath(ArquivoNN(FPadraoDadosCenario, Numero)));
+  Ini := TMemIniFile.Create(ResolverCaminho(ArquivoNN(FPadraoDadosCenario, Numero)));
   try
     { item que quebra quando um lutador cai em cima }
     if Ini.SectionExists('Item') then

@@ -32,15 +32,15 @@ begin
       Lutador[J].Escolheu := True;
       Ch := TempoEstado;
       if Ch < 30 then
-        texto(200 - (Ch - 30) * 20, 135, Linha(MemoTexto, 20), ACentro, 26, VerdeAnuncio);
+        texto(200 - (Ch - 30) * 20, 135, Linha(TxtGeral, 20), ACentro, 26, VerdeAnuncio);
       if (Ch >= 30) and (Ch <= 100) then
-        texto(200, 135, Linha(MemoTexto, 20), ACentro, 26, VerdeAnuncio);
+        texto(200, 135, Linha(TxtGeral, 20), ACentro, 26, VerdeAnuncio);
       if Ch > 100 then
-        texto(200 - (Ch - 100) * 20, 135, Linha(MemoTexto, 20), ACentro, 26, VerdeAnuncio);
+        texto(200 - (Ch - 100) * 20, 135, Linha(TxtGeral, 20), ACentro, 26, VerdeAnuncio);
       { o oponente da rodada atual vai para o outro lutador }
       Lutador[3 - J].Personagem := Lutador[J].Adversarios[Fase];
       if TempoEstado > 40 then
-        texto(200, 180, Linha(MemoNomes, Lutador[3 - J].Personagem), ACentro, 15, Branco);
+        texto(200, 180, Linha(TxtNomes, Lutador[3 - J].Personagem), ACentro, 15, Branco);
       for K := 1 to 8 do
       begin
         Ch := Lutador[J].Adversarios[K];
@@ -71,7 +71,7 @@ begin
   if (TempoEstado > 60) and (ImgCenario.Count > 0) then
   begin
     ImgCenario[0].StretchDraw(Tela, Rect(80, 6, 320, 134), 0);
-    texto(200, 115, Linha(MemoCenarios, CenarioAtual - 1), ACentro, 9, Branco);
+    texto(200, 115, Linha(TxtCenarios, CenarioAtual - 1), ACentro, 9, Branco);
   end;
 
   { no primeiro quadro: escolhe e carrega o cenario do adversario }

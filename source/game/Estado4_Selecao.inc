@@ -99,12 +99,12 @@ begin
             Retrato((Ch - 1) * 5, Round(TempoEstado * 1.35) + ((Ch - 9) * 49 - 402), 223);
         end;
         if J = 1 then X := 100 else X := 300;
-        texto(X, 130 - Round(Cos(ContPisca / 4.3) * 4), Linha(MemoNomes, Ch), ACentro, 12, RGB(180, 220, 160));
+        texto(X, 130 - Round(Cos(ContPisca / 4.3) * 4), Linha(TxtNomes, Ch), ACentro, 12, RGB(180, 220, 160));
       end;
     end;
     N := Round(Cos(ContagemTick / 4) * 20);
     Cor := RGB(N + 230, N + 230, 255);
-    texto(200, Round(TempoEstado * 0.3) - 96, Linha(MemoTexto, 8), ACentro, 18, Cor);
+    texto(200, Round(TempoEstado * 0.3) - 96, Linha(TxtGeral, 8), ACentro, 18, Cor);
     Cor := RGB(250, 150, 150);
     if (ContagemSeg <= 5) and (not Odd(ContagemTick)) then Cor := RGB(250, 220, 220);
     texto(200, 15, IntToStr(ContagemSeg), ACentro, 22, Cor);
@@ -208,7 +208,7 @@ begin
     for J := 1 to 2 do
     begin
       if Lutador[J].Personagem < 1 then Lutador[J].Personagem := FQtdLutadores;
-      if Lutador[J].Personagem > FQtdLutadores then Lutador[J].Personagem := 1;
+      if Lutador[J].Personagem > FQtdLutadores then Lutador[J].Personagem := pnChaves;
     end;
     if not Lutador[1].Ativo then Lutador[1].Escolheu := True;
     if not Lutador[2].Ativo then Lutador[2].Escolheu := True;

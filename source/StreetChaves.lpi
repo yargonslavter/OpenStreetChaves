@@ -23,11 +23,6 @@
     <RunParams>
       <FormatVersion Value="2"/>
     </RunParams>
-    <RequiredPackages>
-      <Item>
-        <PackageName Value="LCL"/>
-      </Item>
-    </RequiredPackages>
     <Units>
       <Unit>
         <Filename Value="StreetChaves.lpr"/>
@@ -39,6 +34,10 @@
       </Unit>
       <Unit>
         <Filename Value="ChavesSDL.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="ChavesUTF8.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
@@ -58,27 +57,15 @@
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
-        <Filename Value="legacy/DXTipos.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy/DXBmp.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy/DXFonte.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit>
-      <Unit>
-        <Filename Value="legacy/DXClass.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit>
-      <Unit>
         <Filename Value="game/ChavesGfx.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
         <Filename Value="game/ChavesSom.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit>
+      <Unit>
+        <Filename Value="game/ChavesFonte.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit>
       <Unit>
@@ -94,7 +81,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="game;$(ProjOutDir)"/>
-      <OtherUnitFiles Value="game;legacy;3party;3party/SDL2"/>
+      <OtherUnitFiles Value="game;3party;3party/SDL2"/>
       <UnitOutputDirectory Value="build/$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

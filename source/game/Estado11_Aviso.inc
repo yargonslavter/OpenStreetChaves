@@ -6,10 +6,10 @@ var
 begin
   Sup := Tela;
   barra(0, 0, LarguraTela, AlturaTela, Preto);
-  texto(200, 50, Linha(MemoTexto, 25), ACentro, 15, Branco);
+  texto(200, 50, Linha(TxtGeral, 25), ACentro, 15, Branco);
   ImgAbertura.PorNome('Logo' + SufixoIdioma).Draw(Sup, 89, 80, 0);
-  texto(200, 240, Linha(MemoTexto, 26), ACentro, 10, Branco);
-  texto(200, 260, Linha(MemoTexto, 31), ACentro, 10, Branco);
+  texto(200, 240, Linha(TxtGeral, 26), ACentro, 10, Branco);
+  texto(200, 260, Linha(TxtGeral, 31), ACentro, 10, Branco);
   Inc(TempoEstado);
   if TempoEstado > 200 then
   begin

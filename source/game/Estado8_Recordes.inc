@@ -31,8 +31,8 @@ begin
   if TempoEstado > 240 then
     for L := 0 to 15 do
       barra(0, L * 20, LarguraTela, L * 20 + (TempoEstado - 240), Preto);
-  if ContPisca < 18 then texto(200, 5, Linha(MemoTexto, 21), ACentro, 12, Branco);
-  if ContPisca < 10 then texto(200, 240, Linha(MemoTexto, 6), ACentro, 10, Branco);
+  if ContPisca < 18 then texto(200, 5, Linha(TxtGeral, 21), ACentro, 12, Branco);
+  if ContPisca < 10 then texto(200, 240, Linha(TxtGeral, 6), ACentro, 10, Branco);
   Inc(ContPisca);
   if ContPisca > 20 then ContPisca := 0;
   Inc(TempoEstado);

@@ -34,18 +34,18 @@ var
 
   procedure Rot(R: Integer; Cor: TColor);
   begin
-    texto(10, 45 + 15 * R, Linha(MemoConfig, Rotulo[R]), AEsq, 11, Cor);
+    texto(10, 45 + 15 * R, Linha(TxtConfig, Rotulo[R]), AEsq, 11, Cor);
   end;
 
   procedure Val(X, R, Idx: Integer; Cor: TColor);
   begin
-    texto(X, 45 + 15 * R, Linha(MemoConfig, Idx), AEsq, 11, Cor);
+    texto(X, 45 + 15 * R, Linha(TxtConfig, Idx), AEsq, 11, Cor);
   end;
 
 begin
   Sel := AzulSelecao;
   barra(0, 0, LarguraTela, AlturaTela, Preto);
-  texto(200, 5, Linha(MemoConfig, 1), ACentro, 15, Branco);
+  texto(200, 5, Linha(TxtConfig, 1), ACentro, 15, Branco);
   for I := 1 to 12 do Rot(I, Branco);
   for I := 1 to 8 do texto((I - 1) * 10 + 140, 60, IntToStr(I), AEsq, 11, Branco);
   texto(140, 75, '30', AEsq, 11, Branco);
@@ -73,7 +73,7 @@ begin
   Val(230, 11, 5, Branco);
   Val(140, 12, 4, Branco);
   Val(230, 12, 5, Branco);
-  texto(200, 280, Linha(MemoConfig, 22), ACentro, 11, Branco);
+  texto(200, 280, Linha(TxtConfig, 22), ACentro, 11, Branco);
 
   { destaque da linha selecionada e dos valores atuais }
   if (CursorMenu >= 1) and (CursorMenu <= 12) then Rot(CursorMenu, Sel);
@@ -118,8 +118,7 @@ begin
       7: if Idioma = 2 then
          begin
            Idioma := 1;
-           CarregarTextos(Idioma, MemoNomes.Lines, MemoTexto.Lines, MemoConfig.Lines,
-             MemoFrases.Lines, MemoDialogo.Lines, MemoFinais.Lines, MemoCenarios.Lines);
+           CarregarIdioma;
          end;
       8: if SomPendente > 1 then Dec(SomPendente);
       9: if MusicaAtual > 1 then Dec(MusicaAtual);
@@ -140,8 +139,7 @@ begin
       7: if Idioma = 1 then
          begin
            Idioma := 2;
-           CarregarTextos(Idioma, MemoNomes.Lines, MemoTexto.Lines, MemoConfig.Lines,
-             MemoFrases.Lines, MemoDialogo.Lines, MemoFinais.Lines, MemoCenarios.Lines);
+           CarregarIdioma;
          end;
       8: if SomPendente < QtdSons then Inc(SomPendente);
       9: if MusicaAtual < QtdMusicas then Inc(MusicaAtual);

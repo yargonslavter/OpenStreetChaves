@@ -14,11 +14,12 @@ unit ChavesGfx;
   Cor "TColor" = 0x00BBGGRR (como no Delphi); pixel = 0xAARRGGBB. }
 
 {$mode delphi}{$H+}
+{$POINTERMATH ON}
 
 interface
 
 uses
-  Classes, SysUtils, Types, Math, DXTipos, DXBmp, DXFonte, DXClass;
+  Classes, SysUtils, Types, Math, ChavesConst, ChavesFonte, ChavesDados;
 
 type
   TBlendMode = (bmCopy, bmAlpha, bmAdd, bmSub);
@@ -152,22 +153,358 @@ type
   end;
 
 { Conversoes de cor }
-function DXColorToPix(C: TColor): Cardinal;
-function DXPixToColor(P: Cardinal): TColor;
+function CorParaPixel(C: TColor): Cardinal;
+function PixelParaCor(P: Cardinal): TColor;
 
 implementation
 
+{ ---- leitor de BMP (antes legacy/DXBmp.pas): imagem em memoria (ARGB 32 bits) com leitor de BMP proprio, sem LCL.
+
+  TLeitorBMP faz o papel que TPicture/TBitmap tinham no jogo: LoadFromFile, Assign, Empty,
+  Width/Height e Graphic (devolve ele mesmo, para manter a sintaxe do codigo original).
+  Le BMP de 1, 4, 8, 16, 24 e 32 bits, sem compressao, RLE4/RLE8 e BITFIELDS, com cabecalhos
+  OS/2 (12) e Windows (40..124). O canal alfa de 32 bits e ignorado (pixels opacos), como era
+  no carregamento anterior. Pixel = $FFRRGGBB. }
+
+type
+  ELeitorBMP = class(Exception);
+
+  TLeitorBMP = class(TPersistent)
+  private
+    FWidth, FHeight: Integer;
+    FPix: array of Cardinal;
+    FOnChange: TNotifyEvent;
+    function GetGraphic: TLeitorBMP;
+    function GetEmpty: Boolean;
+    procedure Changed;
+  public
+    procedure Assign(Source: TPersistent); override;
+    procedure Clear;
+    procedure SetSize(AWidth, AHeight: Integer);
+    procedure LoadFromFile(const FileName: string);
+    procedure LoadFromStream(Stream: TStream);
+    function ScanLine(Y: Integer): PCardinal;
+    property Graphic: TLeitorBMP read GetGraphic;
+    property Empty: Boolean read GetEmpty;
+    property Width: Integer read FWidth;
+    property Height: Integer read FHeight;
+    property OnChange: TNotifyEvent read FOnChange write FOnChange;
+  end;
+
+
+function TLeitorBMP.GetGraphic: TLeitorBMP;
+begin
+  Result := Self;
+end;
+
+function TLeitorBMP.GetEmpty: Boolean;
+begin
+  Result := (FWidth = 0) or (FHeight = 0);
+end;
+
+procedure TLeitorBMP.Changed;
+begin
+  if Assigned(FOnChange) then FOnChange(Self);
+end;
+
+procedure TLeitorBMP.Clear;
+begin
+  FWidth := 0;
+  FHeight := 0;
+  FPix := nil;
+  Changed;
+end;
+
+procedure TLeitorBMP.SetSize(AWidth, AHeight: Integer);
+begin
+  if AWidth < 0 then AWidth := 0;
+  if AHeight < 0 then AHeight := 0;
+  FWidth := AWidth;
+  FHeight := AHeight;
+  SetLength(FPix, FWidth * FHeight);
+  if Length(FPix) > 0 then FillDWord(FPix[0], Length(FPix), $FF000000);
+end;
+
+function TLeitorBMP.ScanLine(Y: Integer): PCardinal;
+begin
+  Result := @FPix[Y * FWidth];
+end;
+
+procedure TLeitorBMP.Assign(Source: TPersistent);
+var
+  S: TLeitorBMP;
+begin
+  if Source is TLeitorBMP then
+  begin
+    S := TLeitorBMP(Source);
+    FWidth := S.FWidth;
+    FHeight := S.FHeight;
+    FPix := Copy(S.FPix);
+    Changed;
+  end
+  else if Source = nil then
+    Clear
+  else
+    inherited Assign(Source);
+end;
+
+procedure TLeitorBMP.LoadFromFile(const FileName: string);
+var
+  F: TFileStream;
+begin
+  F := TFileStream.Create(FileName, fmOpenRead or fmShareDenyWrite);
+  try
+    LoadFromStream(F);
+  finally
+    F.Free;
+  end;
+end;
+
+{ ---- leitor de BMP ---- }
+
+function Le16(P: PByte): Integer; inline;
+begin
+  Result := P[0] or (P[1] shl 8);
+end;
+
+function Le32(P: PByte): Integer; inline;
+begin
+  Result := Integer(Cardinal(P[0]) or (Cardinal(P[1]) shl 8) or (Cardinal(P[2]) shl 16) or (Cardinal(P[3]) shl 24));
+end;
+
+{ amplia um campo de mascara (ex.: 5 bits) para 8 bits }
+function CampoPara8(V: Cardinal; Mascara: Cardinal): Cardinal;
+var
+  Sh, Bits: Integer;
+  Max: Cardinal;
+begin
+  if Mascara = 0 then Exit(0);
+  Sh := 0;
+  while (Mascara and 1) = 0 do
+  begin
+    Mascara := Mascara shr 1;
+    Inc(Sh);
+  end;
+  Bits := 0;
+  Max := Mascara;
+  while Max <> 0 do
+  begin
+    Inc(Bits);
+    Max := Max shr 1;
+  end;
+  V := (V shr Sh) and Mascara;
+  if Bits >= 8 then Result := V shr (Bits - 8)
+  else Result := (V * 255) div Mascara;
+end;
+
+procedure TLeitorBMP.LoadFromStream(Stream: TStream);
+var
+  Dados: array of Byte;
+  Tam, Off, HdrSize, W, H, Planes, Bpp, Comp, ClrUsed, I, X, Y, Stride, NPal, PalOff, PalSize: Integer;
+  TopDown: Boolean;
+  Pal: array[0..255] of Cardinal;
+  MR, MG, MB: Cardinal;
+  P: PByte;
+  Linha: PCardinal;
+  V: Cardinal;
+
+  function Pix(R, G, B: Cardinal): Cardinal;
+  begin
+    Result := $FF000000 or (R shl 16) or (G shl 8) or B;
+  end;
+
+  procedure DecodificaRLE(Is4: Boolean);
+  var
+    Pos, Px, Py, N, B1, B2, J, Dx, Dy, Idx: Integer;
+    Fim: Boolean;
+  begin
+    Pos := Off;
+    Px := 0;
+    Py := 0;
+    Fim := False;
+    while (not Fim) and (Pos + 1 < Tam) do
+    begin
+      B1 := Dados[Pos]; B2 := Dados[Pos + 1];
+      Inc(Pos, 2);
+      if B1 > 0 then
+      begin
+        { repete B1 pixels }
+        for J := 0 to B1 - 1 do
+        begin
+          if Is4 then
+          begin
+            if (J and 1) = 0 then Idx := B2 shr 4 else Idx := B2 and 15;
+          end
+          else Idx := B2;
+          if (Px < W) and (Py < H) then
+            FPix[(H - 1 - Py) * W + Px] := Pal[Idx and 255];
+          Inc(Px);
+        end;
+      end
+      else
+        case B2 of
+          0: begin Px := 0; Inc(Py); end;
+          1: Fim := True;
+          2: begin
+               if Pos + 1 >= Tam then Break;
+               Dx := Dados[Pos]; Dy := Dados[Pos + 1]; Inc(Pos, 2);
+               Inc(Px, Dx); Inc(Py, Dy);
+             end;
+        else
+          begin
+            N := B2;
+            for J := 0 to N - 1 do
+            begin
+              if Is4 then
+              begin
+                if Pos + (J div 2) >= Tam then Break;
+                if (J and 1) = 0 then Idx := Dados[Pos + (J div 2)] shr 4
+                else Idx := Dados[Pos + (J div 2)] and 15;
+              end
+              else
+              begin
+                if Pos + J >= Tam then Break;
+                Idx := Dados[Pos + J];
+              end;
+              if (Px < W) and (Py < H) then
+                FPix[(H - 1 - Py) * W + Px] := Pal[Idx and 255];
+              Inc(Px);
+            end;
+            if Is4 then Inc(Pos, (N + 1) div 2) else Inc(Pos, N);
+            if Pos and 1 = 1 then Inc(Pos);      // alinha em 16 bits
+          end;
+        end;
+    end;
+  end;
+
+begin
+  Tam := Stream.Size - Stream.Position;
+  if Tam < 26 then raise ELeitorBMP.Create('BMP invalido (arquivo muito pequeno)');
+  SetLength(Dados, Tam);
+  Stream.ReadBuffer(Dados[0], Tam);
+  if (Dados[0] <> Ord('B')) or (Dados[1] <> Ord('M')) then raise ELeitorBMP.Create('Nao e um arquivo BMP');
+  Off := Le32(@Dados[10]);
+  HdrSize := Le32(@Dados[14]);
+  if HdrSize = 12 then
+  begin
+    W := Le16(@Dados[18]);
+    H := Le16(@Dados[20]);
+    Planes := Le16(@Dados[22]);
+    Bpp := Le16(@Dados[24]);
+    Comp := 0;
+    ClrUsed := 0;
+    PalSize := 3;
+  end
+  else if HdrSize >= 40 then
+  begin
+    W := Le32(@Dados[18]);
+    H := Le32(@Dados[22]);
+    Planes := Le16(@Dados[26]);
+    Bpp := Le16(@Dados[28]);
+    Comp := Le32(@Dados[30]);
+    ClrUsed := Le32(@Dados[46]);
+    PalSize := 4;
+  end
+  else raise ELeitorBMP.Create('Cabecalho de BMP nao suportado');
+  if Planes <> 1 then raise ELeitorBMP.Create('BMP com planos <> 1');
+  TopDown := H < 0;
+  if TopDown then H := -H;
+  if (W <= 0) or (H <= 0) or (W > 16384) or (H > 16384) then raise ELeitorBMP.Create('Dimensoes de BMP invalidas');
+
+  { paleta }
+  FillChar(Pal, SizeOf(Pal), 0);
+  if Bpp <= 8 then
+  begin
+    NPal := ClrUsed;
+    if (NPal = 0) or (NPal > (1 shl Bpp)) then NPal := 1 shl Bpp;
+    PalOff := 14 + HdrSize;
+    for I := 0 to NPal - 1 do
+      if PalOff + I * PalSize + 2 < Tam then
+        Pal[I] := Pix(Dados[PalOff + I * PalSize + 2], Dados[PalOff + I * PalSize + 1], Dados[PalOff + I * PalSize]);
+  end;
+
+  { mascaras }
+  MR := 0; MG := 0; MB := 0;
+  if (Bpp = 16) or (Bpp = 32) then
+  begin
+    if (Comp = 3) or (Comp = 6) then
+    begin
+      if HdrSize >= 52 then
+      begin
+        MR := Cardinal(Le32(@Dados[54])); MG := Cardinal(Le32(@Dados[58])); MB := Cardinal(Le32(@Dados[62]));
+      end
+      else
+      begin
+        MR := Cardinal(Le32(@Dados[14 + HdrSize])); MG := Cardinal(Le32(@Dados[18 + HdrSize]));
+        MB := Cardinal(Le32(@Dados[22 + HdrSize]));
+      end;
+    end
+    else if Bpp = 16 then
+    begin
+      MR := $7C00; MG := $03E0; MB := $001F;
+    end
+    else
+    begin
+      MR := $00FF0000; MG := $0000FF00; MB := $000000FF;
+    end;
+  end;
+
+  SetSize(W, H);
+
+  if (Comp = 1) and (Bpp = 8) then DecodificaRLE(False)
+  else if (Comp = 2) and (Bpp = 4) then DecodificaRLE(True)
+  else if (Comp = 0) or (Comp = 3) or (Comp = 6) then
+  begin
+    Stride := ((W * Bpp + 31) div 32) * 4;
+    { alguns arquivos tem o ultimo trecho truncado: aceita se a ultima linha tiver os pixels }
+    if Off + Stride * (H - 1) + ((W * Bpp + 7) div 8) > Tam then
+      raise ELeitorBMP.Create('BMP truncado');
+    SetLength(Dados, Tam + Stride + 8);      // folga (zeros) para a ultima linha truncada
+    for Y := 0 to H - 1 do
+    begin
+      if TopDown then Linha := @FPix[Y * W] else Linha := @FPix[(H - 1 - Y) * W];
+      P := @Dados[Off + Y * Stride];
+      case Bpp of
+        1: for X := 0 to W - 1 do
+             Linha[X] := Pal[(P[X shr 3] shr (7 - (X and 7))) and 1];
+        4: for X := 0 to W - 1 do
+             if (X and 1) = 0 then Linha[X] := Pal[P[X shr 1] shr 4]
+             else Linha[X] := Pal[P[X shr 1] and 15];
+        8: for X := 0 to W - 1 do
+             Linha[X] := Pal[P[X]];
+        16: for X := 0 to W - 1 do
+            begin
+              V := Cardinal(Le16(@P[X * 2]));
+              Linha[X] := Pix(CampoPara8(V, MR), CampoPara8(V, MG), CampoPara8(V, MB));
+            end;
+        24: for X := 0 to W - 1 do
+              Linha[X] := Pix(P[X * 3 + 2], P[X * 3 + 1], P[X * 3]);
+        32: for X := 0 to W - 1 do
+            begin
+              V := Cardinal(Le32(@P[X * 4]));
+              Linha[X] := Pix(CampoPara8(V, MR), CampoPara8(V, MG), CampoPara8(V, MB));
+            end;
+      else
+        raise ELeitorBMP.Create('Profundidade de cor de BMP nao suportada');
+      end;
+    end;
+  end
+  else raise ELeitorBMP.Create('Compressao de BMP nao suportada');
+  Changed;
+end;
+
+
 { ======================= utilitarios ======================= }
 
-function DXColorToPix(C: TColor): Cardinal;
+function CorParaPixel(C: TColor): Cardinal;
 var
   RGB: Cardinal;
 begin
-  RGB := Cardinal(ColorToRGB(C));          // 0x00BBGGRR
+  RGB := Cardinal(C);          // 0x00BBGGRR
   Result := $FF000000 or ((RGB and $FF) shl 16) or (RGB and $FF00) or ((RGB shr 16) and $FF);
 end;
 
-function DXPixToColor(P: Cardinal): TColor;
+function PixelParaCor(P: Cardinal): TColor;
 begin
   Result := TColor(((P shr 16) and $FF) or (P and $FF00) or ((P and $FF) shl 16));
 end;
@@ -178,7 +515,7 @@ type
   TTextMask = class
   public
     W, H: Integer;
-    Data: TDXMascara;
+    Data: TMascara;
   end;
 
 var
@@ -212,7 +549,7 @@ begin
   if GMaskCache.Count > 600 then GMaskCache.Clear;
 
   M := TTextMask.Create;
-  DXFonteMascara(Tam, S, M.W, M.H, M.Data);
+  FonteMascara(Tam, S, M.W, M.H, M.Data);
   GMaskCache.AddObject(Key, M);
   Result := M;
 end;
@@ -222,7 +559,7 @@ end;
 constructor TSuperficie.Create;
 begin
   inherited Create;
-  FTransparentColor := clBlack;
+  FTransparentColor := Preto;
 end;
 
 procedure TSuperficie.SetSize(AWidth, AHeight: Integer);
@@ -243,33 +580,33 @@ end;
 function TSuperficie.GetPixel(X, Y: Integer): TColor;
 begin
   if (X < 0) or (Y < 0) or (X >= FWidth) or (Y >= FHeight) then
-    Result := clBlack
+    Result := Preto
   else
-    Result := DXPixToColor(FPix[Y * FWidth + X]);
+    Result := PixelParaCor(FPix[Y * FWidth + X]);
 end;
 
 procedure TSuperficie.SetPixel(X, Y: Integer; Value: TColor);
 begin
   if (X < 0) or (Y < 0) or (X >= FWidth) or (Y >= FHeight) then Exit;
-  FPix[Y * FWidth + X] := DXColorToPix(Value);
+  FPix[Y * FWidth + X] := CorParaPixel(Value);
 end;
 
 procedure TSuperficie.Fill(Color: TColor);
 begin
-  if Length(FPix) > 0 then FillDWord(FPix[0], Length(FPix), DXColorToPix(Color));
+  if Length(FPix) > 0 then FillDWord(FPix[0], Length(FPix), CorParaPixel(Color));
 end;
 
 function TSuperficie.CarregarBMP(const Arquivo: string): Boolean;
 var
-  Pic: TDXPicture;
+  Pic: TLeitorBMP;
   Nome: string;
   Y: Integer;
 begin
   Result := False;
   SetSize(0, 0);
-  Nome := DXResolvePath(Arquivo);
+  Nome := ResolverCaminho(Arquivo);
   if (Arquivo = '') or not FileExists(Nome) then Exit;
-  Pic := TDXPicture.Create;
+  Pic := TLeitorBMP.Create;
   try
     Pic.LoadFromFile(Nome);
     if Pic.Empty then Exit;
@@ -318,7 +655,7 @@ begin
   J0 := Max(0, -T);
   J1 := Min(ADH - 1, FHeight - 1 - T);
   if (I1 < I0) or (J1 < J0) then Exit;
-  Key := DXColorToPix(Image.FTransparentColor) and $FFFFFF;
+  Key := CorParaPixel(Image.FTransparentColor) and $FFFFFF;
   if Alpha < 0 then Alpha := 0;
   if Alpha > 255 then Alpha := 255;
   A := Alpha;
@@ -456,7 +793,7 @@ begin
   SW := SrcRect.Right - SrcRect.Left;
   SH := SrcRect.Bottom - SrcRect.Top;
   if (SW <= 0) or (SH <= 0) then Exit;
-  Key := DXColorToPix(Image.FTransparentColor) and $FFFFFF;
+  Key := CorParaPixel(Image.FTransparentColor) and $FFFFFF;
   if Alpha < 0 then Alpha := 0;
   if Alpha > 255 then Alpha := 255;
   A := Alpha; IA := 255 - A;
@@ -550,7 +887,7 @@ begin
   Y1 := Max(0, Min(R.Top, R.Bottom));
   Y2 := Min(FHeight, Max(R.Top, R.Bottom));
   if (X2 <= X1) or (Y2 <= Y1) then Exit;
-  C := DXColorToPix(Cor);
+  C := CorParaPixel(Cor);
   for Y := Y1 to Y2 - 1 do
     FillDWord(FPix[Y * FWidth + X1], X2 - X1, C);
 end;
@@ -562,7 +899,7 @@ var
 begin
   L := Min(R.Left, R.Right); RR := Max(R.Left, R.Right) - 1;
   T := Min(R.Top, R.Bottom); B := Max(R.Top, R.Bottom) - 1;
-  C := DXColorToPix(Cor);
+  C := CorParaPixel(Cor);
   for X := L to RR do
   begin
     if (X >= 0) and (X < FWidth) then
@@ -602,8 +939,8 @@ begin
   if (W <= 0) or (H <= 0) then Exit;
   RX := Min(Abs(RX), W); RY := Min(Abs(RY), H);
   HX := RX / 2.0; HY := RY / 2.0;
-  FC := DXColorToPix(CorFundo);
-  PC := DXColorToPix(CorBorda);
+  FC := CorParaPixel(CorFundo);
+  PC := CorParaPixel(CorBorda);
   PrevXL := -1; PrevXR := -1;
   for Y := T to B - 1 do
   begin
@@ -656,7 +993,7 @@ end;
 
 function TSuperficie.LarguraTexto(const S: string; Tam: Integer): Integer;
 begin
-  Result := DXFonteLargura(Tam, S);
+  Result := FonteLargura(Tam, S);
 end;
 
 procedure TSuperficie.Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor);
@@ -668,7 +1005,7 @@ var
 begin
   if S = '' then Exit;
   M := GetTextMask(Tam, S);
-  FCol := DXColorToPix(Cor);
+  FCol := CorParaPixel(Cor);
   FR := (FCol shr 16) and $FF; FG := (FCol shr 8) and $FF; FB := FCol and $FF;
   for J := 0 to M.H - 1 do
   begin
@@ -698,7 +1035,7 @@ begin
   inherited Create;
   FSurface := TSuperficie.Create;
   FTransparent := True;
-  FTransparentColor := clWhite;
+  FTransparentColor := Branco;
 end;
 
 destructor TImagem.Destroy;
@@ -930,7 +1267,7 @@ begin
 end;
 
 initialization
-  DXFonteCarregar(DXResolvePath('Fontes/ComicSansMS.atlas'));   // gerado por tools/GeraFonte
+  FonteCarregar(ResolverCaminho('Fontes/ComicSansMS.atlas'));   // gerado por tools/GeraFonte
 
 finalization
   GMaskCache.Free;

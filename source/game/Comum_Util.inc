@@ -10,9 +10,15 @@ begin
   Result := BitsTeclado(MapaP2) or ControleP[2];
 end;
 
-function TJogo.Linha(Memo: TTextoLista; I: Integer): string;
+function TJogo.Linha(Lista: TStrings; I: Integer): string;
 begin
-  if (I >= 0) and (I < Memo.Lines.Count) then Result := Memo.Lines[I] else Result := '';
+  if (I >= 0) and (I < Lista.Count) then Result := Lista[I] else Result := '';
+end;
+
+{ (Re)carrega os textos do idioma atual (Idioma: 1 = PT, 2 = ES). }
+procedure TJogo.CarregarIdioma;
+begin
+  CarregarTextos(Idioma, TxtNomes, TxtGeral, TxtConfig, TxtFrases, TxtDialogo, TxtFinais, TxtCenarios);
 end;
 
 function TJogo.SufixoIdioma: string;
@@ -94,9 +100,9 @@ begin
   begin
     Vida := VidaMax;
     VidaBarra := VidaMax;
-    Acao := 1;
+    Acao := acParado;
     VelY := 0;
-    Vencedor := False;
+    Invulneravel := False;
     Acertos := 0;
     TempoAcertos := 0;
     GolpeAtivo := False;
@@ -107,8 +113,8 @@ begin
   Lutador[2].X := 380.0;
   ChaoY := 300;
   Lutador[Jogador].Y := ChaoY;
-  Lutador[1].Lado := 1;
-  Lutador[2].Lado := 2;
+  Lutador[1].Lado := ldDireita;
+  Lutador[2].Lado := ldEsquerda;
   Lutador[1].DesenhaPorCima := True;
   Lutador[2].DesenhaPorCima := False;
   with Lutador[Jogador] do
