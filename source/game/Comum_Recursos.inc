@@ -74,8 +74,15 @@ begin
       finally
         Free;
       end;
-    FQtdLutadores := Ini.ReadInteger('Lutadores', 'Quantidade', 15);
-    LerDadosLutadores(Ini.ReadString('Lutadores', 'Dados', ''));
+    { personagens: Quantidade fixa ou, sem ela, contados ate o primeiro Cnn.ini que faltar }
+    Padrao := Ini.ReadString('Lutadores', 'Dados', '');
+    FQtdLutadores := Ini.ReadInteger('Lutadores', 'Quantidade', 0);
+    if FQtdLutadores <= 0 then
+      while FileExists(ResolverCaminho(ArquivoNN(Padrao, FQtdLutadores + 1))) do
+        Inc(FQtdLutadores);
+    if FQtdLutadores < 1 then
+      raise Exception.Create('Nenhum lutador encontrado (' + Padrao + ').');
+    LerDadosLutadores(Padrao);
     { roteiros das acoes (Dados/Lutadores/Comum.rot e CNN.rot); erro de escrita gera ERoteiro }
     CarregarRoteiros(Ini.ReadString('Lutadores', 'Roteiro', 'Dados/Lutadores/C##.rot'),
       Ini.ReadString('Lutadores', 'RoteiroComum', 'Dados/Lutadores/Comum.rot'), FQtdLutadores);
@@ -127,13 +134,13 @@ begin
 
     { falas de vitoria: para cada personagem, uma posicao por variante }
     SepararLista(Ini.ReadString('Falas', 'Variantes', ''), Partes);
-    for I := 1 to Ini.ReadInteger('Falas', 'Quantidade', 0) do
+    for I := 1 to Ini.ReadInteger('Falas', 'Quantidade', FQtdLutadores) do
       for V := 0 to Partes.Count - 1 do
         carregarfala(ArquivoNN(Partes[V], I));
 
     { rostos: para cada personagem, uma posicao por variante (* = espelhado) }
     SepararLista(Ini.ReadString('Rostos', 'Variantes', ''), Partes);
-    for I := 1 to Ini.ReadInteger('Rostos', 'Quantidade', 0) do
+    for I := 1 to Ini.ReadInteger('Rostos', 'Quantidade', FQtdLutadores) do
       for V := 0 to Partes.Count - 1 do
       begin
         Nome := Partes[V];

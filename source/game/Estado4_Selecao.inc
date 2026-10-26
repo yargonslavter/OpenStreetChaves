@@ -27,10 +27,14 @@ begin
   end;
 end;
 
-{ Estado 4: selecao de lutador }
+{ Estado 4: selecao de lutador. Os retratos ficam numa grade de ColunasGrade colunas; quando ha
+  mais de LinhasVisiveis linhas, a grade rola para mostrar o lutador de quem mexeu por ultimo. }
 procedure TJogo.Estado4_Selecao;
+const
+  ColunasGrade = 8;
+  LinhasVisiveis = 2;
 var
-  I, J, C, X, Y, Ch, N: Integer;
+  I, J, C, X, Y, Ch, N, QtdLinhas: Integer;
   Cor, Cor2: TColor;
   K1, K2, E1, E2: Byte;
   R: TRect;
@@ -45,7 +49,67 @@ var
       ImgRetrato[Indice].Draw(Tela, PX, PY, 0);
   end;
 
+  { Posicao de um personagem na grade, se a linha dele esta visivel.
+    @param(Pers personagem (1..FQtdLutadores))
+    @param(PX recebe a esquerda, sem o deslocamento da faixa (0 = primeira coluna))
+    @param(PY recebe o topo)
+    @returns(True se a linha do personagem esta na parte visivel da grade) }
+  function NaGrade(Pers: Integer; out PX, PY: Integer): Boolean;
+  var
+    L: Integer;
+  begin
+    L := (Pers - 1) div ColunasGrade - LinhaSelecao;
+    PX := ((Pers - 1) mod ColunasGrade) * 49;
+    PY := 163 + L * 60;
+    Result := (L >= 0) and (L < LinhasVisiveis);
+  end;
+
+  { Rola a grade ate a linha do personagem do jogador ficar visivel.
+    @param(Jog jogador (1 ou 2)) }
+  procedure Seguir(Jog: Integer);
+  var
+    L: Integer;
+  begin
+    L := (Lutador[Jog].Personagem - 1) div ColunasGrade;
+    if L < LinhaSelecao then LinhaSelecao := L;
+    if L >= LinhaSelecao + LinhasVisiveis then LinhaSelecao := L - LinhasVisiveis + 1;
+  end;
+
+  { Setas e botao 1 de um jogador que ainda nao escolheu: esquerda/direita andam um (dando a
+    volta na lista), cima/baixo andam uma linha; o botao confirma.
+    @param(Jog jogador (1 ou 2))
+    @param(K teclas do jogador (1 cima, 2 baixo, 4 esquerda, 8 direita, 16 botao 1)) }
+  procedure Navegar(Jog: Integer; K: Byte);
+  var
+    P: Integer;
+  begin
+    if Lutador[Jog].Escolheu or not Lutador[Jog].Ativo then Exit;
+    P := Lutador[Jog].Personagem;
+    if ((K and 4) <> 0) and not Lutador[Jog].AntEsq then Dec(P);
+    if ((K and 8) <> 0) and not Lutador[Jog].AntDir then Inc(P);
+    if ((K and 1) <> 0) and not Lutador[Jog].AntCima and (P > ColunasGrade) then Dec(P, ColunasGrade);
+    { na ultima linha incompleta, descer vai para o ultimo lutador }
+    if ((K and 2) <> 0) and not Lutador[Jog].AntBaixo and
+       ((P - 1) div ColunasGrade < QtdLinhas - 1) then
+      P := Min(P + ColunasGrade, FQtdLutadores);
+    if P < 1 then P := FQtdLutadores;
+    if P > FQtdLutadores then P := pnChaves;
+    if P <> Lutador[Jog].Personagem then
+    begin
+      Lutador[Jog].Personagem := P;
+      SomEfeitos.Tocar(1);
+      Seguir(Jog);
+    end;
+    if ((K and 16) <> 0) and not Lutador[Jog].AntSocoFraco then
+    begin
+      Lutador[Jog].Escolheu := True;
+      criaadversario(Jog, P);
+      SomEfeitos.Tocar(2);
+    end;
+  end;
+
 begin
+  QtdLinhas := (FQtdLutadores + ColunasGrade - 1) div ColunasGrade;
   RelogioParado := False;
   if (MusicaAtual <> 0) and (SomMusica.Count > 0) then SomMusica.Parar(0);
   barra(0, 0, LarguraTela, AlturaTela, Preto);
@@ -63,17 +127,25 @@ begin
   barra(X - 410, 156, X, 290, RGB(30, 50, 70));
   barra(X - 410, 158, X, 160, Branco);
   barra(X - 410, 286, X, 288, Branco);
-  for C := 0 to 14 do
-  begin
-    if C < 8 then Ch := X + (C * 49 - 402) else Ch := X + ((C - 8) * 49 - 402);
-    if C + C * 4 < ImgRetrato.Count then
+  if LinhaSelecao > QtdLinhas - LinhasVisiveis then LinhaSelecao := QtdLinhas - LinhasVisiveis;
+  if LinhaSelecao < 0 then LinhaSelecao := 0;
+  for C := 1 to FQtdLutadores do
+    if NaGrade(C, Ch, Y) and ((C - 1) * 5 < ImgRetrato.Count) then
     begin
-      if C < 8 then R := Rect(Ch, 163, Ch + 50, 223) else R := Rect(Ch, 223, Ch + 50, 283);
-      ImgRetrato[C + C * 4].DrawAlpha(Tela, R, 0, 60);
+      R := Rect(X - 402 + Ch, Y, X - 402 + Ch + 50, Y + 60);
+      ImgRetrato[(C - 1) * 5].DrawAlpha(Tela, R, 0, 60);
     end;
+  { setas piscando quando ha linhas escondidas acima ou abaixo }
+  if (FaseSelecao = 2) and (ContPisca < 13) then
+  begin
+    if LinhaSelecao > 0 then ImgIcone.PorNome('Cima').Draw(Tela, 194, 144, 0);
+    if LinhaSelecao + LinhasVisiveis < QtdLinhas then ImgIcone.PorNome('Baixo').Draw(Tela, 194, 288, 0);
   end;
   if FaseSelecao = 1 then
   begin
+    { entrando: comeca mostrando a linha de quem ja esta jogando }
+    if Lutador[2].Ativo then Seguir(2);
+    if Lutador[1].Ativo then Seguir(1);
     Inc(TempoEstado, 20);
     if TempoEstado >= 300 then
     begin
@@ -90,13 +162,8 @@ begin
         Ch := Lutador[J].Personagem;
         if J = 1 then X := 52 else X := 252;
         Retrato((Ch - 1) * 5 + 4, X, 25);
-        if not Lutador[J].Escolheu then
-        begin
-          if Ch <= 8 then
-            Retrato((Ch - 1) * 5, Round(TempoEstado * 1.35) + ((Ch - 1) * 49 - 402), 163)
-          else
-            Retrato((Ch - 1) * 5, Round(TempoEstado * 1.35) + ((Ch - 9) * 49 - 402), 223);
-        end;
+        if not Lutador[J].Escolheu and NaGrade(Ch, X, Y) then
+          Retrato((Ch - 1) * 5, Round(TempoEstado * 1.35) + X - 402, Y);
         if J = 1 then X := 100 else X := 300;
         texto(X, 130 - Round(Cos(ContPisca / 4.3) * 4), Linha(TxtNomes, Ch), ACentro, 12, RGB(180, 220, 160));
       end;
@@ -120,21 +187,10 @@ begin
     if ContPisca >= 25 then ContPisca := 0;
     { marcadores 1P / 2P sobre o retrato escolhido }
     for J := 1 to 2 do
-      if Lutador[J].Ativo and not Lutador[J].Escolheu then
+      if Lutador[J].Ativo and not Lutador[J].Escolheu and NaGrade(Lutador[J].Personagem, X, Y) then
       begin
-        X := 10;
-        Y := 20;
-        Ch := Lutador[J].Personagem;
-        if Ch <= 8 then
-        begin
-          X := (Ch - 1) * 49 + 3;
-          Y := 160;
-        end
-        else
-        begin
-          X := (Ch - 9) * 49 + 3;
-          Y := 220;
-        end;
+        Inc(X, 3);
+        Dec(Y, 3);
         if not Odd(ContPisca) then Cor2 := RGB(50, 50, 50) else Cor2 := Preto;
         if J = 1 then
           texto(X, Y, '1P', AEsq, 10, RGB(100, 100, 200) + Cor2)
@@ -144,66 +200,8 @@ begin
 
     K1 := TecP1;
     K2 := TecP2;
-    { jogador 1 (teclado) }
-    if not Lutador[1].Escolheu and Lutador[1].Ativo then
-    begin
-      if ((K1 and 4) <> 0) and not Lutador[1].AntEsq then
-      begin
-        Dec(Lutador[1].Personagem);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K1 and 8) <> 0) and not Lutador[1].AntDir then
-      begin
-        Inc(Lutador[1].Personagem);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K1 and 1) <> 0) and not Lutador[1].AntCima and (Lutador[1].Personagem > 8) then
-      begin
-        Dec(Lutador[1].Personagem, 8);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K1 and 2) <> 0) and not Lutador[1].AntBaixo and (Lutador[1].Personagem <= 8) then
-      begin
-        Inc(Lutador[1].Personagem, 8);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K1 and 16) <> 0) and not Lutador[1].AntSocoFraco then
-      begin
-        Lutador[1].Escolheu := True;
-        criaadversario(1, Lutador[1].Personagem);
-        SomEfeitos.Tocar(2);
-      end;
-    end;
-    { jogador 2 (joystick emulado) }
-    if not Lutador[2].Escolheu and Lutador[2].Ativo then
-    begin
-      if ((K2 and 4) <> 0) and not Lutador[2].AntEsq then
-      begin
-        Dec(Lutador[2].Personagem);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K2 and 8) <> 0) and not Lutador[2].AntDir then
-      begin
-        Inc(Lutador[2].Personagem);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K2 and 1) <> 0) and not Lutador[2].AntCima and (Lutador[2].Personagem > 8) then
-      begin
-        Dec(Lutador[2].Personagem, 8);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K2 and 2) <> 0) and not Lutador[2].AntBaixo and (Lutador[2].Personagem <= 8) then
-      begin
-        Inc(Lutador[2].Personagem, 8);
-        SomEfeitos.Tocar(1);
-      end;
-      if ((K2 and 16) <> 0) and not Lutador[2].AntSocoFraco then
-      begin
-        Lutador[2].Escolheu := True;
-        criaadversario(2, Lutador[2].Personagem);
-        SomEfeitos.Tocar(2);
-      end;
-    end;
+    Navegar(1, K1);  // jogador 1 (teclado)
+    Navegar(2, K2);  // jogador 2 (joystick emulado)
     for J := 1 to 2 do
     begin
       if Lutador[J].Personagem < 1 then Lutador[J].Personagem := FQtdLutadores;

@@ -282,6 +282,7 @@ var
   ContPisca: Byte;               // contador ciclico para efeitos que piscam
   CursorMenu: Byte;              // opcao selecionada (resolucao / linha da config / tecla)
   FaseSelecao: Byte;             // selecao de lutador: 1 = entrando, 2 = interativa
+  LinhaSelecao: Integer;         // selecao de lutador: primeira linha visivel da grade (0..)
   IntervaloTimer: Word;          // intervalo do timer em ms (velocidade do jogo), padrao 28
   AvisoVelocidade: Byte;         // quadros restantes mostrando a barra de velocidade
   Pausado: Boolean;                 // True = jogo pausado (tecla P)

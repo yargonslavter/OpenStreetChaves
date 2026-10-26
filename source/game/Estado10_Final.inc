@@ -225,8 +225,9 @@ begin
   Linha4 := Seg * 4 + Base;
   Cod := Linha(TxtFinais, Linha4);
   if Cod = '-' then Tmp4494 := 99;
-  for I := 0 to 14 do
-    if Cod = Chr(Ord('A') + I) then Tmp4494 := I * 5;
+  // numero do personagem que fala: o retrato e o primeiro rosto dele
+  I := StrToIntDef(Trim(Cod), 0);
+  if (I >= 1) and (I <= FQtdLutadores) then Tmp4494 := (I - 1) * 5;
   if (Tmp4494 <> 99) and (ImgRetrato.Count > Tmp4494) and (T < 2200) then
   begin
     ImgRetrato[Tmp4494].Draw(Sup, 20, 222, 0);
