@@ -65,7 +65,13 @@ begin
     FPadraoCenario := Ini.ReadString('Cenarios', 'Arquivo', '');
     FPadraoMusica := Ini.ReadString('Musicas', 'Arquivo', '');
     FPadraoDadosCenario := Ini.ReadString('Cenarios', 'Dados', '');
-    FQtdCenarios := Ini.ReadInteger('Cenarios', 'Quantidade', 12);
+    { cenarios: Quantidade fixa ou, sem ela, contados ate o primeiro Cenario-NN.ini que faltar }
+    FQtdCenarios := Ini.ReadInteger('Cenarios', 'Quantidade', 0);
+    if FQtdCenarios <= 0 then
+      while FileExists(ResolverCaminho(ArquivoNN(FPadraoDadosCenario, FQtdCenarios + 1))) do
+        Inc(FQtdCenarios);
+    if FQtdCenarios < 1 then
+      raise Exception.Create('Nenhum cenario encontrado (' + FPadraoDadosCenario + ').');
     SetLength(FMusicaCenario, FQtdCenarios + 1);
     for I := 1 to FQtdCenarios do
       with TMemIniFile.Create(ResolverCaminho(ArquivoNN(FPadraoDadosCenario, I))) do
@@ -468,7 +474,7 @@ begin
   QuadroAtivo := True;
 end;
 
-{ Item que quebra, voador e animacoes do cenario Numero. }
+{ Item que quebra, objetos que quebram ([ObjetoN]), voador e animacoes do cenario Numero. }
 procedure TJogo.LerDadosCenario(Numero: Integer);
 var
   Ini: TMemIniFile;
@@ -488,6 +494,7 @@ var
 
 begin
   SetLength(FDesenhos, 0);
+  SetLength(FObjetos, 0);
   ItemBonus.Icone := 0;
   FVoadorModo := 0;
   Partes := TStringList.Create;
@@ -504,6 +511,38 @@ begin
       ItemBonus.Dx2 := Parte(2, 0);
       ItemBonus.Dy2 := Parte(3, 0);
       ItemBonus.Icone := Max(0, ImgIcone.IndiceDe(Ini.ReadString('Item', 'Icone', '')));
+    end;
+
+    { objetos que quebram: [Objeto1], [Objeto2]... }
+    A := 1;
+    while Ini.SectionExists('Objeto' + IntToStr(A)) do
+    begin
+      Secao := 'Objeto' + IntToStr(A);
+      Inc(A);
+      SetLength(FObjetos, Length(FObjetos) + 1);
+      with FObjetos[High(FObjetos)] do
+      begin
+        S := Ini.ReadString(Secao, 'Imagem', '');
+        if (S <> '') and (UpCase(S[1]) = 'A') then Inteiro := StrToIntDef(Copy(S, 2, MaxInt), 0) - 1 else Inteiro := -1;
+        S := Ini.ReadString(Secao, 'Quebrado', '');
+        if (S <> '') and (UpCase(S[1]) = 'A') then Quebrado := StrToIntDef(Copy(S, 2, MaxInt), 0) - 1 else Quebrado := -1;
+        X := Ini.ReadInteger(Secao, 'X', 0);
+        Y := Ini.ReadInteger(Secao, 'Y', 0);
+        SepararLista(Ini.ReadString(Secao, 'Caixa', ''), Partes);
+        X1 := Parte(0, 0);
+        Y1 := Parte(1, 0);
+        X2 := Parte(2, 0);
+        Y2 := Parte(3, 0);
+        ResistenciaMax := Max(1, Ini.ReadInteger(Secao, 'Resistencia', 1));
+        Resistencia := ResistenciaMax;
+        Pedacos := Ini.ReadInteger(Secao, 'Pedacos', 21);
+        QtdPedacos := Ini.ReadInteger(Secao, 'QtdPedacos', 10);
+        Pontos := Ini.ReadInteger(Secao, 'Pontos', 100);
+        Som := Ini.ReadInteger(Secao, 'Som', sndAcertoEspecial);
+        Frente := Ini.ReadBool(Secao, 'Frente', False);
+        Espera := 0;
+        Tremor := 0;
+      end;
     end;
 
     { voador }

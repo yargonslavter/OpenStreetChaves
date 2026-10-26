@@ -796,7 +796,6 @@ var
   SP, DP: Cardinal;
   SRow: PCardinal;
   DRow: PCardinal;
-  Straight: Boolean;
   A, IA: Integer;
   SR, SG, SB, DR, DG, DB: Integer;
 begin
@@ -823,7 +822,7 @@ begin
   if Alpha > 255 then Alpha := 255;
   A := Alpha;
   IA := 255 - A;
-  Straight := (SW = ADW) and (not FlipX);
+  //Straight := (SW = ADW) and (not FlipX);
 
   // mapa de colunas (origem) para cada coluna de destino
   if Length(FMap) < ADW then SetLength(FMap, ADW);
@@ -913,7 +912,6 @@ var
   SP, DP: Cardinal;
   A, IA: Integer;
   SR, SG, SB, DR, DG, DB: Integer;
-  CX, CY: Double;
 begin
   Result := False;
   if (Image = nil) or (Image.FWidth = 0) or (FWidth = 0) or (W = 0) or (H = 0) then Exit;
@@ -930,7 +928,7 @@ begin
   PX := X + W * CenterX;
   PY := Y + H * CenterY;
   // bounding box do retangulo rotacionado
-  CX := X; CY := Y;
+  //CX := X; CY := Y;
   for K := 0 to 3 do
   begin
     case K of

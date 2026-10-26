@@ -27,6 +27,21 @@ type
     Esconde: set of Byte;      // personagens que, lutando, fazem o desenho sumir
   end;
 
+  { Objeto do cenario que quebra com golpes, projeteis e lutadores derrubados em cima
+    ([Objeto1], [Objeto2]... de Dados/Cenarios/Cenario-NN.ini) }
+  TObjetoCenario = record
+    Inteiro, Quebrado: Integer;      // indices em ImgAnimacao (-1 = nada)
+    X, Y: Integer;                   // canto de cima a esquerda, no cenario
+    X1, Y1, X2, Y2: Integer;         // caixa de colisao, relativa a X,Y
+    Resistencia, ResistenciaMax: Integer; // golpes que aguenta
+    Pedacos, QtdPedacos: Integer;    // tipo de efeito dos pedacos (Dados/Efeitos.ini) e quantos
+    Pontos: Integer;                 // pontos para quem quebra
+    Som: Integer;                    // som ao quebrar
+    Frente: Boolean;                 // desenhado na frente dos lutadores
+    Espera: Integer;                 // quadros ate aceitar outro golpe
+    Tremor: Integer;                 // quadros tremendo depois de um golpe
+  end;
+
   { Golpe da lista da tecla G }
   TGolpeInfo = record
     N: string;     // nome ('*' no comeco = golpe especial final)
@@ -138,6 +153,7 @@ type
     FVolumes: TStringList;        // Chave=volume: Dados/Som.ini e, por cima, Chaves.ini ([Volume])
     { cenario carregado (carregarcenario) }
     FDesenhos: array of TDesenhoCenario;   // animacoes, na ordem de desenho
+    FObjetos: array of TObjetoCenario;     // objetos que quebram (zerados a cada carga do cenario)
     FCameraXMax, FCameraYMax: Integer;     // limite da camera (tamanho da imagem - tela)
     FVoadorModo: Integer;                  // 0 = sem voador, 1 = sempre, 2 = so com o relogio andando
     FVoadorY: Integer;
@@ -392,6 +408,14 @@ type
     procedure L7_Voador;
     { Luta: desenha o item do cenario e o quebra quando um lutador cai sobre ele. }
     procedure L7_ItemBonus;
+    { Luta: desenha os objetos do cenario de uma camada e, na de tras, confere quem os acerta.
+      @param(Frente True = objetos na frente dos lutadores; False = os de tras (e as colisoes)) }
+    procedure L7_Objetos(Frente: Boolean);
+    { Um golpe acertou o objeto: tira resistencia e, se acabou, quebra (pedacos, som e pontos).
+      @param(I indice em FObjetos)
+      @param(Jog lutador que acertou (0 = ninguem))
+      @param(Quebra True = quebra de uma vez (lutador derrubado em cima)) }
+    procedure AcertaObjeto(I, Jog: Integer; Quebra: Boolean);
     { Luta: mensagens de bonus/combo e indicador de poder (estoques e carga) de um lutador.
       @param(Jog lutador, 1 ou 2) }
     procedure L7_HudBaixo(Jog: Byte);

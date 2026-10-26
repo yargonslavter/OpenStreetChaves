@@ -412,6 +412,89 @@ begin
   end;
 end;
 
+{ Objetos do cenario ([ObjetoN] de Dados/Cenarios/Cenario-NN.ini): desenha os da camada pedida e,
+  na de tras, confere golpes, projeteis e lutadores derrubados que acertam cada objeto inteiro. }
+procedure TJogo.L7_Objetos(Frente: Boolean);
+var
+  I, Jog, K, Idx, DX: Integer;
+  Ob: ^TObjetoCenario;
+  P: PLutador;
+  E: PEfeito;
+  BX1, BY1, BX2, BY2: Integer;
+begin
+  for I := 0 to High(FObjetos) do
+  begin
+    Ob := @FObjetos[I];
+    if Ob.Frente <> Frente then Continue;
+    if Ob.Resistencia > 0 then Idx := Ob.Inteiro else Idx := Ob.Quebrado;
+    DX := 0;
+    if Ob.Tremor > 0 then DX := Random(5) - 2;
+    if (Idx >= 0) and (Idx < ImgAnimacao.Count) and (FlashTela = 0) then
+      ImgAnimacao[Idx].Draw(Tela, Ob.X + DX - CameraX, Ob.Y - CameraY, 0);
+  end;
+  if Frente then Exit;
+
+  for I := 0 to High(FObjetos) do
+  begin
+    Ob := @FObjetos[I];
+    if Ob.Espera > 0 then Dec(Ob.Espera);
+    if Ob.Tremor > 0 then Dec(Ob.Tremor);
+    if Ob.Resistencia <= 0 then Continue;
+    BX1 := Ob.X + Ob.X1;
+    BY1 := Ob.Y + Ob.Y1;
+    BX2 := Ob.X + Ob.X2;
+    BY2 := Ob.Y + Ob.Y2;
+    for Jog := 1 to 2 do
+    begin
+      P := @Lutador[Jog];
+      { golpe }
+      if P.GolpeAtivo and (Round(P.X) + P.AtaqueX1 < BX2) and (Round(P.X) + P.AtaqueX2 > BX1) and
+         ((Round(P.Y) - P.AlturaSprite) + P.AtaqueY1 < BY2) and ((Round(P.Y) - P.AlturaSprite) + P.AtaqueY2 > BY1) then
+        AcertaObjeto(I, Jog, False);
+      { lutador derrubado caindo em cima }
+      if (Ob.Resistencia > 0) and (P.Acao = acDerrubado) and
+         (Round(P.X) + P.CorpoX1 < BX2) and (Round(P.X) + P.CorpoX2 > BX1) and
+         ((Round(P.Y) - P.AlturaSprite) + P.CorpoY1 < BY2) and ((Round(P.Y) - P.AlturaSprite) + P.CorpoY2 > BY1) then
+        AcertaObjeto(I, 3 - Jog, True);
+    end;
+    { projeteis }
+    for K := 1 to MaxEfeitos do
+    begin
+      if Ob.Resistencia <= 0 then Break;
+      E := @Efeitos[K];
+      if (E.Tipo = 0) or not E.PodeAcertar or (E.Dano <= 0) or (E.Dono < 1) or (E.Dono > 2) then Continue;
+      if (E.CaixaX1 + E.X < BX2) and (E.CaixaX2 + E.X > BX1) and (E.CaixaY1 + E.Y < BY2) and (E.CaixaY2 + E.Y > BY1) then
+        AcertaObjeto(I, E.Dono, False);
+    end;
+  end;
+end;
+
+procedure TJogo.AcertaObjeto(I, Jog: Integer; Quebra: Boolean);
+var
+  K, CX, CY: Integer;
+  Ob: ^TObjetoCenario;
+begin
+  Ob := @FObjetos[I];
+  if (Ob.Resistencia <= 0) or (Ob.Espera > 0) then Exit;
+  Ob.Espera := 12;
+  Ob.Tremor := 8;
+  CX := Ob.X + (Ob.X1 + Ob.X2) div 2;
+  CY := Ob.Y + (Ob.Y1 + Ob.Y2) div 2;
+  if Quebra then Ob.Resistencia := 0 else Dec(Ob.Resistencia);
+  if Ob.Resistencia > 0 then
+  begin
+    { aguentou: so lasca }
+    SomPendente := sndAcertoFraco;
+    for K := 1 to 3 do CriaEfeito(Ob.Pedacos, '', 0, CX + Random(20) - 10, CY + Random(20) - 10);
+    Exit;
+  end;
+  SomPendente := Ob.Som;
+  for K := 1 to Ob.QtdPedacos do
+    CriaEfeito(Ob.Pedacos, '', 0, Ob.X + Ob.X1 + Random(Max(1, Ob.X2 - Ob.X1)), Ob.Y + Ob.Y1 + Random(Max(1, Ob.Y2 - Ob.Y1)));
+  if (Jog >= 1) and (Jog <= 2) and Lutador[Jog].Ativo then
+    Lutador[Jog].Pontos := Lutador[Jog].Pontos + Ob.Pontos;
+end;
+
 { Mensagens de bonus/combo, indicador de poder (estoques e carga) de baixo. }
 procedure TJogo.L7_HudBaixo(Jog: Byte);
 var
@@ -1243,6 +1326,7 @@ begin
 
   L7_Voador;
   L7_ItemBonus;
+  L7_Objetos(False);
 
   // lutadores (quem apanhou/atacou por ultimo e desenhado por cima)
   if Lutador[1].DesenhaPorCima then
@@ -1261,6 +1345,7 @@ begin
     defendergolpe(1);
     defendergolpe(2);
   end;
+  L7_Objetos(True);
   desenhaefeitos;
   for J := 1 to 2 do L7_HudBaixo(J);
 
