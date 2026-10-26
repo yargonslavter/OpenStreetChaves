@@ -47,11 +47,17 @@ function DXTextoLargura(const FontName: string; Size, Style: Integer; const S: s
   @param(S texto em UTF-8)
   @returns(a altura em pixels) }
 function DXTextoAltura(const FontName: string; Size, Style: Integer; const S: string): Integer;
+{ Ascendente da fonte (distancia do topo da celula ate a linha de base), como no GDI.
+  @param(FontName nome da fonte do sistema)
+  @param(Size tamanho em pontos (negativo = altura do caractere em pixels))
+  @param(Style bits: 1 negrito, 2 italico, 4 sublinhado, 8 riscado)
+  @returns(o ascendente em pixels) }
+function DXTextoAscendente(const FontName: string; Size, Style: Integer): Integer;
 
 implementation
 
 uses
-  Classes, SysUtils, Math, Graphics, GraphType, IntfGraphics, FPImage;
+  Classes, SysUtils, Math, Graphics, GraphType, IntfGraphics, FPImage, LCLType, LCLIntf;
 
 var
   GScratch: TBitmap = nil;
@@ -71,7 +77,7 @@ end;
 { Configura a fonte do canvas (branca, com anti-serrilhado).
   @param(B bitmap)
   @param(FontName nome da fonte)
-  @param(Size tamanho em pontos)
+  @param(Size tamanho em pontos (negativo = altura do caractere em pixels, como TFont.Height))
   @param(Style bits: 1 negrito, 2 italico, 4 sublinhado, 8 riscado) }
 procedure AjustaFonte(B: TBitmap; const FontName: string; Size, Style: Integer);
 var
@@ -83,7 +89,7 @@ begin
   if (Style and 4) <> 0 then Include(Est, fsUnderline);
   if (Style and 8) <> 0 then Include(Est, fsStrikeOut);
   B.Canvas.Font.Name := FontName;
-  B.Canvas.Font.Size := Size;
+  if Size < 0 then B.Canvas.Font.Height := Size else B.Canvas.Font.Size := Size;
   B.Canvas.Font.Style := Est;
   B.Canvas.Font.Color := clWhite;
   B.Canvas.Font.Quality := fqAntialiased;
@@ -99,6 +105,15 @@ function DXTextoAltura(const FontName: string; Size, Style: Integer; const S: st
 begin
   AjustaFonte(Scratch, FontName, Size, Style);
   Result := Scratch.Canvas.TextHeight(S);
+end;
+
+function DXTextoAscendente(const FontName: string; Size, Style: Integer): Integer;
+var
+  TM: TTextMetric;
+begin
+  AjustaFonte(Scratch, FontName, Size, Style);
+  Scratch.Canvas.TextWidth('H');           // garante a fonte selecionada no DC
+  if GetTextMetrics(Scratch.Canvas.Handle, TM) then Result := TM.tmAscent else Result := 0;
 end;
 
 procedure DXTextoMascaraMargem(const FontName: string; Size, Style: Integer; const S: string;

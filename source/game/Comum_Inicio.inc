@@ -18,6 +18,7 @@ end;
 destructor TJogo.Destroy;
 begin
   FreeAndNil(FFrameSheet);
+  FreeAndNil(FFolha1x);
   TxtNomes.Free;
   TxtGeral.Free;
   TxtConfig.Free;
@@ -82,6 +83,7 @@ var
 begin
   CriaComponentes;
   FFrameSheet := nil;
+  FFolha1x := nil;
   { o original procurava os arquivos na pasta corrente: vamos para a pasta do jogo }
   Nome := ResolverCaminho(PastaDados + ArqRecursos);
   if FileExists(Nome) then SetCurrentDir(ExtractFilePath(ExtractFileDir(Nome)));

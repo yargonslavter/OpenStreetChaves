@@ -141,7 +141,8 @@ type
       @param(Secao 'Padroes' ou 'Configuracao') }
     procedure LerConfiguracao(Ini: TCustomIniFile; const Secao: string);
   private
-    FFrameSheet: TSuperficie;     // folha de sprites em memoria (carregarlutador)
+    FFrameSheet: TSuperficie;     // folha de sprites em memoria (carregarlutador; HD, se houver)
+    FFolha1x: TSuperficie;        // a mesma folha sempre no BMP original: dela saem os cortes dos quadros
     FTick7: Integer;
     FPadraoLutador, FPadraoCenario, FPadraoMusica: string;   // nomes de arquivo (Dados/Recursos.ini)
     FPadraoDadosCenario: string;  // Dados/Cenarios/Cenario-##.ini

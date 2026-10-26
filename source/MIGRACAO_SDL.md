@@ -7,7 +7,7 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
 - `SDL2.dll` (x64, versao 2.28 ou mais nova) ao lado do `StreetChaves.exe` (raiz do projeto).
   As units em `3party/SDL2` ligam a DLL ao abrir o programa (sem carga dinamica): **sem a DLL o programa nao abre**.
   O Git ignora `*.dll`: cada clone precisa baixar a DLL em https://github.com/libsdl-org/SDL/releases .
-- `Fontes/ComicSansMS.atlas` (gerado por `tools/GeraFonte`; veja o README da raiz).
+- `Fontes/ComicNeue-3x.atlas` ou `Fontes/ComicSansMS.atlas` (gerados por `tools/GeraFonte`; veja o README da raiz).
 - `source/3party/SDL2` esta no caminho de busca de units do `StreetChaves.lpi`.
 - SDL2_ttf / SDL2_image / SDL2_mixer / SDL2_gfx NAO sao usados (evitam DLLs extras).
 
@@ -53,8 +53,49 @@ facilitar Linux, macOS e Android. Cada fase terminou com o jogo jogavel.
 ## Proximos passos
 1. Remapeamento do controle na tela F2 e controles de toque (Android).
 2. Build de teste em Linux e macOS (o codigo ja nao usa APIs do Windows; faltam as bibliotecas SDL2 de cada sistema).
-3. Fidelidade/resolucao: desenho 3x (logica continua 400x300; so o desenho usa sprites 3x maiores).
-4. Decisao de licenca do atlas da Comic Sans MS (distribuir ou trocar por fonte livre, ex.: Comic Neue, OFL).
+3. Graficos em alta resolucao (3x): ver a secao abaixo.
+
+## Graficos em alta resolucao (3x)
+A logica continua em 400x300 (coordenadas, caixas, camera, roteiros); so o desenho fica 3x maior.
+A escala mora inteira no `ChavesGfx`: toda a API recebe coordenadas logicas e cada superficie
+tem a sua `Escala` (pixels fisicos por pixel logico). Assim os `Estado*.inc` nao mudam, e a ordem
+das chamadas de desenho (que tambem rodam `AtualizaQuadro` e `Random`) fica a mesma.
+
+Decisoes: assets HD em PNG com canal alfa, em pastas paralelas `HD/` (ex.: `HD/Lutadores/C01.png`),
+com volta para o 1x quando o HD nao existe; arte gerada por uma ferramenta de upscale (mesmo
+layout das folhas, exatamente 3x); linhas e sombra do texto escalam junto (3 px); fonte do atlas
+3x = Comic Neue (OFL).
+
+| # | Fase | Situacao |
+|---|------|----------|
+| 1 | Escala no `ChavesGfx` (`EscalaTela` em `ChavesConst`), buffer e textura SDL de 1200x900 | Feita |
+| 2 | Atlas de fonte 3x (Comic Neue) e texto alinhado em pixels fisicos | Feita |
+| 3 | Leitor de PNG com alfa, busca em `HD/` com volta ao 1x, mistura por alfa no `DoBlit`/`DoRotate` | Feita |
+| 4 | Folha HD do lutador recortada pelos cortes calculados na folha 1x (x3) | Feita |
+| 5 | Ferramenta de ampliacao em lote (`tools/GeraHD`: BMP 1x -> PNG 3x, Lanczos com alfa pre-multiplicado) | Feita |
+| 6 | Medir e otimizar o desenho (~3,8 ms por passo em 3x sem HD e ~4,6 ms com HD, contra ~0,75 ms em 1x; carga dos PNG no inicio de cada luta) | A fazer |
+
+Conferencia da fase 1 (`--gravar`, 4000 passos, 80 quadros): com `EscalaTela = 1` os quadros sao
+identicos aos de antes; com 3 cada bloco 3x3 e igual ao pixel do 1x, exceto nas imagens esticadas
+(retratos, logo, miniatura do cenario), que agora sao amostradas com mais precisao.
+
+Fase 2: `Fontes/ComicNeue-3x.atlas` (gerado por `GeraFonte --hd`) guarda cada tamanho Tam do jogo
+como Tam x 3, desenhado com a Comic Neue Bold (o peso normal ficou fino demais perto da Comic Sans).
+Em cada tamanho a altura da letra e a que deixa a soma das larguras dos textos do jogo igual a da
+Comic Sans 3x (deu ~81% do tamanho nominal), e a linha de base e a altura da celula sao as da
+Comic Sans 3x: a diagramacao das telas nao muda. `TSuperficie.Texto` recebe o alinhamento e o
+calcula em pixels fisicos; `LarguraTexto` continua logica (arredondada). Sem o atlas 3x (ou com
+`EscalaTela = 1`) o jogo usa o `ComicSansMS.atlas` ampliado em blocos. Conferido com `--gravar`:
+`EscalaTela = 1` igual ao original; 3x sem o atlas HD igual a fase 1; custo por passo inalterado.
+
+Fases 3 a 5: `TSuperficie.CarregarBMP` procura `HD/Pasta/Nome.png` (exatamente 3x o BMP; senao
+volta ao BMP e anota em `HD.log`); o PNG e lido pelo `fcl-image` (FPReadPNG) e, com transparencia,
+a superficie guarda o alfa de cada pixel (`TemAlfa`): `DoBlit` e `DoRotate` misturam por ele no
+lugar da cor-chave (e respeitam o Alpha de `DrawAlpha`); `AtribuirRegiao` leva o alfa junto (quadros
+e espelhos). `carregarlutador` acha os cortes na folha BMP (`FFolha1x`) e copia os quadros da folha
+carregada (HD, se houver). `tools/GeraHD` gera os 326 PNG (113 MB) em ~30 s. Conferido com
+`--gravar`: `logica.txt` (resumo dos lutadores e dos efeitos a cada quadro gravado) igual com e sem
+`HD/`; com `--sem-hd` os quadros sao iguais aos da fase 2.
 
 ## Pontos de atencao
 - O buffer do jogo e ARGB 32 bits (0xAARRGGBB), o mesmo formato da textura SDL: nao ha conversao.

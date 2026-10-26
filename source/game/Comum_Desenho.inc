@@ -23,12 +23,8 @@ end;
 { Alinh: 99 = centralizado em X, 101 = alinhado a direita em X, outro = a esquerda.
   Desenha uma sombra preta deslocada de (+1,+1) antes do texto colorido. }
 procedure TJogo.texto(X, Y: Integer; const Texto: string; Alinh: Byte; Tam: Integer; Cor: TColor);
-var
-  D: Integer;
 begin
-  D := 0;
-  if Alinh = ACentro then D := Round(Tela.LarguraTexto(Texto, Tam) / 2);
-  if Alinh = ADir then D := Tela.LarguraTexto(Texto, Tam);
-  Tela.Texto(X - D + 1, Y + 1, Texto, Tam, Preto);
-  Tela.Texto(X - D, Y, Texto, Tam, Cor);
+  { o alinhamento e feito pela tela, em pixels fisicos (sem arredondar para a grade 400x300) }
+  Tela.Texto(X + 1, Y + 1, Texto, Tam, Preto, Alinh);
+  Tela.Texto(X, Y, Texto, Tam, Cor, Alinh);
 end;

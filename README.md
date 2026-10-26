@@ -21,9 +21,9 @@ nem formulários.
 
 | Parte | Como é feito agora |
 |-------|--------------------|
-| Janela e vídeo | SDL2: o jogo desenha num buffer 400x300 (ARGB) em software e o SDL o apresenta (escala com barras pretas; F11 / Alt+Enter = tela cheia) |
-| Gráficos | `ChavesGfx.pas`: superfícies, imagens e listas de imagens próprias (cópia normal, esticada, alfa, rotação), BMP lido sem bibliotecas |
-| Texto | Atlas de glifos pré-renderizados (`Fontes/ComicSansMS.atlas`), sem depender de fonte do sistema em tempo de execução |
+| Janela e vídeo | SDL2: a lógica do jogo usa coordenadas 400x300, mas o desenho é feito em software num buffer 3x maior (1200x900, ARGB; `EscalaTela` em `ChavesConst.pas`) e o SDL o apresenta (escala com barras pretas; F11 / Alt+Enter = tela cheia) |
+| Gráficos | `ChavesGfx.pas`: superfícies, imagens e listas de imagens próprias (cópia normal, esticada, alfa, rotação), BMP lido sem bibliotecas e versões em alta resolução em PNG com alfa (pasta `HD/`, lidas com o `fcl-image` do Free Pascal) |
+| Texto | Atlas de glifos pré-renderizados, sem depender de fonte do sistema em tempo de execução: `Fontes/ComicNeue-3x.atlas` (Comic Neue, licença OFL, na resolução 3x) e, se ele faltar ou com `EscalaTela = 1`, `Fontes/ComicSansMS.atlas` |
 | Som | `ChavesSom.pas`: mixer próprio sobre o áudio do SDL (sem MCI, sem SDL2_mixer) |
 | Entrada | Teclado por código físico do SDL (`SDL_SCANCODE_*`) e controles (gamepads e joysticks genéricos) para os jogadores 1 e 2 |
 | Lógica do jogo | `TJogo` (`ChavesJogo.pas`), dividida em um arquivo `.inc` por estado do jogo (`source/game/Estado*.inc`) |
@@ -37,12 +37,16 @@ O que ainda falta para ser "SDL puro" em todas as plataformas está em [`source/
    Baixe em https://github.com/libsdl-org/SDL/releases (arquivo `SDL2-2.28.x-win32-x64.zip`).
    O Git ignora `*.dll`, então cada pessoa que clonar o repositório precisa colocar a DLL.
    Sem a DLL o programa nem abre.
-3. **Atlas de fonte** `Fontes/ComicSansMS.atlas` (já deve estar na pasta `Fontes/` do repositório).
-   Se o arquivo não existir, o jogo avisa ao abrir. Para gerá-lo uma vez (precisa da fonte *Comic Sans MS*
-   instalada no Windows): abra `source/tools/GeraFonte/GeraFonte.lpi`, construa e execute. Ele grava o
-   atlas e confere o resultado contra todos os textos do jogo (log em `GeraFonte.log`).
-   Atenção: a Comic Sans MS é uma fonte da Microsoft; decida se o atlas pode ser distribuído ou se vale
-   trocá-la por uma fonte livre (por exemplo, Comic Neue, licença OFL).
+3. **Atlas de fonte** `Fontes/ComicNeue-3x.atlas` (já deve estar na pasta `Fontes/` do repositório).
+   Se o arquivo não existir, o jogo usa `Fontes/ComicSansMS.atlas` ampliado; sem nenhum dos dois, avisa ao abrir.
+   Para gerar os atlas, abra `source/tools/GeraFonte/GeraFonte.lpi`, construa e execute:
+   * `GeraFonte.exe --hd` gera o `ComicNeue-3x.atlas` com a Comic Neue Bold de `Fontes/ComicNeue/` (licença OFL,
+     `Fontes/ComicNeue/OFL.txt`; não precisa instalar). `--hd regular` usa o peso normal, mais fino. A altura das letras em cada tamanho é escolhida para que
+     os textos tenham a mesma largura que na Comic Sans MS (se ela estiver instalada), e a linha de base é a dela.
+   * `GeraFonte.exe` (sem parâmetro) gera o `ComicSansMS.atlas` (precisa da *Comic Sans MS* instalada no Windows).
+
+   Ele confere o resultado contra todos os textos do jogo (log em `GeraFonte.log`).
+   Atenção: a Comic Sans MS é uma fonte da Microsoft; decida se o `ComicSansMS.atlas` pode ser distribuído.
 4. **Pasta `Dados/`** na raiz (já vem no repositório): `Jogo.ini` (valores do jogo e padrões), `Recursos.ini`
    (lista de imagens e sons) e `Textos/` (textos em português e espanhol). Sem o `Recursos.ini` o jogo avisa ao abrir e fecha.
 5. Abra `source/StreetChaves.lpi` e use o menu Executar -> Construir (Ctrl+F9).
@@ -51,6 +55,32 @@ Pronto! O executável `StreetChaves.exe` aparece na raiz do projeto (ao lado das
 `Sons`, etc.) e é só abrir.
 
 O programa `StreetChaves.exe --demo` abre um quadro de teste da infraestrutura SDL (útil para diagnosticar vídeo e entrada).
+
+`StreetChaves.exe --gravar <pasta> [passos] [intervalo]` roda a lógica sem esperar o relógio, com semente fixa e teclas
+roteirizadas, e grava um quadro BMP a cada `intervalo` passos (padrão: 3000 passos, 1 quadro a cada 50), mais o estado
+da lógica (lutadores e efeitos) em `logica.txt`. Serve para conferir que uma mudança no desenho não alterou a lógica:
+duas versões com a mesma lógica gravam o mesmo `logica.txt` (e, se o desenho também for igual, os mesmos quadros).
+
+`--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
+
+# Gráficos em alta resolução (pasta `HD/`)
+
+O jogo desenha em 3x (1200x900). Para cada imagem `Pasta/Nome.bmp` ele procura antes `HD/Pasta/Nome.png`: um PNG com
+canal alfa e **exatamente 3 vezes** o tamanho do BMP (folhas de lutadores com o mesmo layout, ampliado). Se não houver,
+usa o BMP ampliado. Um PNG com tamanho errado é ignorado e anotado em `HD.log`. O título da janela mostra quantas
+imagens HD foram carregadas.
+
+A pasta `HD/` é gerada pela ferramenta `source/tools/GeraHD` (abra `GeraHD.lpi`, construa; o `GeraHD.exe` aparece na raiz):
+
+* `GeraHD.exe` amplia todas as imagens (Lutadores, Efeitos, Animacoes, Rostos, Embutidos, Cenarios) com o filtro
+  Lanczos e alfa pré-multiplicado: o branco das imagens transparentes vira alfa (sem franja branca); cenários e as
+  imagens marcadas com `,0` no `Recursos.ini` ficam opacos; cada quadro das folhas de lutadores é ampliado sozinho.
+* `GeraHD.exe Lutadores Rostos/R01-a.bmp` processa só essas pastas ou arquivos.
+* `--filtro=bicubico` (mais macio) ou `--filtro=vizinho` (pixels repetidos) trocam o filtro.
+* Um PNG que já existe **não é regravado** (pode ter sido retocado à mão), a não ser com `--refazer`.
+
+Os PNG podem ser editados ou trocados por versões melhores (redesenho, ampliação por IA etc.), desde que mantenham o
+tamanho exato e, nas folhas de lutadores, a posição de cada quadro (os cortes continuam sendo achados no BMP original).
 
 # Controles do jogo
 

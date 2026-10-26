@@ -3,6 +3,18 @@
   Tudo e desenhado num buffer ARGB (0xAARRGGBB) na memoria; quem apresenta o quadro na tela e o
   ChavesSDL (textura SDL). Nao ha canvas, pincel ou caneta: cada primitiva recebe suas cores.
 
+  Escala: cada superficie tem Escala pixels fisicos por pixel logico (a tela do jogo usa
+  EscalaTela; as imagens, 1 ou a escala do arquivo em alta resolucao). Todas as coordenadas e
+  tamanhos da API (Width, Height, Pixels, retangulos de destino e de origem) sao LOGICOS; so
+  ScanLine, LarguraFisica e AlturaFisica falam em pixels fisicos. Assim o jogo continua
+  pensando em 400x300 e o desenho sai na resolucao fisica.
+
+  Imagens em alta resolucao: com EscalaTela > 1, CarregarBMP('Pasta/Nome.bmp') procura antes
+  'HD/Pasta/Nome.png' (PNG com canal alfa, exatamente EscalaTela vezes o tamanho do BMP); se nao
+  existir ou tiver outro tamanho (anotado em HD.log), carrega o BMP. A superficie de um PNG com
+  transparencia guarda o alfa de cada pixel (TemAlfa) e as copias transparentes misturam por ele
+  no lugar da cor transparente.
+
     TSuperficie    buffer de pixels + copias (normal, esticada, alfa, rotacao)
                    + retangulos, elipses, retangulos redondos e texto (fonte do atlas)
     TImagem        imagem com cor transparente e "padroes" (grade de quadros de uma folha)
@@ -26,7 +38,9 @@ type
 
   TSuperficie = class
   private
-    FWidth, FHeight: Integer;
+    FWidth, FHeight: Integer;         // tamanho fisico
+    FEscala: Integer;                 // pixels fisicos por pixel logico
+    FTemAlfa: Boolean;                // pixels com alfa proprio (PNG); senao, todos opacos
     FPix: array of Cardinal;
     FTransparentColor: TColor;
     FMap: array of Integer;           // buffer reutilizavel p/ mapeamento de colunas
@@ -38,8 +52,21 @@ type
       @param(Y linha)
       @param(Value cor (fora da superficie = ignora)) }
     procedure SetPixel(X, Y: Integer; Value: TColor);
+    { @returns(a largura logica) }
+    function GetWidth: Integer;
+    { @returns(a altura logica) }
+    function GetHeight: Integer;
+    { Pinta o bloco fisico de um pixel logico (recortado nas bordas).
+      @param(X coluna logica)
+      @param(Y linha logica)
+      @param(C pixel ARGB) }
+    procedure PreencherBloco(X, Y: Integer; C: Cardinal);
+    { @param(R retangulo logico)
+      @param(E escala)
+      @returns(o retangulo em pixels fisicos) }
+    class function Fisico(const R: TRect; E: Integer): TRect; static;
     { Copia com mistura: base de Draw, StretchDraw e DrawAlpha. Estica por
-      vizinho mais proximo e recorta nas bordas.
+      vizinho mais proximo e recorta nas bordas. Tudo em pixels FISICOS.
       @param(Mode bmCopy ou bmAlpha)
       @param(DestRect retangulo de destino (largura ou altura negativa espelha))
       @param(SrcRect regiao de Image)
@@ -50,7 +77,7 @@ type
     function DoBlit(Mode: TBlendMode; const DestRect, SrcRect: TRect;
       Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
     { Copia girada com mistura: base de DrawRotate (mapeamento inverso, vizinho mais
-      proximo).
+      proximo). Tudo em pixels FISICOS.
       @param(Mode bmCopy ou bmAlpha)
       @param(X esquerda do retangulo de destino (antes de girar))
       @param(Y topo)
@@ -81,18 +108,26 @@ type
     procedure Forma(X1, Y1, X2, Y2, RX, RY: Integer; CorBorda, CorFundo: TColor;
       Preencher: Boolean);
   public
-    { Cria uma superficie vazia (0 x 0) com cor transparente Preto. }
+    { Cria uma superficie vazia (0 x 0, escala 1) com cor transparente Preto. }
     constructor Create;
     { Muda o tamanho e pinta tudo de preto.
-      @param(AWidth largura (negativo = 0))
-      @param(AHeight altura (negativo = 0)) }
-    procedure SetSize(AWidth, AHeight: Integer);
-    { Carrega um BMP (1/4/8/16/24/32 bits, RLE e BITFIELDS) para a superficie, trocando o tamanho.
+      @param(AWidth largura logica (negativo = 0))
+      @param(AHeight altura logica (negativo = 0))
+      @param(AEscala pixels fisicos por pixel logico (menor que 1 = 1)) }
+    procedure SetSize(AWidth, AHeight: Integer; AEscala: Integer = 1);
+    { Carrega um BMP (1/4/8/16/24/32 bits, RLE e BITFIELDS) para a superficie, trocando o tamanho
+      (escala 1), ou a versao em alta resolucao dele (HD/....png, escala EscalaTela), se houver.
       @param(Arquivo caminho do BMP (resolvido por ResolverCaminho))
+      @param(PermitirHD False = sempre o BMP (ex.: para medir a folha original))
       @returns(False se o arquivo nao existe ou e invalido (a superficie fica 0 x 0))
       @raises(Exception BMP corrompido ou num formato nao suportado) }
-    function CarregarBMP(const Arquivo: string): Boolean;
-    { @param(Y linha (sem conferencia de faixa))
+    function CarregarBMP(const Arquivo: string; PermitirHD: Boolean = True): Boolean;
+    { Carrega um PNG (com ou sem alfa) para a superficie, trocando o tamanho.
+      @param(Arquivo caminho do PNG (ja resolvido))
+      @param(AEscala escala da imagem (o tamanho logico e o do PNG dividido por ela))
+      @returns(False se o arquivo nao existe, e invalido ou nao e divisivel pela escala) }
+    function CarregarPNG(const Arquivo: string; AEscala: Integer): Boolean;
+    { @param(Y linha FISICA (sem conferencia de faixa))
       @returns(o endereco do primeiro pixel da linha (ARGB)) }
     function ScanLine(Y: Integer): PCardinal;
     { Copia uma regiao de outra superficie para (X, Y), no mesmo tamanho.
@@ -174,18 +209,27 @@ type
       @param(Preencher False = so o contorno) }
     procedure Elipse(X1, Y1, X2, Y2: Integer; CorBorda, CorFundo: TColor; Preencher: Boolean);
     { Escreve um texto com a fonte do atlas, com anti-serrilhado (a sombra e feita por quem chama).
-      @param(X esquerda)
+      Com o atlas na escala da superficie (ex.: ComicNeue-3x), o texto sai na resolucao fisica e o
+      alinhamento e calculado em pixels fisicos; com o atlas 1x, cada pixel vira um bloco.
+      @param(X esquerda (ou centro / direita, conforme Alinh))
       @param(Y topo da celula do texto)
       @param(S texto em UTF-8)
-      @param(Tam tamanho da fonte em pontos)
-      @param(Cor cor do texto) }
-    procedure Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor);
+      @param(Tam tamanho da fonte em pontos (o do jogo, 1x))
+      @param(Cor cor do texto)
+      @param(Alinh ACentro = X e o centro, ADir = X e a direita, outro = X e a esquerda) }
+    procedure Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor;
+      Alinh: Integer = AEsq);
     { @param(S texto em UTF-8)
       @param(Tam tamanho da fonte)
-      @returns(a largura do texto em pixels) }
+      @returns(a largura logica do texto (arredondada, se o atlas for de alta resolucao)) }
     function LarguraTexto(const S: string; Tam: Integer): Integer;
-    property Width: Integer read FWidth;
-    property Height: Integer read FHeight;
+    property Width: Integer read GetWidth;              // logica
+    property Height: Integer read GetHeight;            // logica
+    property LarguraFisica: Integer read FWidth;
+    property AlturaFisica: Integer read FHeight;
+    property Escala: Integer read FEscala;
+    property TemAlfa: Boolean read FTemAlfa;
+    { pixel logico (le o primeiro pixel fisico do bloco; escreve o bloco inteiro) }
     property Pixels[X, Y: Integer]: TColor read GetPixel write SetPixel;
     property TransparentColor: TColor read FTransparentColor write FTransparentColor;
   end;
@@ -307,6 +351,12 @@ type
     property Items[Indice: Integer]: TImagem read GetItem; default;
   end;
 
+var
+  { False = ignora as imagens de HD/ (parametro --sem-hd; conferencia de regressao) }
+  UsarHD: Boolean = True;
+  { quantas imagens de HD/ foram carregadas (para o titulo da janela) }
+  ImagensHD: Integer = 0;
+
 { Conversoes de cor }
 { @param(C cor TColor ($00BBGGRR))
   @returns(o pixel opaco $FFRRGGBB) }
@@ -316,6 +366,9 @@ function CorParaPixel(C: TColor): Cardinal;
 function PixelParaCor(P: Cardinal): TColor;
 
 implementation
+
+uses
+  FPImage, FPReadPNG;
 
 { ---- leitor de BMP (antes legacy/DXBmp.pas): imagem em memoria (ARGB 32 bits) com leitor de BMP proprio, sem LCL.
 
@@ -681,6 +734,7 @@ type
 
 var
   GMaskCache: TStringList = nil;
+  GFonteEscala: Integer = 1;     // escala do atlas carregado (1 = ComicSansMS, EscalaTela = ComicNeue-Nx)
 
 { @param(Tam tamanho da fonte)
   @param(S texto)
@@ -727,15 +781,19 @@ end;
 constructor TSuperficie.Create;
 begin
   inherited Create;
+  FEscala := 1;
   FTransparentColor := Preto;
 end;
 
-procedure TSuperficie.SetSize(AWidth, AHeight: Integer);
+procedure TSuperficie.SetSize(AWidth, AHeight: Integer; AEscala: Integer);
 begin
   if AWidth < 0 then AWidth := 0;
   if AHeight < 0 then AHeight := 0;
-  FWidth := AWidth;
-  FHeight := AHeight;
+  if AEscala < 1 then AEscala := 1;
+  FEscala := AEscala;
+  FTemAlfa := False;
+  FWidth := AWidth * FEscala;
+  FHeight := AHeight * FEscala;
   SetLength(FPix, FWidth * FHeight);
   if Length(FPix) > 0 then FillDWord(FPix[0], Length(FPix), $FF000000);
 end;
@@ -745,8 +803,43 @@ begin
   Result := @FPix[Y * FWidth];
 end;
 
+function TSuperficie.GetWidth: Integer;
+begin
+  Result := FWidth div FEscala;
+end;
+
+function TSuperficie.GetHeight: Integer;
+begin
+  Result := FHeight div FEscala;
+end;
+
+class function TSuperficie.Fisico(const R: TRect; E: Integer): TRect;
+begin
+  Result := Rect(R.Left * E, R.Top * E, R.Right * E, R.Bottom * E);
+end;
+
+procedure TSuperficie.PreencherBloco(X, Y: Integer; C: Cardinal);
+var
+  X1, Y1, X2, Y2, PY: Integer;
+begin
+  if FEscala = 1 then
+  begin
+    if (X >= 0) and (Y >= 0) and (X < FWidth) and (Y < FHeight) then FPix[Y * FWidth + X] := C;
+    Exit;
+  end;
+  X1 := Max(0, X * FEscala);
+  Y1 := Max(0, Y * FEscala);
+  X2 := Min(FWidth, (X + 1) * FEscala);
+  Y2 := Min(FHeight, (Y + 1) * FEscala);
+  if (X2 <= X1) or (Y2 <= Y1) then Exit;
+  for PY := Y1 to Y2 - 1 do
+    FillDWord(FPix[PY * FWidth + X1], X2 - X1, C);
+end;
+
 function TSuperficie.GetPixel(X, Y: Integer): TColor;
 begin
+  X := X * FEscala;
+  Y := Y * FEscala;
   if (X < 0) or (Y < 0) or (X >= FWidth) or (Y >= FHeight) then
     Result := Preto
   else
@@ -755,25 +848,154 @@ end;
 
 procedure TSuperficie.SetPixel(X, Y: Integer; Value: TColor);
 begin
-  if (X < 0) or (Y < 0) or (X >= FWidth) or (Y >= FHeight) then Exit;
-  FPix[Y * FWidth + X] := CorParaPixel(Value);
+  PreencherBloco(X, Y, CorParaPixel(Value));
 end;
 
-function TSuperficie.CarregarBMP(const Arquivo: string): Boolean;
+{ ---- imagens em alta resolucao (HD/) ---- }
+
+{ Anota um aviso sobre as imagens de HD/ em HD.log (ao lado do executavel). Erros ao gravar
+  sao ignorados.
+  @param(Msg o aviso) }
+procedure AvisarHD(const Msg: string);
+var
+  F: TextFile;
+  Nome: string;
+begin
+  Nome := ExtractFilePath(ParamStr(0)) + 'HD.log';
+  try
+    AssignFile(F, Nome);
+    if FileExists(Nome) then Append(F) else Rewrite(F);
+    try
+      WriteLn(F, FormatDateTime('yyyy-mm-dd hh:nn:ss', Now) + '  ' + Msg);
+    finally
+      CloseFile(F);
+    end;
+  except
+    // o log e so informativo
+  end;
+end;
+
+{ Le so o cabecalho de um BMP.
+  @param(Nome caminho do arquivo)
+  @param(W recebe a largura)
+  @param(H recebe a altura (sempre positiva))
+  @returns(False se nao e um BMP legivel) }
+function TamanhoBMP(const Nome: string; out W, H: Integer): Boolean;
+var
+  F: TFileStream;
+  Cab: array[0..25] of Byte;
+begin
+  Result := False;
+  W := 0;
+  H := 0;
+  try
+    F := TFileStream.Create(Nome, fmOpenRead or fmShareDenyWrite);
+    try
+      if F.Read(Cab, SizeOf(Cab)) <> SizeOf(Cab) then Exit;
+    finally
+      F.Free;
+    end;
+  except
+    Exit;
+  end;
+  if (Cab[0] <> Ord('B')) or (Cab[1] <> Ord('M')) then Exit;
+  if Le32(@Cab[14]) = 12 then
+  begin
+    W := Le16(@Cab[18]);           // cabecalho OS/2
+    H := Le16(@Cab[20]);
+  end
+  else
+  begin
+    W := Le32(@Cab[18]);
+    H := Abs(Le32(@Cab[22]));
+  end;
+  Result := (W > 0) and (H > 0);
+end;
+
+{ @param(Arquivo caminho do BMP como o jogo o pede (relativo a pasta do jogo))
+  @returns(o caminho da versao em alta resolucao (HD/....png), ou '' se nao for relativo) }
+function CaminhoHD(const Arquivo: string): string;
+begin
+  Result := '';
+  if (Arquivo = '') or (ExtractFileDrive(Arquivo) <> '') or (Arquivo[1] in ['/', '\']) then Exit;
+  Result := ResolverCaminho('HD' + PathDelim + ChangeFileExt(SetDirSeparators(Arquivo), '.png'));
+end;
+
+function TSuperficie.CarregarPNG(const Arquivo: string; AEscala: Integer): Boolean;
+var
+  Img: TFPMemoryImage;
+  Leitor: TFPReaderPNG;
+  X, Y, A: Integer;
+  C: TFPColor;
+  P: PCardinal;
+begin
+  Result := False;
+  SetSize(0, 0);
+  if (AEscala < 1) or not FileExists(Arquivo) then Exit;
+  Img := TFPMemoryImage.Create(0, 0);
+  Leitor := TFPReaderPNG.Create;
+  try
+    try
+      Img.UsePalette := False;
+      Img.LoadFromFile(Arquivo, Leitor);
+    except
+      Exit;
+    end;
+    if (Img.Width = 0) or (Img.Height = 0) or (Img.Width mod AEscala <> 0) or
+       (Img.Height mod AEscala <> 0) then Exit;
+    SetSize(Img.Width div AEscala, Img.Height div AEscala, AEscala);
+    for Y := 0 to FHeight - 1 do
+    begin
+      P := @FPix[Y * FWidth];
+      for X := 0 to FWidth - 1 do
+      begin
+        C := Img.Colors[X, Y];
+        A := C.Alpha shr 8;
+        if A < 255 then FTemAlfa := True;
+        P[X] := (Cardinal(A) shl 24) or (Cardinal(C.Red shr 8) shl 16) or
+          (Cardinal(C.Green shr 8) shl 8) or Cardinal(C.Blue shr 8);
+      end;
+    end;
+    Result := True;
+  finally
+    Leitor.Free;
+    Img.Free;
+  end;
+end;
+
+function TSuperficie.CarregarBMP(const Arquivo: string; PermitirHD: Boolean): Boolean;
 var
   Pic: TLeitorBMP;
-  Nome: string;
-  Y: Integer;
+  Nome, NomeHD: string;
+  Y, W, H: Integer;
 begin
   Result := False;
   SetSize(0, 0);
   Nome := ResolverCaminho(Arquivo);
   if (Arquivo = '') or not FileExists(Nome) then Exit;
+
+  { versao em alta resolucao: PNG com exatamente EscalaTela vezes o tamanho do BMP }
+  if PermitirHD and UsarHD and (EscalaTela > 1) then
+  begin
+    NomeHD := CaminhoHD(Arquivo);
+    if (NomeHD <> '') and FileExists(NomeHD) and TamanhoBMP(Nome, W, H) then
+    begin
+      if CarregarPNG(NomeHD, EscalaTela) and (Width = W) and (Height = H) then
+      begin
+        Inc(ImagensHD);
+        Exit(True);
+      end;
+      AvisarHD(Format('%s ignorado: precisa ser um PNG de %dx%d (%d vezes o %s)',
+        [NomeHD, W * EscalaTela, H * EscalaTela, EscalaTela, Arquivo]));
+      SetSize(0, 0);
+    end;
+  end;
+
   Pic := TLeitorBMP.Create;
   try
     Pic.LoadFromFile(Nome);
     if Pic.Empty then Exit;
-    SetSize(Pic.Width, Pic.Height);
+    SetSize(Pic.Width, Pic.Height, 1);
     for Y := 0 to FHeight - 1 do
       Move(Pic.ScanLine(Y)^, FPix[Y * FWidth], FWidth * SizeOf(Cardinal));
     Result := True;
@@ -783,6 +1005,22 @@ begin
 end;
 
 { ---- copias ---- }
+
+{ Mistura um pixel sobre o fundo.
+  @param(Fundo pixel de destino)
+  @param(Frente pixel de origem)
+  @param(A opacidade da origem, 0..255)
+  @returns(o pixel misturado, opaco) }
+function Misturar(Fundo, Frente: Cardinal; A: Integer): Cardinal; inline;
+var
+  IA: Integer;
+begin
+  IA := 255 - A;
+  Result := $FF000000 or
+    (Cardinal((((Fundo shr 16) and $FF) * IA + ((Frente shr 16) and $FF) * A) div 255) shl 16) or
+    (Cardinal((((Fundo shr 8) and $FF) * IA + ((Frente shr 8) and $FF) * A) div 255) shl 8) or
+    Cardinal(((Fundo and $FF) * IA + (Frente and $FF) * A) div 255);
+end;
 
 function TSuperficie.DoBlit(Mode: TBlendMode; const DestRect, SrcRect: TRect;
   Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
@@ -796,8 +1034,9 @@ var
   SP, DP: Cardinal;
   SRow: PCardinal;
   DRow: PCardinal;
-  A, IA: Integer;
+  A, IA, PA: Integer;
   SR, SG, SB, DR, DG, DB: Integer;
+  UsaAlfa: Boolean;
 begin
   Result := False;
   if (Image = nil) or (Image.FWidth = 0) or (Image.FHeight = 0) or (FWidth = 0) then Exit;
@@ -835,6 +1074,7 @@ begin
     FMap[I] := SX;
   end;
 
+  UsaAlfa := Transparent and Image.FTemAlfa;
   for J := J0 to J1 do
   begin
     if FlipY then SY := (ADH - 1 - J) * SH div ADH else SY := J * SH div ADH;
@@ -848,6 +1088,20 @@ begin
     begin
       DX := L + I;
       SP := SRow[FMap[I]];
+      if UsaAlfa then
+      begin
+        { imagem com alfa proprio (PNG): mistura pelo alfa do pixel (vezes Alpha, em bmAlpha) }
+        PA := SP shr 24;
+        if Mode = bmAlpha then PA := PA * A div 255;
+        if PA = 0 then Continue;
+        if PA < 255 then
+        begin
+          DRow[DX] := Misturar(DRow[DX], SP, PA);
+          Continue;
+        end;
+        DRow[DX] := SP or $FF000000;
+        Continue;
+      end;
       if Transparent and ((SP and $FFFFFF) = Key) then Continue;
       case Mode of
         bmCopy:
@@ -871,27 +1125,33 @@ end;
 function TSuperficie.Draw(X, Y: Integer; const SrcRect: TRect;
   Image: TSuperficie; Transparent: Boolean): Boolean;
 begin
-  Result := DoBlit(bmCopy, Rect(X, Y, X + (SrcRect.Right - SrcRect.Left),
-    Y + (SrcRect.Bottom - SrcRect.Top)), SrcRect, Image, Transparent, 255);
+  if Image = nil then begin Result := False; Exit; end;
+  Result := DoBlit(bmCopy, Fisico(Rect(X, Y, X + (SrcRect.Right - SrcRect.Left),
+    Y + (SrcRect.Bottom - SrcRect.Top)), FEscala), Fisico(SrcRect, Image.FEscala),
+    Image, Transparent, 255);
 end;
 
 function TSuperficie.Draw(X, Y: Integer; Image: TSuperficie;
   Transparent: Boolean): Boolean;
 begin
   if Image = nil then begin Result := False; Exit; end;
-  Result := Draw(X, Y, Rect(0, 0, Image.FWidth, Image.FHeight), Image, Transparent);
+  Result := Draw(X, Y, Rect(0, 0, Image.Width, Image.Height), Image, Transparent);
 end;
 
 function TSuperficie.StretchDraw(const DestRect, SrcRect: TRect;
   Image: TSuperficie; Transparent: Boolean): Boolean;
 begin
-  Result := DoBlit(bmCopy, DestRect, SrcRect, Image, Transparent, 255);
+  if Image = nil then begin Result := False; Exit; end;
+  Result := DoBlit(bmCopy, Fisico(DestRect, FEscala), Fisico(SrcRect, Image.FEscala),
+    Image, Transparent, 255);
 end;
 
 function TSuperficie.DrawAlpha(const DestRect, SrcRect: TRect;
   Image: TSuperficie; Transparent: Boolean; Alpha: Integer): Boolean;
 begin
-  Result := DoBlit(bmAlpha, DestRect, SrcRect, Image, Transparent, Alpha);
+  if Image = nil then begin Result := False; Exit; end;
+  Result := DoBlit(bmAlpha, Fisico(DestRect, FEscala), Fisico(SrcRect, Image.FEscala),
+    Image, Transparent, Alpha);
 end;
 
 function TSuperficie.DoRotate(Mode: TBlendMode; X, Y, W, H: Integer;
@@ -910,7 +1170,7 @@ var
   SW, SH: Integer;
   Key: Cardinal;
   SP, DP: Cardinal;
-  A, IA: Integer;
+  A, IA, PA: Integer;
   SR, SG, SB, DR, DG, DB: Integer;
 begin
   Result := False;
@@ -963,6 +1223,13 @@ begin
       SY := SrcRect.Top + Trunc(V * SH);
       if (SX < 0) or (SY < 0) or (SX >= Image.FWidth) or (SY >= Image.FHeight) then Continue;
       SP := Image.FPix[SY * Image.FWidth + SX];
+      if Transparent and Image.FTemAlfa then
+      begin
+        { imagem com alfa proprio (PNG): mistura pelo alfa do pixel }
+        PA := (SP shr 24) * A div 255;
+        if PA > 0 then FPix[PYi * FWidth + PXi] := Misturar(FPix[PYi * FWidth + PXi], SP, PA);
+        Continue;
+      end;
       if Transparent and ((SP and $FFFFFF) = Key) then Continue;
       DP := FPix[PYi * FWidth + PXi];
       SR := (SP shr 16) and $FF; SG := (SP shr 8) and $FF; SB := SP and $FF;
@@ -979,18 +1246,22 @@ end;
 function TSuperficie.DrawRotate(X, Y, Width, Height: Integer; const SrcRect: TRect;
   Image: TSuperficie; CenterX, CenterY: Double; Transparent: Boolean; Angle: Integer): Boolean;
 begin
-  Result := DoRotate(bmCopy, X, Y, Width, Height, SrcRect, Image, CenterX, CenterY, Transparent, Angle, 255);
+  if Image = nil then begin Result := False; Exit; end;
+  Result := DoRotate(bmCopy, X * FEscala, Y * FEscala, Width * FEscala, Height * FEscala,
+    Fisico(SrcRect, Image.FEscala), Image, CenterX, CenterY, Transparent, Angle, 255);
 end;
 
 procedure TSuperficie.PreencherRect(const R: TRect; Cor: TColor);
 var
   X1, Y1, X2, Y2, Y: Integer;
   C: Cardinal;
+  F: TRect;
 begin
-  X1 := Max(0, Min(R.Left, R.Right));
-  X2 := Min(FWidth, Max(R.Left, R.Right));
-  Y1 := Max(0, Min(R.Top, R.Bottom));
-  Y2 := Min(FHeight, Max(R.Top, R.Bottom));
+  F := Fisico(R, FEscala);
+  X1 := Max(0, Min(F.Left, F.Right));
+  X2 := Min(FWidth, Max(F.Left, F.Right));
+  Y1 := Max(0, Min(F.Top, F.Bottom));
+  Y2 := Min(FHeight, Max(F.Top, F.Bottom));
   if (X2 <= X1) or (Y2 <= Y1) then Exit;
   C := CorParaPixel(Cor);
   for Y := Y1 to Y2 - 1 do
@@ -1007,19 +1278,13 @@ begin
   C := CorParaPixel(Cor);
   for X := L to RR do
   begin
-    if (X >= 0) and (X < FWidth) then
-    begin
-      if (T >= 0) and (T < FHeight) then FPix[T * FWidth + X] := C;
-      if (B >= 0) and (B < FHeight) then FPix[B * FWidth + X] := C;
-    end;
+    PreencherBloco(X, T, C);
+    PreencherBloco(X, B, C);
   end;
   for Y := T to B do
   begin
-    if (Y >= 0) and (Y < FHeight) then
-    begin
-      if (L >= 0) and (L < FWidth) then FPix[Y * FWidth + L] := C;
-      if (RR >= 0) and (RR < FWidth) then FPix[Y * FWidth + RR] := C;
-    end;
+    PreencherBloco(L, Y, C);
+    PreencherBloco(RR, Y, C);
   end;
 end;
 
@@ -1031,14 +1296,13 @@ var
   CY, DYf, Ins: Double;
   FC, PC: Cardinal;
 
-  { Pinta um pixel, se estiver dentro da superficie.
+  { Pinta um pixel logico, se estiver dentro da superficie.
     @param(PX coluna)
     @param(PY linha)
     @param(C pixel ARGB) }
   procedure Put(PX, PY: Integer; C: Cardinal);
   begin
-    if (PX >= 0) and (PY >= 0) and (PX < FWidth) and (PY < FHeight) then
-      FPix[PY * FWidth + PX] := C;
+    PreencherBloco(PX, PY, C);
   end;
 
 begin
@@ -1102,39 +1366,68 @@ end;
 
 function TSuperficie.LarguraTexto(const S: string; Tam: Integer): Integer;
 begin
-  Result := FonteLargura(Tam, S);
+  if (FEscala > 1) and (GFonteEscala = FEscala) then
+    Result := Round(FonteLargura(Tam * FEscala, S) / FEscala)
+  else
+    Result := FonteLargura(Tam, S);
 end;
 
-procedure TSuperficie.Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor);
+procedure TSuperficie.Texto(X, Y: Integer; const S: string; Tam: Integer; Cor: TColor;
+  Alinh: Integer);
 var
   M: TTextMask;
-  I, J, DX, DY, Cov, IC: Integer;
+  I, J, DX, DY, Cov, IC, BX, BY, Bloco, PX, PY, D: Integer;
   FCol, DP: Cardinal;
   FR, FG, FB, DR, DG, DB: Integer;
 begin
   if S = '' then Exit;
-  M := GetTextMask(Tam, S);
+  if (FEscala > 1) and (GFonteEscala = FEscala) then
+  begin
+    { atlas na escala da superficie: um pixel da mascara = um pixel fisico }
+    M := GetTextMask(Tam * FEscala, S);
+    Bloco := 1;
+    D := 0;
+    if Alinh = ACentro then D := Round(FonteLargura(Tam * FEscala, S) / 2);
+    if Alinh = ADir then D := FonteLargura(Tam * FEscala, S);
+  end
+  else
+  begin
+    { atlas 1x: cada pixel da mascara (logico) cobre um bloco de FEscala x FEscala pixels fisicos }
+    M := GetTextMask(Tam, S);
+    Bloco := FEscala;
+    D := 0;
+    if Alinh = ACentro then D := Round(FonteLargura(Tam, S) / 2);
+    if Alinh = ADir then D := FonteLargura(Tam, S);
+    D := D * FEscala;
+  end;
+  PX := X * FEscala - D;
+  PY := Y * FEscala;
   FCol := CorParaPixel(Cor);
   FR := (FCol shr 16) and $FF; FG := (FCol shr 8) and $FF; FB := FCol and $FF;
+  { cada pixel fisico mistura com o seu proprio fundo }
   for J := 0 to M.H - 1 do
-  begin
-    DY := Y + J;
-    if (DY < 0) or (DY >= FHeight) then Continue;
-    for I := 0 to M.W - 1 do
+    for BY := 0 to Bloco - 1 do
     begin
-      Cov := M.Data[J * M.W + I];
-      if Cov = 0 then Continue;
-      DX := X + I;
-      if (DX < 0) or (DX >= FWidth) then Continue;
-      DP := FPix[DY * FWidth + DX];
-      IC := 255 - Cov;
-      DR := (((DP shr 16) and $FF) * IC + FR * Cov) div 255;
-      DG := (((DP shr 8) and $FF) * IC + FG * Cov) div 255;
-      DB := ((DP and $FF) * IC + FB * Cov) div 255;
-      FPix[DY * FWidth + DX] :=
-        $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
+      DY := PY + J * Bloco + BY;
+      if (DY < 0) or (DY >= FHeight) then Continue;
+      for I := 0 to M.W - 1 do
+      begin
+        Cov := M.Data[J * M.W + I];
+        if Cov = 0 then Continue;
+        IC := 255 - Cov;
+        for BX := 0 to Bloco - 1 do
+        begin
+          DX := PX + I * Bloco + BX;
+          if (DX < 0) or (DX >= FWidth) then Continue;
+          DP := FPix[DY * FWidth + DX];
+          DR := (((DP shr 16) and $FF) * IC + FR * Cov) div 255;
+          DG := (((DP shr 8) and $FF) * IC + FG * Cov) div 255;
+          DB := ((DP and $FF) * IC + FB * Cov) div 255;
+          FPix[DY * FWidth + DX] :=
+            $FF000000 or (Cardinal(DR) shl 16) or (Cardinal(DG) shl 8) or Cardinal(DB);
+        end;
+      end;
     end;
-  end;
 end;
 
 { ======================= TImagem ======================= }
@@ -1196,7 +1489,7 @@ end;
 procedure TImagem.AtribuirRegiao(Src: TSuperficie; X1, Y1, X2, Y2: Integer; Mirror: Boolean;
   Transparente: Boolean; CorTransp: TColor);
 var
-  W, H, X, Y, SX: Integer;
+  W, H, X, Y, SX, SY, E, FW, FH: Integer;
 begin
   FTransparent := Transparente;
   TransparentColor := CorTransp;
@@ -1204,15 +1497,21 @@ begin
   H := Y2 - Y1;
   if W < 0 then W := 0;
   if H < 0 then H := 0;
-  FSurface.SetSize(W, H);
-  for Y := 0 to H - 1 do
-    for X := 0 to W - 1 do
+  { a regiao e logica; a copia e feita pixel fisico a pixel fisico, na escala da origem }
+  E := Src.FEscala;
+  FSurface.SetSize(W, H, E);
+  FSurface.FTemAlfa := Src.FTemAlfa;
+  FW := W * E;
+  FH := H * E;
+  for Y := 0 to FH - 1 do
+    for X := 0 to FW - 1 do
     begin
-      if Mirror then SX := X2 - 1 - X else SX := X1 + X;
-      if (SX >= 0) and (SX < Src.FWidth) and (Y1 + Y >= 0) and (Y1 + Y < Src.FHeight) then
-        FSurface.FPix[Y * W + X] := Src.FPix[(Y1 + Y) * Src.FWidth + SX]
+      if Mirror then SX := X2 * E - 1 - X else SX := X1 * E + X;
+      SY := Y1 * E + Y;
+      if (SX >= 0) and (SX < Src.FWidth) and (SY >= 0) and (SY < Src.FHeight) then
+        FSurface.FPix[Y * FW + X] := Src.FPix[SY * Src.FWidth + SX]
       else
-        FSurface.FPix[Y * W + X] := $FF000000;
+        FSurface.FPix[Y * FW + X] := $FF000000;
     end;
   FSurface.TransparentColor := FTransparentColor;
   FPatternWidth := 0;
@@ -1338,7 +1637,13 @@ begin
 end;
 
 initialization
-  FonteCarregar(ResolverCaminho('Fontes/ComicSansMS.atlas'));   // gerado por tools/GeraFonte
+  { atlas gerados por tools/GeraFonte: em alta resolucao, o da Comic Neue na escala da tela;
+    sem ele (ou em 1x), o da Comic Sans MS (ampliado em blocos) }
+  if (EscalaTela > 1) and
+     FonteCarregar(ResolverCaminho(Format('Fontes/ComicNeue-%dx.atlas', [EscalaTela]))) then
+    GFonteEscala := EscalaTela
+  else
+    FonteCarregar(ResolverCaminho('Fontes/ComicSansMS.atlas'));
 
 finalization
   GMaskCache.Free;

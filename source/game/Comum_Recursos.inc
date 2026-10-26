@@ -5,7 +5,7 @@
 procedure TJogo.CriaComponentes;
 begin
   Tela := TSuperficie.Create;
-  Tela.SetSize(LarguraTela, AlturaTela);
+  Tela.SetSize(LarguraTela, AlturaTela, EscalaTela);
   SomEfeitos := TBancoSom.Create(False);
   SomMusica := TBancoSom.Create(True);
   SomVitoria := TBancoSom.Create(False);
@@ -413,7 +413,9 @@ end;
 
 { Carrega a folha de sprites do lutador. Os quadros sao separados por colunas
   "escuras" (R,G,B <= 100 no topo e na base). Jogador 1 ocupa os indices 1.. e
-  jogador 2 os indices 51.. das listas. }
+  jogador 2 os indices 51.. das listas. Os cortes sao procurados sempre na folha original
+  (BMP); os quadros sao copiados da folha carregada, que pode ser a de alta resolucao (HD/),
+  com os mesmos cortes em coordenadas logicas. }
 procedure TJogo.carregarlutador(const Nome: string; Personagem: Byte; Jogador: Integer);
 var
   Desloc, Cont, Ini, Col, W, H: Integer;
@@ -433,7 +435,9 @@ begin
     Exit;
   end;
   if FFrameSheet = nil then FFrameSheet := TSuperficie.Create;
+  if FFolha1x = nil then FFolha1x := TSuperficie.Create;
   FFrameSheet.CarregarBMP(Nome);
+  FFolha1x.CarregarBMP(Nome, False);
   Desloc := 0;
   if Jogador = 1 then Desloc := 0;
   if Jogador = 2 then Desloc := 50;
@@ -442,14 +446,14 @@ begin
   if (Personagem >= 1) and (Personagem <= FQtdLutadores) then
     Lutador[Jogador].AlturaSprite := FLutadores[Personagem].AlturaSprite;
 
-  W := FFrameSheet.Width;
-  H := FFrameSheet.Height;
+  W := FFolha1x.Width;
+  H := FFolha1x.Height;
   Ini := 0;
   Cont := 1;
   for Col := 0 to W - 1 do
   begin
-    C1 := FFrameSheet.Pixels[Col, 0];
-    C2 := FFrameSheet.Pixels[Col, H - 1];
+    C1 := FFolha1x.Pixels[Col, 0];
+    C2 := FFolha1x.Pixels[Col, H - 1];
     if Escuro(C1) and Escuro(C2) then
     begin
       copiabmp(Cont + Desloc, Ini, 0, Col - 1, H - 1);

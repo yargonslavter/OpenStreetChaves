@@ -5,13 +5,17 @@
   A migracao segue por fases (ver MIGRACAO_SDL.md).
 
   FASE 2 (esta versao): o jogo e a classe TJogo (ChavesJogo.pas), sem formulario. A cada
-  passo de IntervaloTimer ms chamamos Jogo.PassoSDL (logica + desenho no buffer 400x300),
+  passo de IntervaloTimer ms chamamos Jogo.PassoSDL (logica em 400x300 + desenho no buffer fisico),
   apresentamos esse buffer numa textura SDL e repassamos o teclado do SDL ao jogo (codigos
   fisicos SDL_SCANCODE_*, sem conversao).
 
   Como executar:
     StreetChaves.exe          jogo na janela SDL
     StreetChaves.exe --demo   quadro de teste da fase 0 (infraestrutura SDL)
+    StreetChaves.exe --gravar <pasta> [passos] [intervalo]
+                              conferencia de regressao: grava quadros com semente e teclas fixas
+    --sem-hd (em qualquer posicao, por ultimo com --gravar)
+                              ignora as imagens em alta resolucao da pasta HD/
 
   Teclas do host: F11 ou Alt+Enter = alterna tela cheia. No modo --demo: I = escala inteira,
   ESC = sair. No jogo, as demais teclas vao direto ao jogo (ESC sai, como no original). }
@@ -23,7 +27,7 @@ unit ChavesSDL;
 interface
 
 uses
-  Classes, SysUtils, sdl2, ChavesConst, ChavesTipos, ChavesJogo, ChavesFonte, ChavesDados;
+  Classes, SysUtils, sdl2, ChavesConst, ChavesTipos, ChavesJogo, ChavesFonte, ChavesDados, ChavesGfx;
 
 type
   { Tecla recebida: Scan = codigo fisico do SDL (SDL_SCANCODE_*) }
@@ -93,6 +97,9 @@ type
     { Cria o TJogo e liga as pontes com o SDL. Sem o atlas da fonte, sem Dados/Recursos.ini ou com
       erro nos arquivos de dados, mostra a mensagem e fecha o programa. }
     procedure IniciarJogo;
+    { Grava o buffer do jogo (LarguraTelaFisica x AlturaTelaFisica) num BMP de 24 bits.
+      @param(Arquivo caminho do BMP) }
+    procedure SalvarQuadro(const Arquivo: string);
     { O jogo pediu outro modo de tela (tela F1).
       @param(Sender o jogo) }
     procedure AoMudarTela(Sender: TObject);
@@ -126,14 +133,22 @@ type
     constructor Create;
     { Libera o jogo, a textura, o renderizador e a janela e encerra o SDL. }
     destructor Destroy; override;
-    { Inicia o SDL, abre a janela (800x600, redimensionavel), o renderizador (acelerado ou, sem
-      aceleracao, por software) e a textura de 400x300.
+    { Inicia o SDL, abre a janela (tamanho fisico ou 800x600, redimensionavel), o renderizador (acelerado ou, sem
+      aceleracao, por software) e a textura do tamanho fisico do buffer do jogo.
       @param(ComJogo True = cria o jogo; False = quadro de teste)
       @returns(False se algo falhou (a mensagem ja foi mostrada)) }
     function Iniciar(ComJogo: Boolean): Boolean;
     { Laco principal: eventos, logica em passos fixos de IntervaloMs (no maximo 250 ms acumulados),
       desenho e apresentacao, ate fechar a janela ou o jogo pedir para sair. }
     procedure Executar;
+    { Conferencia de regressao (--gravar): roda Passos passos da logica sem esperar o relogio,
+      com semente fixa e teclas roteirizadas (ficha, start, golpes), e grava um quadro a cada
+      Intervalo passos em Pasta (quadro-NNNNN.bmp, mais o estado da logica em logica.txt). Duas versoes do jogo com a mesma logica
+      gravam os mesmos quadros.
+      @param(Pasta pasta de saida (criada se nao existir))
+      @param(Passos quantos passos rodar)
+      @param(Intervalo de quantos em quantos passos gravar) }
+    procedure GravarQuadros(const Pasta: string; Passos, Intervalo: Integer);
     { Pede o fim do laco principal. }
     procedure Parar;
     property IntervaloMs: Integer read FIntervaloMs write FIntervaloMs;
@@ -187,6 +202,8 @@ function TAppSDL.Iniciar(ComJogo: Boolean): Boolean;
 var
   Info: TSDL_RendererInfo;
   V: TSDL_Version;
+  Area: TSDL_Rect;
+  JW, JH: Integer;
 begin
   Result := False;
   if SDL_Init(SDL_INIT_VIDEO or SDL_INIT_EVENTS or SDL_INIT_JOYSTICK or SDL_INIT_GAMECONTROLLER) <> 0 then
@@ -195,12 +212,21 @@ begin
     Exit;
   end;
 
-  { pixels nitidos ao ampliar (sem suavizacao) }
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, '0');
+  { buffer em 400x300: pixels nitidos ao ampliar (sem suavizacao); buffer ja ampliado
+    (EscalaTela > 1): suaviza, para nao deixar pixels desiguais em escalas fracionarias }
+  if EscalaTela > 1 then SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, '1')
+  else SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, '0');
 
+  { janela no tamanho fisico do buffer, se couber na area util da tela; senao, 800x600 }
+  JW := LarguraTelaFisica;
+  JH := AlturaTelaFisica;
+  if (SDL_GetDisplayUsableBounds(0, @Area) = 0) and ((JW > Area.w) or (JH + 40 > Area.h)) then
+  begin
+    JW := LarguraTela * 2;
+    JH := AlturaTela * 2;
+  end;
   FJanela := SDL_CreateWindow('Open Street Chaves (SDL)', SDL_WINDOWPOS_CENTERED,
-    SDL_WINDOWPOS_CENTERED, LarguraTela * 2, AlturaTela * 2,
-    SDL_WINDOW_SHOWN or SDL_WINDOW_RESIZABLE);
+    SDL_WINDOWPOS_CENTERED, JW, JH, SDL_WINDOW_SHOWN or SDL_WINDOW_RESIZABLE);
   if FJanela = nil then
   begin
     Erro('SDL_CreateWindow falhou: ' + string(SDL_GetError));
@@ -216,12 +242,13 @@ begin
     Exit;
   end;
 
-  { o jogo desenha sempre em 400x300; o SDL amplia mantendo a proporcao (faixas pretas) }
-  SDL_RenderSetLogicalSize(FRender, LarguraTela, AlturaTela);
+  { o jogo desenha num buffer de LarguraTelaFisica x AlturaTelaFisica (400x300 logicos vezes
+    EscalaTela); o SDL amplia mantendo a proporcao (faixas pretas) }
+  SDL_RenderSetLogicalSize(FRender, LarguraTelaFisica, AlturaTelaFisica);
   SDL_RenderSetIntegerScale(FRender, SDL_FALSE);
 
   FTextura := SDL_CreateTexture(FRender, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
-    LarguraTela, AlturaTela);
+    LarguraTelaFisica, AlturaTelaFisica);
   if FTextura = nil then
   begin
     Erro('SDL_CreateTexture falhou: ' + string(SDL_GetError));
@@ -243,8 +270,9 @@ procedure TAppSDL.IniciarJogo;
 begin
   if not FonteDisponivel then
   begin
-    Erro('Arquivo Fontes\ComicSansMS.atlas nao encontrado (ou invalido).' + LineEnding +
-      'Gere-o uma vez com a ferramenta source\tools\GeraFonte (precisa da fonte Comic Sans MS no Windows).');
+    Erro('Atlas da fonte nao encontrado (ou invalido): Fontes\ComicNeue-3x.atlas ou Fontes\ComicSansMS.atlas.' +
+      LineEnding + 'Gere-o uma vez com a ferramenta source\tools\GeraFonte ("GeraFonte --hd" usa a Comic Neue ' +
+      'de Fontes\ComicNeue; sem parametro, precisa da Comic Sans MS no Windows).');
     Halt(1);
   end;
   if not FileExists(ResolverCaminho(PastaDados + ArqRecursos)) then
@@ -291,7 +319,7 @@ begin
     FTelaCheia := True;
   end;
   if FEsticar then SDL_RenderSetLogicalSize(FRender, 0, 0)
-  else SDL_RenderSetLogicalSize(FRender, LarguraTela, AlturaTela);
+  else SDL_RenderSetLogicalSize(FRender, LarguraTelaFisica, AlturaTelaFisica);
 end;
 
 procedure TAppSDL.Parar;
@@ -611,16 +639,23 @@ end;
 
 procedure TAppSDL.Apresentar;
 var
-  Fonte: Pointer;
-  Dst: TSDL_Rect;
+  Dst, Demo: TSDL_Rect;
   W, H: Integer;
 begin
-  Fonte := @FPixels[0];
-  if FJogo <> nil then Fonte := FJogo.PixelsSDL;
-  SDL_UpdateTexture(FTextura, nil, Fonte, LarguraTela * SizeOf(Cardinal));
+  if FJogo <> nil then
+    SDL_UpdateTexture(FTextura, nil, FJogo.PixelsSDL, LarguraTelaFisica * SizeOf(Cardinal))
+  else
+  begin
+    { o quadro de teste continua em 400x300: usa so o canto da textura }
+    Demo.x := 0;
+    Demo.y := 0;
+    Demo.w := LarguraTela;
+    Demo.h := AlturaTela;
+    SDL_UpdateTexture(FTextura, @Demo, @FPixels[0], LarguraTela * SizeOf(Cardinal));
+  end;
   SDL_RenderClear(FRender);
   if FJogo = nil then
-    SDL_RenderCopy(FRender, FTextura, nil, nil)
+    SDL_RenderCopy(FRender, FTextura, @Demo, nil)
   else if FEsticar then
   begin
     { tela cheia esticada: ocupa a janela toda; o deslocamento (, e .) e proporcional }
@@ -633,10 +668,10 @@ begin
   end
   else
   begin
-    Dst.x := FJogo.DeslocamentoX;
+    Dst.x := FJogo.DeslocamentoX * EscalaTela;     // o deslocamento (, e .) e logico
     Dst.y := 0;
-    Dst.w := LarguraTela;
-    Dst.h := AlturaTela;
+    Dst.w := LarguraTelaFisica;
+    Dst.h := AlturaTelaFisica;
     SDL_RenderCopy(FRender, FTextura, nil, @Dst);
   end;
   SDL_RenderPresent(FRender);
@@ -676,8 +711,8 @@ begin
     Inc(FFrames);
     if Agora - FUltimoFps >= Freq then          // a cada segundo mostra os quadros/s no titulo
     begin
-      SDL_SetWindowTitle(FJanela, PAnsiChar(AnsiString(Format('%s - %d fps - controles: %s / %s',
-        [FTitulo, FFrames, NomeControle(0), NomeControle(1)]))));
+      SDL_SetWindowTitle(FJanela, PAnsiChar(AnsiString(Format('%s - %d fps - controles: %s / %s - imagens HD: %d',
+        [FTitulo, FFrames, NomeControle(0), NomeControle(1), ImagensHD]))));
       FFrames := 0;
       FUltimoFps := Agora;
     end;
@@ -685,13 +720,137 @@ begin
   end;
 end;
 
+procedure TAppSDL.SalvarQuadro(const Arquivo: string);
+var
+  F: TFileStream;
+  Hdr: array[0..53] of Byte;
+  Linha: array of Byte;
+  P: PCardinal;
+  X, Y, Stride, Tam: Integer;
+
+  procedure Poe32(Pos: Integer; V: Cardinal);
+  begin
+    Hdr[Pos] := V and $FF;
+    Hdr[Pos + 1] := (V shr 8) and $FF;
+    Hdr[Pos + 2] := (V shr 16) and $FF;
+    Hdr[Pos + 3] := (V shr 24) and $FF;
+  end;
+
+begin
+  Stride := (LarguraTelaFisica * 3 + 3) and not 3;
+  Tam := 54 + Stride * AlturaTelaFisica;
+  FillChar(Hdr, SizeOf(Hdr), 0);
+  Hdr[0] := Ord('B'); Hdr[1] := Ord('M');
+  Poe32(2, Tam);
+  Poe32(10, 54);
+  Poe32(14, 40);
+  Poe32(18, LarguraTelaFisica);
+  Poe32(22, AlturaTelaFisica);
+  Hdr[26] := 1;
+  Hdr[28] := 24;
+  Poe32(34, Stride * AlturaTelaFisica);
+  SetLength(Linha, Stride);
+  F := TFileStream.Create(Arquivo, fmCreate);
+  try
+    F.WriteBuffer(Hdr, SizeOf(Hdr));
+    for Y := AlturaTelaFisica - 1 downto 0 do
+    begin
+      P := PCardinal(FJogo.PixelsSDL) + Y * LarguraTelaFisica;
+      for X := 0 to LarguraTelaFisica - 1 do
+      begin
+        Linha[X * 3] := P[X] and $FF;
+        Linha[X * 3 + 1] := (P[X] shr 8) and $FF;
+        Linha[X * 3 + 2] := (P[X] shr 16) and $FF;
+      end;
+      F.WriteBuffer(Linha[0], Stride);
+    end;
+  finally
+    F.Free;
+  end;
+end;
+
+procedure TAppSDL.GravarQuadros(const Pasta: string; Passos, Intervalo: Integer);
+const
+  { roteiro que se repete a cada 60 passos: (passo, tecla, passos apertada) }
+  Roteiro: array[0..6] of record Passo, Tecla, Dura: Integer; end = (
+    (Passo: 0;  Tecla: Integer(SDL_SCANCODE_5);     Dura: 2),
+    (Passo: 10; Tecla: Integer(SDL_SCANCODE_1);     Dura: 2),
+    (Passo: 20; Tecla: Integer(SDL_SCANCODE_Z);     Dura: 2),
+    (Passo: 30; Tecla: Integer(SDL_SCANCODE_X);     Dura: 2),
+    (Passo: 38; Tecla: Integer(SDL_SCANCODE_RIGHT); Dura: 8),
+    (Passo: 48; Tecla: Integer(SDL_SCANCODE_C);     Dura: 2),
+    (Passo: 54; Tecla: Integer(SDL_SCANCODE_DOWN);  Dura: 4));
+var
+  Ev: TSDL_Event;
+  Passo, K, Fase: Integer;
+  Logica: TStringList;
+
+  { @param(P inicio da memoria)
+    @param(N quantos bytes)
+    @returns(um resumo (FNV-1a) da memoria, para conferir a logica sem os pixels) }
+  function Resumo(P: PByte; N: Integer): Cardinal;
+  var
+    I: Integer;
+  begin
+    Result := 2166136261;
+    for I := 0 to N - 1 do
+      Result := (Result xor P[I]) * 16777619;
+  end;
+
+begin
+  if FJogo = nil then Exit;
+  ForceDirectories(Pasta);
+  RandSeed := 20261026;
+  { logica.txt: estado do jogo a cada quadro gravado; tem de ser igual entre versoes que so
+    mudam o desenho (inclusive com e sem as imagens de HD/) }
+  Logica := TStringList.Create;
+  try
+    for Passo := 0 to Passos - 1 do
+    begin
+      while SDL_PollEvent(@Ev) <> 0 do
+        if Ev.type_ = SDL_QUITEV then Exit;
+      Fase := Passo mod 60;
+      for K := 0 to High(Roteiro) do
+      begin
+        if Fase = Roteiro[K].Passo then FJogo.TeclaSDL(Roteiro[K].Tecla, True);
+        if Fase = Roteiro[K].Passo + Roteiro[K].Dura then FJogo.TeclaSDL(Roteiro[K].Tecla, False);
+      end;
+      FJogo.PassoSDL;
+      if FJogo.Sair then Break;
+      if Passo mod Intervalo = 0 then
+      begin
+        SalvarQuadro(IncludeTrailingPathDelimiter(Pasta) + Format('quadro-%.5d.bmp', [Passo]));
+        Logica.Add(Format('%.5d estado=%d lutadores=%.8x efeitos=%.8x',
+          [Passo, Estado, Resumo(@Lutador, SizeOf(Lutador)), Resumo(@Efeitos, SizeOf(Efeitos))]));
+        Apresentar;
+      end;
+    end;
+  finally
+    Logica.SaveToFile(IncludeTrailingPathDelimiter(Pasta) + 'logica.txt');
+    Logica.Free;
+  end;
+end;
+
 procedure ExecutarModoSDL;
 var
   App: TAppSDL;
+  Demo, Gravar: Boolean;
+  I: Integer;
 begin
+  Demo := (ParamCount > 0) and SameText(ParamStr(1), '--demo');
+  Gravar := (ParamCount > 1) and SameText(ParamStr(1), '--gravar');
+  for I := 1 to ParamCount do
+    if SameText(ParamStr(I), '--sem-hd') then UsarHD := False;
   App := TAppSDL.Create;
   try
-    if App.Iniciar(not ((ParamCount > 0) and SameText(ParamStr(1), '--demo'))) then App.Executar;
+    if App.Iniciar(not Demo) then
+    begin
+      { --gravar <pasta> [passos] [intervalo] }
+      if Gravar then
+        App.GravarQuadros(ParamStr(2), StrToIntDef(ParamStr(3), 3000), StrToIntDef(ParamStr(4), 50))
+      else
+        App.Executar;
+    end;
   finally
     App.Free;
   end;

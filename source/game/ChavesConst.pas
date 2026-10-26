@@ -61,6 +61,11 @@ const
   { ---- tela ---- }
   LarguraTela = 400;
   AlturaTela = 300;
+  { o jogo pensa em 400x300 (coordenadas logicas); o desenho e feito numa tela EscalaTela vezes
+    maior (pixels fisicos), para os graficos em alta resolucao }
+  EscalaTela = 3;
+  LarguraTelaFisica = LarguraTela * EscalaTela;
+  AlturaTelaFisica = AlturaTela * EscalaTela;
 
   { ---- limites do jogo ---- }
   VidaMax = 125;        // energia cheia

@@ -91,3 +91,7 @@ source/StreetChaves.lps
 link7220.res
 /source/tools/GeraFonte/backup
 /source/tools/GeraFonte/build
+/source/tools/GeraHD/backup
+/source/tools/GeraHD/build
+GeraHD.log
+HD.log

@@ -13,7 +13,7 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   - `ChavesGfx.pas` - gráficos em software (`TSuperficie`, `TImagem`, `TListaImagens`) e leitor de BMP;
   - `ChavesRoteiro.pas` - interpretador dos roteiros `.rot` dos lutadores (Pascal simplificado);
   - `ChavesConferencia.pas` - compara código antigo e roteiro novo (diretiva `CONFERIR_ROTEIRO`, `conferencia.log`);
-  - `ChavesFonte.pas` - texto pelo atlas de glifos (`Fontes/ComicSansMS.atlas`), usado também pela GeraFonte;
+  - `ChavesFonte.pas` - texto pelo atlas de glifos (`Fontes/ComicNeue-3x.atlas` ou `Fontes/ComicSansMS.atlas`), usado também pela GeraFonte;
   - `ChavesSom.pas` - áudio (`TBancoSom`, mixer sobre o áudio do SDL);
   - `Comum_*.inc` - partes compartilhadas (desenho, recursos, sprites, início, quadro, entrada, SDL);
   - `Estado0..12_*.inc` - um arquivo por estado do jogo (resolução, abertura, configuração, teclas, seleção,
@@ -21,8 +21,11 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
   - `ChavesDados.pas` - leitura dos arquivos de dados (`Dados/*.ini`, `Chaves.ini`).
 - `source/3party/SDL2/` - SDL2-for-Pascal (ligação estática com `SDL2.dll`). Só `sdl2.pas` e seus `.inc` são usados;
   `sdl2_gfx/image/mixer/net/ttf` não são usados pelo jogo.
-- `source/tools/GeraFonte/` - ferramenta separada (usa a LCL) que gera `Fontes/ComicSansMS.atlas` a partir da fonte
-  Comic Sans MS instalada no Windows e confere o resultado contra todos os textos do jogo.
+- `source/tools/GeraFonte/` - ferramenta separada (usa a LCL) que gera `Fontes/ComicNeue-3x.atlas` (`--hd`, Comic Neue de
+  `Fontes/ComicNeue/`) e `Fontes/ComicSansMS.atlas` (fonte
+  Comic Sans MS instalada no Windows) e confere o resultado contra todos os textos do jogo.
+- `source/tools/GeraHD/` - ferramenta separada (sem LCL) que gera a pasta `HD/` (PNG 3x com alfa) a partir dos BMP
+  (veja "Gráficos em alta resolução" no README da raiz).
 - `source/tools/Documentacao/` - scripts que geram a documentação do código com o PasDoc (veja abaixo).
 - Regra de plataforma: o jogo tem de ser multiplataforma (sem LCL, só FPC + SDL2). As ferramentas em `source/tools/`
   podem usar a LCL ou recursos de um sistema só; ser multiplataforma é preferível, mas não obrigatório.
@@ -62,7 +65,7 @@ Estrutura (raiz = pasta onde fica o antigo `Chaves.exe`; tudo do porte fica em `
 
 ## Como o jogo funciona
 A cada `IntervaloTimer` ms (28 por padrão) o host chama `TJogo.PassoSDL`, que executa um quadro da lógica
-(`ExecutarQuadro`) e desenha no buffer `Tela` (400x300, ARGB). O host copia o buffer para uma textura SDL e a apresenta.
+(`ExecutarQuadro`) e desenha no buffer `Tela` (400x300 lógicos, desenhado em `EscalaTela` vezes isso em pixels físicos, ARGB). O host copia o buffer para uma textura SDL e a apresenta.
 O estado atual (`Estado`, constantes `CHS_*` em `ChavesConst`) decide qual `Estado*_...` roda a cada quadro.
 
 ## Entrada
