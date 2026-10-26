@@ -196,6 +196,8 @@ begin
   begin
     if Lutador[1].Ativo then FinalId := Lutador[1].Personagem;
     if Lutador[2].Ativo then FinalId := Lutador[2].Personagem;
+    { campanha terminada: libera o proximo lutador da ordem (Dados/Jogo.ini [Liberacao]) }
+    LiberarProximo;
   end;
 
   if ImgCenario.Count > 0 then

@@ -50,6 +50,92 @@ begin
   end;
 end;
 
+procedure TJogo.CarregarLiberacao;
+var
+  Partes: TStringList;
+  Ini: TMemIniFile;
+  I, N: Integer;
+
+  { Marca os personagens de uma lista "9,10,11".
+    @param(Lista numeros separados por virgula)
+    @param(Valor True = liberado, False = bloqueado) }
+  procedure Marca(const Lista: string; Valor: Boolean);
+  var
+    K: Integer;
+  begin
+    SepararLista(Lista, Partes);
+    for K := 0 to Partes.Count - 1 do
+    begin
+      N := StrToIntDef(Partes[K], 0);
+      if (N >= 1) and (N <= FQtdLutadores) then FLiberado[N] := Valor;
+    end;
+  end;
+
+begin
+  SetLength(FLiberado, FQtdLutadores + 1);
+  for I := 1 to FQtdLutadores do FLiberado[I] := True;
+  if FileExists('Liberados.dat') then Exit;
+  Partes := TStringList.Create;
+  try
+    Marca(FOrdemLib, False);
+    Marca(FIniciaisLib, True);
+    if FileExists(ArqConfiguracao) then
+    begin
+      Ini := TMemIniFile.Create(ArqConfiguracao);
+      try
+        Marca(Ini.ReadString('Progresso', 'Liberados', ''), True);
+      finally
+        Ini.Free;
+      end;
+    end;
+  finally
+    Partes.Free;
+  end;
+end;
+
+function TJogo.Liberado(Pers: Integer): Boolean;
+begin
+  Result := (Pers >= 1) and (Pers <= High(FLiberado)) and FLiberado[Pers];
+end;
+
+procedure TJogo.LiberarProximo;
+var
+  Partes: TStringList;
+  Ini: TMemIniFile;
+  I, N: Integer;
+  Lista: string;
+begin
+  Partes := TStringList.Create;
+  try
+    SepararLista(FOrdemLib, Partes);
+    for I := 0 to Partes.Count - 1 do
+    begin
+      N := StrToIntDef(Partes[I], 0);
+      if (N >= 1) and (N <= FQtdLutadores) and not FLiberado[N] then
+      begin
+        FLiberado[N] := True;
+        { grava a lista de quem a ordem ja liberou (mudar a ordem depois nao tira ninguem) }
+        try
+          Ini := TMemIniFile.Create(ArqConfiguracao);
+          try
+            Lista := Ini.ReadString('Progresso', 'Liberados', '');
+            if Lista <> '' then Lista := Lista + ',';
+            Ini.WriteString('Progresso', 'Liberados', Lista + IntToStr(N));
+            Ini.UpdateFile;
+          finally
+            Ini.Free;
+          end;
+        except
+          // pasta somente leitura: o lutador fica liberado so ate fechar o jogo
+        end;
+        Exit;
+      end;
+    end;
+  finally
+    Partes.Free;
+  end;
+end;
+
 { Modo 1 = janela 400x300; 2 = tela cheia mantendo proporcao; 3 = tela cheia esticada.
   (O original trocava o modo de video do DirectDraw.) Quem muda a janela e o ChavesSDL. }
 procedure TJogo.AplicarResolucao(Modo: Integer);

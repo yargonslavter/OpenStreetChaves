@@ -160,6 +160,8 @@ begin
     MostrarNivel := True;
     MostrarCreditos := True;
     LerConfiguracao(Ini, 'Padroes');
+    FIniciaisLib := Ini.ReadString('Liberacao', 'Iniciais', '');
+    FOrdemLib := Ini.ReadString('Liberacao', 'Ordem', '');
     { recordes iniciais: posicao=iniciais,personagem,pontos }
     for I := 1 to 10 do
     begin
@@ -213,6 +215,7 @@ begin
 
   { imagens e sons listados em Dados/Recursos.ini }
   CarregarRecursos;
+  CarregarLiberacao;
   { truque: SCnn.dat na pasta do jogo fixa o cenario nn }
   for I := 1 to FQtdCenarios do
     if FileExists(ArquivoNN('SC##.dat', I)) then CenarioSecreto := I;

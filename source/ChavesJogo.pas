@@ -149,6 +149,8 @@ type
     FMusicaCenario: array of Integer;   // musica propria de cada cenario (0 = nenhuma)
     FQtdLutadores: Integer;       // personagens existentes (1..FQtdLutadores)
     FLutadores: array of TDadosLutador; // dados de cada personagem (indice 1..FQtdLutadores)
+    FLiberado: array of Boolean;  // personagem liberado na selecao (indice 1..FQtdLutadores)
+    FIniciaisLib, FOrdemLib: string; // [Liberacao] Iniciais e Ordem do Dados/Jogo.ini
     FFinais: array of TFinal;     // finais de cada personagem (indice 1..)
     FVolumes: TStringList;        // Chave=volume: Dados/Som.ini e, por cima, Chaves.ini ([Volume])
     { cenario carregado (carregarcenario) }
@@ -301,6 +303,17 @@ type
     procedure AplicarResolucao(Modo: Integer);
     { Grava a configuracao da tela F1 em Chaves.ini (pasta somente leitura: ignora). }
     procedure SalvarConfiguracao;
+    { Monta a lista de lutadores liberados: os bloqueados sao os de [Liberacao] Ordem do
+      Dados/Jogo.ini que nao estao em Iniciais nem ja foram liberados ([Progresso] do Chaves.ini).
+      Liberados.dat na pasta do jogo libera todos. Chamado depois de CarregarRecursos. }
+    procedure CarregarLiberacao;
+    { O lutador pode ser escolhido na selecao?
+      @param(Pers personagem (1..FQtdLutadores))
+      @returns(True se esta liberado) }
+    function Liberado(Pers: Integer): Boolean;
+    { Campanha terminada: libera o proximo lutador de [Liberacao] Ordem e grava o progresso
+      no Chaves.ini (pasta somente leitura: ignora). }
+    procedure LiberarProximo;
     { Estado 0: escolha da resolucao (janela, tela cheia ou tela cheia esticada). }
     procedure Estado0_Resolucao;
     { Estado 1: abertura (predio, vila, logo) e modo de demonstracao; com fichas, os botoes 1 e 2
