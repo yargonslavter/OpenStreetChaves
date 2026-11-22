@@ -145,9 +145,11 @@ function ResumoLutador(const L: TLutador): string;
 procedure ModoDeSorteio(Modo: TModoSorteio);
 { @returns(em msRepetir: quantos sorteios gravados ainda nao foram usados) }
 function SorteiosRestantes: Integer;
-{ Inicia a exportacao opt-in dos sorteios roteados por SortearValor.
-  A sessao e fornecida pelo chamador para manter o arquivo reprodutivel. }
+{ Inicia a exportacao opt-in dos sorteios roteados por SortearValor. }
 procedure IniciarTraceSorteios(const Arquivo, Sessao: string);
+{ Abre/fecha o contexto de um passo logico (inclui passos pausados). }
+procedure IniciarTickTraceSorteios(Executou: Boolean);
+procedure FinalizarTickTraceSorteios;
 { Fecha o arquivo JSONL sem alterar o estado do RNG ou do gravador/reprodutor. }
 procedure FinalizarTraceSorteios;
 { Retorna eventual erro de escrita; a falha de log nao interrompe a simulacao. }
@@ -364,6 +366,17 @@ type
     R: Int64;
   end;
 
+type
+  TTraceScriptContext = record
+    ExecutionId: Int64;
+    ParentExecutionId: Int64;
+    Origem: string;
+    FighterIndex: Integer;
+    CharacterId: Integer;
+    CommandCode: Integer;
+    DrawCount: Int64;
+  end;
+
 var
   ModoSort: TModoSorteio = msNormal;
   Gravados: array of TSorteioGravado;
@@ -372,6 +385,10 @@ var
   TraceSessao: string = '';
   TraceApiCallIndex: Int64 = 0;
   TraceMtWordIndex: Int64 = 0;
+  TraceTickIndex: Int64 = -1;
+  TraceNextScriptExecutionId: Int64 = 0;
+  TraceControlEventIndex: Int64 = 0;
+  TraceScriptStack: array of TTraceScriptContext;
   TraceErro: string = '';
 
 { Escapa uma string para uso em um valor JSON. }
@@ -418,16 +435,57 @@ begin
   end;
 end;
 
-{ Registra um draw depois de o valor ter sido obtido.
-  O indice de palavra e local a SortearValor: chamadas diretas a System.Random
-  fora deste wrapper nao estao incluidas nesta primeira instrumentacao. }
-{ Registra uma requisicao depois de obter seu valor. Os indices de palavras sao
-  locais a SortearValor; chamadas diretas a System.Random ficam fora deste escopo. }
+{ Campos de contexto comuns a todos os eventos concretos. }
+function ContextoTraceJson: string;
+var
+  C: TTraceScriptContext;
+  L: PLutador;
+begin
+  Result := ',"tick_index":';
+  if TraceTickIndex >= 0 then Result := Result + IntToStr(TraceTickIndex)
+  else Result := Result + 'null';
+  if Length(TraceScriptStack) = 0 then
+  begin
+    Result := Result + ',"script_execution_id":null,"parent_script_execution_id":null' +
+      ',"script_origin":null,"fighter_index":null,"character_id":null' +
+      ',"action_id":null,"action_frame":null,"command_code":null';
+    Exit;
+  end;
+  C := TraceScriptStack[High(TraceScriptStack)];
+  L := @Lutador[C.FighterIndex];
+  Result := Result + ',"script_execution_id":' + IntToStr(C.ExecutionId) +
+    ',"parent_script_execution_id":';
+  if C.ParentExecutionId >= 0 then Result := Result + IntToStr(C.ParentExecutionId)
+  else Result := Result + 'null';
+  Result := Result + ',"script_origin":' + TextoJson(C.Origem) +
+    ',"fighter_index":' + IntToStr(C.FighterIndex) +
+    ',"character_id":' + IntToStr(L^.Personagem) +
+    ',"action_id":' + IntToStr(L^.Acao) +
+    ',"action_frame":' + IntToStr(L^.QuadroAcao) +
+    ',"command_code":' + IntToStr(C.CommandCode);
+end;
+
+{ Escreve eventos de controle do interpretador (branches e iterações reais). }
+procedure RegistrarControleTrace(const Tipo: string; No: Integer; const Detalhes: string);
+var
+  Linha: string;
+begin
+  if TraceSorteios = nil then Exit;
+  Linha := '{"record_type":"control","schema_version":2,"session_id":' +
+    TextoJson(TraceSessao) + ',"control_event_index":' + IntToStr(TraceControlEventIndex) +
+    ',"control_type":' + TextoJson(Tipo) +
+    ',"source_line":' + IntToStr(No) + ContextoTraceJson + ',' + Detalhes + '}';
+  EscreverTraceLinha(Linha);
+  Inc(TraceControlEventIndex);
+end;
+
+{ Registra um draw já concluído sem alterar o fluxo do RNG. O índice de palavras
+  continua explicitamente local a SortearValor, nunca global ao programa. }
 procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
-  RandSeedAntes, RandSeedDepois: Int64);
+  RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte: Integer);
 var
-  PrimeiraPalavra, PalavrasJson, Largura: string;
+  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ScriptDrawJson: string;
   Linha: string;
 begin
   if TraceSorteios = nil then Exit;
@@ -442,18 +500,113 @@ begin
     PalavrasJson := '0';
   end;
   if Largo then Largura := 'Int64' else Largura := 'LongInt';
+  if Origem = '' then OrigemJson := 'null' else OrigemJson := TextoJson(Origem);
+  if LinhaFonte > 0 then LinhaJson := IntToStr(LinhaFonte) else LinhaJson := 'null';
+  if Length(TraceScriptStack) > 0 then
+  begin
+    ScriptDrawJson := IntToStr(TraceScriptStack[High(TraceScriptStack)].DrawCount);
+    Inc(TraceScriptStack[High(TraceScriptStack)].DrawCount);
+  end
+  else ScriptDrawJson := 'null';
 
-  Linha := '{"record_type":"draw","schema_version":1,"session_id":' +
+  Linha := '{"record_type":"draw","schema_version":2,"session_id":' +
     TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","api_call_index":' +
     IntToStr(TraceApiCallIndex) + ',"first_mt_word_index":' + PrimeiraPalavra +
     ',"raw_mt_words":' + PalavrasJson + ',"width":' + TextoJson(Largura) +
     ',"range":' + IntToStr(N) + ',"result":' + IntToStr(R) +
     ',"recorder_mode":' + TextoJson(Modo) + ',"draw_source":' + TextoJson(Fonte) +
     ',"rand_seed_before":' + IntToStr(RandSeedAntes) +
-    ',"rand_seed_after":' + IntToStr(RandSeedDepois) + '}';
+    ',"rand_seed_after":' + IntToStr(RandSeedDepois) +
+    ',"source_origin":' + OrigemJson + ',"source_line":' + LinhaJson +
+    ',"script_draw_index":' + ScriptDrawJson + ContextoTraceJson + '}';
   EscreverTraceLinha(Linha);
   Inc(TraceApiCallIndex);
   if ConsumiuRng then Inc(TraceMtWordIndex, Palavras);
+end;
+
+{ Abre/fecha o contexto de um passo lógico. Passos pausados também são registrados. }
+procedure IniciarTickTraceSorteios(Executou: Boolean);
+var
+  Linha: string;
+begin
+  if TraceSorteios = nil then Exit;
+  Inc(TraceTickIndex);
+  Linha := '{"record_type":"tick_start","schema_version":2,"session_id":' +
+    TextoJson(TraceSessao) + ',"tick_index":' + IntToStr(TraceTickIndex) +
+    ',"executed":' + LowerCase(BoolToStr(Executou, True)) +
+    ',"game_state":' + IntToStr(Estado) +
+    ',"p1_character_id":' + IntToStr(Lutador[1].Personagem) +
+    ',"p1_action_id":' + IntToStr(Lutador[1].Acao) +
+    ',"p1_action_frame":' + IntToStr(Lutador[1].QuadroAcao) +
+    ',"p1_action_duration":' + IntToStr(Lutador[1].DuracaoAcao) +
+    ',"p2_character_id":' + IntToStr(Lutador[2].Personagem) +
+    ',"p2_action_id":' + IntToStr(Lutador[2].Acao) +
+    ',"p2_action_frame":' + IntToStr(Lutador[2].QuadroAcao) +
+    ',"p2_action_duration":' + IntToStr(Lutador[2].DuracaoAcao) + '}';
+  EscreverTraceLinha(Linha);
+end;
+
+procedure FinalizarTickTraceSorteios;
+var
+  Linha: string;
+begin
+  if TraceSorteios = nil then Exit;
+  Linha := '{"record_type":"tick_end","schema_version":2,"session_id":' +
+    TextoJson(TraceSessao) + ',"tick_index":' + IntToStr(TraceTickIndex) +
+    ',"game_state":' + IntToStr(Estado) +
+    ',"p1_character_id":' + IntToStr(Lutador[1].Personagem) +
+    ',"p1_action_id":' + IntToStr(Lutador[1].Acao) +
+    ',"p1_action_frame":' + IntToStr(Lutador[1].QuadroAcao) +
+    ',"p2_character_id":' + IntToStr(Lutador[2].Personagem) +
+    ',"p2_action_id":' + IntToStr(Lutador[2].Acao) +
+    ',"p2_action_frame":' + IntToStr(Lutador[2].QuadroAcao) + '}';
+  EscreverTraceLinha(Linha);
+end;
+
+procedure IniciarExecucaoRoteiroTrace(R: TRoteiro; Jog, Codigo: Integer);
+var
+  C: TTraceScriptContext;
+  Linha: string;
+begin
+  if TraceSorteios = nil then Exit;
+  C.ExecutionId := TraceNextScriptExecutionId;
+  Inc(TraceNextScriptExecutionId);
+  if Length(TraceScriptStack) > 0 then
+    C.ParentExecutionId := TraceScriptStack[High(TraceScriptStack)].ExecutionId
+  else
+    C.ParentExecutionId := -1;
+  C.Origem := R.Origem;
+  C.FighterIndex := Jog;
+  C.CharacterId := Lutador[Jog].Personagem;
+  C.CommandCode := Codigo;
+  C.DrawCount := 0;
+  SetLength(TraceScriptStack, Length(TraceScriptStack) + 1);
+  TraceScriptStack[High(TraceScriptStack)] := C;
+  Linha := '{"record_type":"script_start","schema_version":2,"session_id":' +
+    TextoJson(TraceSessao) + ContextoTraceJson +
+    ',"character_id_at_start":' + IntToStr(C.CharacterId) +
+    ',"action_id_at_start":' + IntToStr(Lutador[Jog].Acao) +
+    ',"action_frame_at_start":' + IntToStr(Lutador[Jog].QuadroAcao) + '}';
+  EscreverTraceLinha(Linha);
+end;
+
+procedure FinalizarExecucaoRoteiroTrace;
+var
+  C: TTraceScriptContext;
+  Linha: string;
+  Jog: Integer;
+begin
+  if (TraceSorteios = nil) or (Length(TraceScriptStack) = 0) then Exit;
+  C := TraceScriptStack[High(TraceScriptStack)];
+  Jog := C.FighterIndex;
+  Linha := '{"record_type":"script_end","schema_version":2,"session_id":' +
+    TextoJson(TraceSessao) + ContextoTraceJson +
+    ',"character_id_at_end":' + IntToStr(Lutador[Jog].Personagem) +
+    ',"action_id_at_end":' + IntToStr(Lutador[Jog].Acao) +
+    ',"action_frame_at_end":' + IntToStr(Lutador[Jog].QuadroAcao) +
+    ',"script_draw_count":' + IntToStr(C.DrawCount) + '}';
+  EscreverTraceLinha(Linha);
+  SetLength(TraceScriptStack, Length(TraceScriptStack) - 1);
 end;
 procedure IniciarTraceSorteios(const Arquivo, Sessao: string);
 var
@@ -472,13 +625,19 @@ begin
   TraceSessao := Sessao;
   TraceApiCallIndex := 0;
   TraceMtWordIndex := 0;
+  TraceTickIndex := -1;
+  TraceNextScriptExecutionId := 0;
+  TraceControlEventIndex := 0;
+  SetLength(TraceScriptStack, 0);
   TraceSorteios := TFileStream.Create(Arquivo, fmCreate or fmShareDenyWrite);
 
-  Linha := '{"record_type":"session","schema_version":1,"session_id":' +
+  Linha := '{"record_type":"session","schema_version":2,"session_id":' +
     TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","rand_seed_initial":' +
     IntToStr(RandSeed) +
     ',"raw_word_index_scope":"SortearValor-only; direct System.Random calls outside this wrapper are excluded"' +
-    ',"context_status":"action/tick context not attached yet"}';
+    ',"context_status":"logical_tick_and_nested_script_context_attached"' +
+    ',"guard_loop_context":"concrete branch decisions and loop iteration values are emitted as control records"' +
+    ',"pascal_source_revision":"e1b025c35ecbc2b14d8635564aafd23c2107d3d1"}';
   EscreverTraceLinha(Linha);
   if TraceSorteios = nil then
     raise Exception.Create('nao foi possivel iniciar o trace JSONL: ' + TraceErro);
@@ -486,6 +645,9 @@ end;
 
 procedure FinalizarTraceSorteios;
 begin
+  if (TraceSorteios <> nil) and (Length(TraceScriptStack) > 0) then
+    TraceErro := 'trace finalizado com contexto de roteiro ainda aberto';
+  SetLength(TraceScriptStack, 0);
   FreeAndNil(TraceSorteios);
 end;
 
@@ -498,7 +660,7 @@ end;
   @param(N limite)
   @param(Largo True = Random de 64 bits; False = de 32 bits)
   @returns(o numero sorteado ou o gravado) }
-function SortearValor(N: Int64; Largo: Boolean): Int64;
+function SortearValor(N: Int64; Largo: Boolean; const Origem: string; LinhaFonte: Integer): Int64;
 var
   SeedAntes: Int64;
   ModoTrace: string;
@@ -516,7 +678,7 @@ begin
       Inc(PosGravado);
       if TraceSorteios <> nil then
         RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
-          False, 0, SeedAntes, RandSeed);
+          False, 0, SeedAntes, RandSeed, Origem, LinhaFonte);
       Exit;
     end;
     SorteioDivergiu := True;
@@ -550,17 +712,17 @@ begin
 
   if TraceSorteios <> nil then
     RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
-      True, Palavras, SeedAntes, RandSeed);
+      True, Palavras, SeedAntes, RandSeed, Origem, LinhaFonte);
 end;
 
 function Sortear(N: LongInt): LongInt;
 begin
-  Result := SortearValor(N, False);
+  Result := SortearValor(N, False, '', 0);
 end;
 
 function Sortear64(N: Int64): Int64;
 begin
-  Result := SortearValor(N, True);
+  Result := SortearValor(N, True, '', 0);
 end;
 
 procedure ModoDeSorteio(Modo: TModoSorteio);
@@ -1792,7 +1954,8 @@ begin
     for I := 0 to N - 1 do Args[I] := Avaliar(X, X.R.FNos[No].Lista[I]);
   Result := VInt(0, False);
   case F of
-    fRandom: Result := VInt(SortearValor(ComoInt(X, No, Args[0]), Args[0].Largo), Args[0].Largo);
+    fRandom: Result := VInt(SortearValor(ComoInt(X, No, Args[0]), Args[0].Largo,
+      X.R.Origem, X.R.FNos[No].Linha), Args[0].Largo);
     fRound: Result := VInt(Round(ComoReal(X, No, Args[0])), True);
     fTrunc: Result := VInt(Trunc(ComoReal(X, No, Args[0])), True);
     fAbs:
@@ -1896,51 +2059,100 @@ begin
     cChamada:
       Chamar(X, X.R.FNos[No].A);
     cSe:
-      if ComoBool(X, No, Avaliar(X, X.R.FNos[No].A)) then
-        Executar1(X, X.R.FNos[No].B)
-      else if X.R.FNos[No].C >= 0 then
-        Executar1(X, X.R.FNos[No].C);
+      begin
+        Achou := ComoBool(X, No, Avaliar(X, X.R.FNos[No].A));
+        if TraceSorteios <> nil then
+          RegistrarControleTrace('if_branch', X.R.FNos[No].Linha,
+            '"branch_taken":' + LowerCase(BoolToStr(Achou, True)));
+        if Achou then Executar1(X, X.R.FNos[No].B)
+        else if X.R.FNos[No].C >= 0 then Executar1(X, X.R.FNos[No].C);
+      end;
     cPara:
       begin
         Ini := ComoInt(X, No, Avaliar(X, X.R.FNos[No].A));
         Fim := ComoInt(X, No, Avaliar(X, X.R.FNos[No].B));
+        K := Ini;
+        I := 0;
+        if TraceSorteios <> nil then
+          RegistrarControleTrace('for_start', X.R.FNos[No].Linha,
+            '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
+            ',"start_value":' + IntToStr(Ini) + ',"end_value":' + IntToStr(Fim) +
+            ',"direction":' + TextoJson(IfThen(X.R.FNos[No].Op > 0, 'to', 'downto')));
         if X.R.FNos[No].Op > 0 then
         begin
-          K := Ini;
           while K <= Fim do
           begin
+            if TraceSorteios <> nil then
+              RegistrarControleTrace('for_iteration', X.R.FNos[No].Linha,
+                '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
+                ',"iteration_index":' + IntToStr(I) + ',"iteration_value":' + IntToStr(K));
             if not Converter(X.R.FTiposLocais[X.R.FNos[No].Ind], VInt(K, False), V) then
               ErroExec(X, No, 'a variavel do for precisa ser inteira');
             X.Locais[X.R.FNos[No].Ind] := V;
             Executar1(X, X.R.FNos[No].C);
             Inc(K);
+            Inc(I);
           end;
         end
         else
         begin
-          K := Ini;
           while K >= Fim do
           begin
+            if TraceSorteios <> nil then
+              RegistrarControleTrace('for_iteration', X.R.FNos[No].Linha,
+                '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
+                ',"iteration_index":' + IntToStr(I) + ',"iteration_value":' + IntToStr(K));
             if not Converter(X.R.FTiposLocais[X.R.FNos[No].Ind], VInt(K, False), V) then
               ErroExec(X, No, 'a variavel do for precisa ser inteira');
             X.Locais[X.R.FNos[No].Ind] := V;
             Executar1(X, X.R.FNos[No].C);
             Dec(K);
+            Inc(I);
           end;
         end;
+        if TraceSorteios <> nil then
+          RegistrarControleTrace('for_end', X.R.FNos[No].Linha,
+            '"iteration_count":' + IntToStr(I));
       end;
     cRepita:
-      repeat
-        Executar1(X, X.R.FNos[No].B);
-      until ComoBool(X, No, Avaliar(X, X.R.FNos[No].A));
+      begin
+        I := 0;
+        repeat
+          if TraceSorteios <> nil then
+            RegistrarControleTrace('repeat_iteration', X.R.FNos[No].Linha,
+              '"iteration_index":' + IntToStr(I));
+          Executar1(X, X.R.FNos[No].B);
+          Achou := ComoBool(X, No, Avaliar(X, X.R.FNos[No].A));
+          if TraceSorteios <> nil then
+            RegistrarControleTrace('repeat_condition', X.R.FNos[No].Linha,
+              '"iteration_index":' + IntToStr(I) +
+              ',"loop_terminates":' + LowerCase(BoolToStr(Achou, True)));
+          Inc(I);
+        until Achou;
+      end;
     cEnquanto:
-      while ComoBool(X, No, Avaliar(X, X.R.FNos[No].A)) do
-        Executar1(X, X.R.FNos[No].B);
+      begin
+        I := 0;
+        Achou := ComoBool(X, No, Avaliar(X, X.R.FNos[No].A));
+        while Achou do
+        begin
+          if TraceSorteios <> nil then
+            RegistrarControleTrace('while_iteration', X.R.FNos[No].Linha,
+              '"iteration_index":' + IntToStr(I));
+          Executar1(X, X.R.FNos[No].B);
+          Inc(I);
+          Achou := ComoBool(X, No, Avaliar(X, X.R.FNos[No].A));
+        end;
+        if TraceSorteios <> nil then
+          RegistrarControleTrace('while_end', X.R.FNos[No].Linha,
+            '"iteration_count":' + IntToStr(I) + ',"exit_condition":false');
+      end;
     cCaso:
       begin
         V := Avaliar(X, X.R.FNos[No].A);
         K := ComoInt(X, No, V);
         Achou := False;
+        E := -1;
         for I := 0 to High(X.R.FNos[No].Lista) do
         begin
           Ramo := X.R.FNos[No].Lista[I];
@@ -1954,11 +2166,21 @@ begin
               Achou := True;
           if Achou then
           begin
+            if TraceSorteios <> nil then
+              RegistrarControleTrace('case_arm', X.R.FNos[No].Linha,
+                '"selector_value":' + IntToStr(K) + ',"arm_index":' + IntToStr(I) +
+                ',"branch_taken":true');
             Executar1(X, X.R.FNos[Ramo].A);
             Break;
           end;
         end;
-        if not Achou and (X.R.FNos[No].B >= 0) then Executar1(X, X.R.FNos[No].B);
+        if not Achou then
+        begin
+          if TraceSorteios <> nil then
+            RegistrarControleTrace('case_else', X.R.FNos[No].Linha,
+              '"selector_value":' + IntToStr(K) + ',"branch_taken":true');
+          if X.R.FNos[No].B >= 0 then Executar1(X, X.R.FNos[No].B);
+        end;
       end;
   else
     ErroExec(X, No, 'comando invalido');
@@ -1999,7 +2221,12 @@ begin
       if not Converter(FTiposLocais[QtdPredef + I], V, X.Locais[QtdPredef + I]) then
         raise ERoteiro.Create(FOrigem + ': valor de entrada invalido');
     end;
-  Executar1(X, FRaiz);
+  IniciarExecucaoRoteiroTrace(Self, Jog, Codigo);
+  try
+    Executar1(X, FRaiz);
+  finally
+    FinalizarExecucaoRoteiroTrace;
+  end;
 end;
 
 { ================= arquivo de roteiro ================= }
