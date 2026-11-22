@@ -12,8 +12,8 @@
   Como executar:
     StreetChaves.exe          jogo na janela SDL
     StreetChaves.exe --demo   quadro de teste da fase 0 (infraestrutura SDL)
-    StreetChaves.exe --gravar <pasta> [passos] [intervalo]
-                              conferencia de regressao: grava quadros com semente e teclas fixas
+    StreetChaves.exe --gravar <pasta> [passos] [intervalo] [--rng-jsonl <arquivo>]
+                              conferencia de regressao; opcionalmente exporta draws de SortearValor
     --sem-hd (em qualquer posicao, por ultimo com --gravar)
                               ignora as imagens em alta resolucao da pasta HD/
 
@@ -148,7 +148,7 @@ type
       @param(Pasta pasta de saida (criada se nao existir))
       @param(Passos quantos passos rodar)
       @param(Intervalo de quantos em quantos passos gravar) }
-    procedure GravarQuadros(const Pasta: string; Passos, Intervalo: Integer);
+    procedure GravarQuadros(const Pasta: string; Passos, Intervalo: Integer; const ArquivoTrace: string = '');
     { Pede o fim do laco principal. }
     procedure Parar;
     property IntervaloMs: Integer read FIntervaloMs write FIntervaloMs;
@@ -163,6 +163,9 @@ type
 procedure ExecutarModoSDL;
 
 implementation
+
+uses
+  ChavesRoteiro;
 
 function TAppSDL.GetPixels: Pointer;
 begin
@@ -769,7 +772,7 @@ begin
   end;
 end;
 
-procedure TAppSDL.GravarQuadros(const Pasta: string; Passos, Intervalo: Integer);
+procedure TAppSDL.GravarQuadros(const Pasta: string; Passos, Intervalo: Integer; const ArquivoTrace: string);
 const
   { roteiro que se repete a cada 60 passos: (passo, tecla, passos apertada) }
   Roteiro: array[0..6] of record Passo, Tecla, Dura: Integer; end = (
@@ -783,7 +786,8 @@ const
 var
   Ev: TSDL_Event;
   Passo, K, Fase: Integer;
-  Logica: TStringList;
+  Logica, LogTraceErro: TStringList;
+  TraceErro: string;
 
   { @param(P inicio da memoria)
     @param(N quantos bytes)
@@ -801,6 +805,8 @@ begin
   if FJogo = nil then Exit;
   ForceDirectories(Pasta);
   RandSeed := 20261026;
+  if ArquivoTrace <> '' then
+    IniciarTraceSorteios(ArquivoTrace, 'gravar-seed-20261026');
   { logica.txt: estado do jogo a cada quadro gravado; tem de ser igual entre versoes que so
     mudam o desenho (inclusive com e sem as imagens de HD/) }
   Logica := TStringList.Create;
@@ -826,6 +832,21 @@ begin
       end;
     end;
   finally
+    if ArquivoTrace <> '' then
+    begin
+      FinalizarTraceSorteios;
+      TraceErro := ErroTraceSorteios;
+      if TraceErro <> '' then
+      begin
+        LogTraceErro := TStringList.Create;
+        try
+          LogTraceErro.Text := TraceErro;
+          LogTraceErro.SaveToFile(ArquivoTrace + '.error.txt');
+        finally
+          LogTraceErro.Free;
+        end;
+      end;
+    end;
     Logica.SaveToFile(IncludeTrailingPathDelimiter(Pasta) + 'logica.txt');
     Logica.Free;
   end;
@@ -836,18 +857,34 @@ var
   App: TAppSDL;
   Demo, Gravar: Boolean;
   I: Integer;
+  ArquivoTrace: string;
 begin
   Demo := (ParamCount > 0) and SameText(ParamStr(1), '--demo');
   Gravar := (ParamCount > 1) and SameText(ParamStr(1), '--gravar');
-  for I := 1 to ParamCount do
-    if SameText(ParamStr(I), '--sem-hd') then UsarHD := False;
+  ArquivoTrace := '';
+  I := 1;
+  while I <= ParamCount do
+  begin
+    if SameText(ParamStr(I), '--sem-hd') then
+      UsarHD := False
+    else if SameText(ParamStr(I), '--rng-jsonl') then
+    begin
+      if I = ParamCount then
+        raise Exception.Create('--rng-jsonl exige um caminho de arquivo');
+      Inc(I);
+      ArquivoTrace := ParamStr(I);
+    end;
+    Inc(I);
+  end;
+  if (ArquivoTrace <> '') and not Gravar then
+    raise Exception.Create('--rng-jsonl so pode ser usado com --gravar');
   App := TAppSDL.Create;
   try
     if App.Iniciar(not Demo) then
     begin
       { --gravar <pasta> [passos] [intervalo] }
       if Gravar then
-        App.GravarQuadros(ParamStr(2), StrToIntDef(ParamStr(3), 3000), StrToIntDef(ParamStr(4), 50))
+        App.GravarQuadros(ParamStr(2), StrToIntDef(ParamStr(3), 3000), StrToIntDef(ParamStr(4), 50), ArquivoTrace)
       else
         App.Executar;
     end;
