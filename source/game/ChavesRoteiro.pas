@@ -1953,24 +1953,45 @@ var
   Op: Integer;
   A, B: TValor;
   FA, FB: Extended;
+  OpNome: string;
+  ValorDireito, ResultadoBool: Boolean;
 begin
   Op := X.R.FNos[No].Op;
   A := Avaliar(X, X.R.FNos[No].A);
-  { and/or com condicoes: param assim que o resultado e conhecido }
+  { and/or com condicoes: registra cada operando e preserva o short-circuit }
   if (Op in [opAnd, opOr]) and (A.C = cvBool) then
   begin
+    if Op = opAnd then OpNome := 'and' else OpNome := 'or';
+    RegistrarSubexpressaoBooleanaTrace(
+      X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].A,
+      X.R.FNos[X.R.FNos[No].A].Linha, X.R.FNos[X.R.FNos[No].A].Coluna,
+      OpNome, 'left', True, True, A.I <> 0, False, False, False, '');
     if (Op = opAnd) and (A.I = 0) then
     begin
+      RegistrarSubexpressaoBooleanaTrace(
+        X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+        X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+        OpNome, 'right', False, False, False, True, True, False, 'and_false');
       Result := VBool(False);
       Exit;
     end;
     if (Op = opOr) and (A.I <> 0) then
     begin
+      RegistrarSubexpressaoBooleanaTrace(
+        X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+        X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+        OpNome, 'right', False, False, False, True, True, True, 'or_true');
       Result := VBool(True);
       Exit;
     end;
     B := Avaliar(X, X.R.FNos[No].B);
-    Result := VBool(ComoBool(X, No, B));
+    ValorDireito := ComoBool(X, No, B);
+    ResultadoBool := ValorDireito;
+    RegistrarSubexpressaoBooleanaTrace(
+      X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+      X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+      OpNome, 'right', True, True, ValorDireito, False, True, ResultadoBool, '');
+    Result := VBool(ResultadoBool);
     Exit;
   end;
   if Op = opIn then
@@ -1988,7 +2009,24 @@ begin
   begin
     if B.C = cvBool then
     begin
-      if Op = opXor then Result := VBool((A.I <> 0) xor (ComoBool(X, No, B)))
+      if Op = opXor then
+      begin
+        ValorDireito := ComoBool(X, No, B);
+        if A.C = cvBool then
+        begin
+          RegistrarSubexpressaoBooleanaTrace(
+            X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].A,
+            X.R.FNos[X.R.FNos[No].A].Linha, X.R.FNos[X.R.FNos[No].A].Coluna,
+            'xor', 'left', True, True, A.I <> 0, False, False, False, '');
+          ResultadoBool := (A.I <> 0) xor ValorDireito;
+          RegistrarSubexpressaoBooleanaTrace(
+            X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+            X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+            'xor', 'right', True, True, ValorDireito, False, True, ResultadoBool, '');
+          Result := VBool(ResultadoBool);
+        end
+        else Result := VBool((A.I <> 0) xor ValorDireito);
+      end
       else ErroExec(X, No, 'and/or misturando condicao e numero');
       Exit;
     end;
