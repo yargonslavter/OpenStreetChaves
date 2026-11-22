@@ -126,8 +126,8 @@ function Sortear(N: LongInt): LongInt;
   @returns(o numero sorteado (ou o gravado, em msRepetir)) }
 function Sortear64(N: Int64): Int64;
 { Direct game-source Random calls routed into the same global trace. }
-function SortearDireto(N: LongInt; const Origem: string; LinhaFonte: Integer): LongInt; overload;
-function SortearDireto(N: Int64; const Origem: string; LinhaFonte: Integer): Int64; overload;
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte, ColunaFonte: Integer): LongInt; overload;
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer): Int64; overload;
 { Nome do campo de TLutador que ocupa um byte do registro (para o relatorio da conferencia).
   @param(Desl posicao do byte dentro de TLutador)
   @returns(o nome do campo que comeca nesse byte ou antes dele; '(byte N)' se nenhum) }
@@ -485,9 +485,9 @@ end;
   externas ainda não são interceptadas. }
 procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
-  RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte: Integer);
+  RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer);
 var
-  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ScriptDrawJson, TipoOrigem: string;
+  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ColunaJson, ScriptDrawJson, TipoOrigem: string;
   Linha: string;
 begin
   if TraceSorteios = nil then Exit;
@@ -523,6 +523,7 @@ begin
     TipoOrigem := 'pascal_direct';
   end;
   if LinhaFonte > 0 then LinhaJson := IntToStr(LinhaFonte) else LinhaJson := 'null';
+  if ColunaFonte > 0 then ColunaJson := IntToStr(ColunaFonte) else ColunaJson := 'null';
   if Length(TraceScriptStack) > 0 then
   begin
     ScriptDrawJson := IntToStr(TraceScriptStack[High(TraceScriptStack)].DrawCount);
@@ -540,6 +541,7 @@ begin
     ',"rand_seed_after":' + IntToStr(RandSeedDepois) +
     ',"source_kind":' + TextoJson(TipoOrigem) +
     ',"source_origin":' + OrigemJson + ',"source_line":' + LinhaJson +
+    ',"source_column":' + ColunaJson +
     ',"script_draw_index":' + ScriptDrawJson + ContextoTraceJson + '}';
   EscreverTraceLinha(Linha);
   Inc(TraceApiCallIndex);
@@ -682,7 +684,7 @@ end;
   @param(N limite)
   @param(Largo True = Random de 64 bits; False = de 32 bits)
   @returns(o numero sorteado ou o gravado) }
-function SortearValor(N: Int64; Largo: Boolean; const Origem: string; LinhaFonte: Integer): Int64;
+function SortearValor(N: Int64; Largo: Boolean; const Origem: string; LinhaFonte: Integer; ColunaFonte: Integer = 0): Int64;
 var
   SeedAntes: Int64;
   ModoTrace: string;
@@ -700,7 +702,7 @@ begin
       Inc(PosGravado);
       if TraceSorteios <> nil then
         RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
-          False, 0, SeedAntes, RandSeed, Origem, LinhaFonte);
+          False, 0, SeedAntes, RandSeed, Origem, LinhaFonte, ColunaFonte);
       Exit;
     end;
     SorteioDivergiu := True;
@@ -734,7 +736,7 @@ begin
 
   if TraceSorteios <> nil then
     RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
-      True, Palavras, SeedAntes, RandSeed, Origem, LinhaFonte);
+      True, Palavras, SeedAntes, RandSeed, Origem, LinhaFonte, ColunaFonte);
 end;
 
 function Sortear(N: LongInt): LongInt;
@@ -747,14 +749,14 @@ begin
   Result := SortearValor(N, True, '', 0);
 end;
 
-function SortearDireto(N: LongInt; const Origem: string; LinhaFonte: Integer): LongInt;
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte, ColunaFonte: Integer): LongInt;
 begin
-  Result := SortearValor(N, False, Origem, LinhaFonte);
+  Result := SortearValor(N, False, Origem, LinhaFonte, ColunaFonte);
 end;
 
-function SortearDireto(N: Int64; const Origem: string; LinhaFonte: Integer): Int64;
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer): Int64;
 begin
-  Result := SortearValor(N, True, Origem, LinhaFonte);
+  Result := SortearValor(N, True, Origem, LinhaFonte, ColunaFonte);
 end;
 
 procedure ModoDeSorteio(Modo: TModoSorteio);
