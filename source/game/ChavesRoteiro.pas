@@ -54,6 +54,7 @@ type
     Lista: array of Integer;  // argumentos, comandos, elementos ou ramos
     V: TValor;                // valor (nConst)
     Linha: Integer;
+    Coluna: Integer;
   end;
 
   TRoteiro = class
@@ -69,7 +70,7 @@ type
       @param(T tipo do no)
       @param(Linha linha do arquivo, para as mensagens de erro)
       @returns(o indice do no em FNos) }
-    function Novo(T: TTipoNo; Linha: Integer): Integer;
+    function Novo(T: TTipoNo; Linha: Integer; Coluna: Integer = 0): Integer;
     { Erro de escrita no roteiro.
       @param(Linha linha do arquivo)
       @param(Msg descricao do erro)
@@ -895,6 +896,7 @@ type
     I: Int64;
     F: Extended;
     Linha: Integer;
+    Coluna: Integer;
   end;
 
   TAnalisador = class
@@ -959,7 +961,7 @@ var
 
 constructor TAnalisador.Create(ARoteiro: TRoteiro; const Texto: string; LinhaInicial: Integer);
 var
-  I, N, Ini, Linha: Integer;
+  I, N, Ini, Linha, InicioLinha: Integer;
   Ch: Char;
   T: TTok;
   S: string;
@@ -977,6 +979,7 @@ begin
   N := 0;
   I := 1;
   Linha := LinhaInicial;
+  InicioLinha := 1;
   while I <= Length(Texto) do
   begin
     Ch := Texto[I];
@@ -984,6 +987,7 @@ begin
     begin
       Inc(Linha);
       Inc(I);
+      InicioLinha := I;
       Continue;
     end;
     if Ch <= ' ' then
@@ -1001,8 +1005,13 @@ begin
     begin
       while (I <= Length(Texto)) and (Texto[I] <> '}') do
       begin
-        if Texto[I] = #10 then Inc(Linha);
-        Inc(I);
+        if Texto[I] = #10 then
+        begin
+          Inc(Linha);
+          Inc(I);
+          InicioLinha := I;
+        end
+        else Inc(I);
       end;
       Inc(I);
       Continue;
@@ -1019,6 +1028,7 @@ begin
       Continue;
     end;
     T.Linha := Linha;
+    T.Coluna := I - InicioLinha + 1;
     T.S := '';
     T.Low := '';
     T.I := 0;
@@ -1122,6 +1132,7 @@ begin
   T.S := '';
   T.Low := '';
   T.Linha := Linha;
+  T.Coluna := I - InicioLinha + 1;
   Add;
   SetLength(Toks, N);
   Pos := 0;
@@ -1638,7 +1649,7 @@ end;
 
 { ================= TRoteiro ================= }
 
-function TRoteiro.Novo(T: TTipoNo; Linha: Integer): Integer;
+function TRoteiro.Novo(T: TTipoNo; Linha: Integer; Coluna: Integer): Integer;
 begin
   Result := FQtdNos;
   if FQtdNos >= Length(FNos) then SetLength(FNos, FQtdNos * 2 + 64);
@@ -1653,6 +1664,7 @@ begin
   FNos[Result].Lista := nil;
   FNos[Result].V := VInt(0, False);
   FNos[Result].Linha := Linha;
+  FNos[Result].Coluna := Coluna;
 end;
 
 procedure TRoteiro.Falha(Linha: Integer; const Msg: string);
