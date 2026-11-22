@@ -5,6 +5,17 @@ Repositório dedicado para engenharia reversa e melhoria do antigo jogo brasilei
 O jogo original (Delphi 5 + DelphiX, `Chaves.exe`). Este projeto o reconstrói em
 Lazarus/Free Pascal, mantendo a fidelidade ao original, e o migra para **SDL2** para ficar portável.
 
+
+
+# Pesquisa de longo prazo: reconstrução Delphi e executável reproduzível
+
+O objetivo de longo prazo inclui duas investigações relacionadas, mas independentes, sobre o **Chaves.exe original (Delphi 5 + DelphiX)**:
+
+1. **Reconstrução do código-fonte Delphi:** recuperar, tanto quanto as evidências permitirem, a organização de units, classes, forms, métodos, recursos e a semântica do programa. Trechos decompilados, declarações inferidas e código recriado devem ser identificados como tais, nunca apresentados como o fonte original recuperado.
+2. **Reprodução binária byte a byte:** investigar se uma compilação reconstruída pode gerar um arquivo idêntico ao executável original. O critério estrito será `SHA256(rebuilt.exe) == SHA256(original.exe)`. Isso pode depender da versão exata do compilador e linker Delphi, RTL/VCL/DelphiX, opções de build, recursos, ordem de linkedição, alinhamento, timestamps e metadados PE.
+
+Equivalência de comportamento, semelhança estrutural do PE, reconstrução de fonte e identidade binária são resultados diferentes. Um não comprova o outro. O objetivo está planejado como pesquisa de longo prazo e não representa uma alegação de que o fonte original ou uma compilação idêntica já tenham sido recuperados. A investigação deve preservar a proveniência do executável e dos recursos, e não é pré-requisito para a evolução normal desta reconstrução Pascal/SDL2.
+
 # Screenshots
 
 | | |
@@ -60,6 +71,26 @@ O programa `StreetChaves.exe --demo` abre um quadro de teste da infraestrutura S
 roteirizadas, e grava um quadro BMP a cada `intervalo` passos (padrão: 3000 passos, 1 quadro a cada 50), mais o estado
 da lógica (lutadores e efeitos) em `logica.txt`. Serve para conferir que uma mudança no desenho não alterou a lógica:
 duas versões com a mesma lógica gravam o mesmo `logica.txt` (e, se o desenho também for igual, os mesmos quadros).
+
+Para exportar os sorteios que passam pelo wrapper `SortearValor`, acrescente
+`--rng-jsonl <arquivo>` ao comando `--gravar`:
+
+```sh
+StreetChaves.exe --gravar saida 3000 50 --rng-jsonl saida/rng.jsonl
+```
+
+A captura é desativada por padrão. O schema v2 registra:
+- início/fim de cada passo lógico em `TJogo.PassoSDL`, com estado do jogo e snapshots de ação/quadro dos dois lutadores;
+- início/fim de cada execução de `.rot`, com origem/seção, lutador, comando e relação pai/filho para chamadas aninhadas;
+- decisões concretas de `if` e `case`, além dos valores/índices das iterações de `for`, `while` e `repeat`;
+- cada chamada a `SortearValor`, com largura LongInt/Int64, intervalo, resultado, modo gravar/repetir,
+  snapshots de `RandSeed`, tick, execução de script, linha de origem e índice local àquela execução.
+
+Os índices de palavras MT continuam locais a `SortearValor`: chamadas diretas a `System.Random` fora do wrapper
+não estão incluídas. O Pascal registra a linha, mas ainda não a coluna de origem; múltiplos eventos na mesma linha
+podem exigir reconciliação ambígua. O trace de ticks contém snapshots selecionados, não uma cópia integral do estado
+do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte idêntico e
+`logica.txt` correspondente.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 

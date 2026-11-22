@@ -1,8 +1,16 @@
 { Comum_SDL.inc - Interface do jogo com o ChavesSDL.pas: passo da logica, buffer de pixels e teclas. }
 
 procedure TJogo.PassoSDL;
+var
+  Executou: Boolean;
 begin
-  if QuadroAtivo then ExecutarQuadro;
+  Executou := QuadroAtivo;
+  IniciarTickTraceSorteios(Executou);
+  try
+    if Executou then ExecutarQuadro;
+  finally
+    FinalizarTickTraceSorteios;
+  end;
 end;
 
 function TJogo.PixelsSDL: Pointer;
