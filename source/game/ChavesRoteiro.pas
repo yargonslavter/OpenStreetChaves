@@ -481,7 +481,8 @@ begin
 end;
 
 { Registra um draw já concluído sem alterar o fluxo do RNG. O índice de palavras
-  continua explicitamente local a SortearValor, nunca global ao programa. }
+  é global entre os pontos de chamada do jogo roteados por SortearValor; RTL e bibliotecas
+  externas ainda não são interceptadas. }
 procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
   RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte: Integer);
