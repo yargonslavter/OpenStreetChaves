@@ -1,0 +1,85 @@
+name: AI input snapshot trace
+
+on:
+  push:
+    branches:
+      - research/ai-input-snapshots-v1
+    paths:
+      - "source/game/ChavesRoteiro.pas"
+      - ".github/workflows/ai-input-snapshot-trace.yml"
+  pull_request:
+    paths:
+      - "source/game/ChavesRoteiro.pas"
+      - ".github/workflows/ai-input-snapshot-trace.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  compile-and-capture:
+    name: Compile Pascal and validate AI input snapshots
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Install Free Pascal 3.2.2 and SDL2
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y fp-compiler fp-units-base fp-units-fcl libsdl2-dev
+          fpc -iV
+          test "$(fpc -iV)" = "3.2.2"
+
+      - name: Compile the game
+        working-directory: source
+        run: |
+          set -euo pipefail
+          mkdir -p build/bin build/units
+          fpc -B \
+            -Fu3party -Fu3party/SDL2 -Fugame -Figame \
+            -FUbuild/units -FEbuild/bin \
+            -obuild/bin/StreetChaves StreetChaves.lpr
+
+      - name: Capture deterministic runtime trace
+        env:
+          SDL_VIDEODRIVER: dummy
+          SDL_AUDIODRIVER: dummy
+        run: |
+          set -euo pipefail
+          mkdir -p build/ai-input-snapshot
+          source/build/bin/StreetChaves \
+            --gravar build/ai-input-snapshot 3000 300 \
+            --rng-jsonl build/ai-input-snapshot/rng.jsonl
+          test -s build/ai-input-snapshot/rng.jsonl
+
+      - name: Validate AI input snapshot fields
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("build/ai-input-snapshot/rng.jsonl")
+          records = [json.loads(line) for line in path.read_text().splitlines()]
+          starts = [
+              record for record in records
+              if record.get("record_type") == "script_start"
+              and record.get("script_origin", "").endswith("[IA]")
+          ]
+          assert starts, "the deterministic capture did not execute an IA script"
+          required_inputs = {"dist", "dist_proj", "opp_y", "threat", "difficulty_factor"}
+          required_state = {
+              "character_id", "action_id", "action_frame", "action_duration",
+              "distance_ai", "facing", "defending", "x", "y", "velocity_y",
+              "in_air", "speed", "health", "body_box"
+          }
+          for record in starts:
+              snapshot = record.get("ai_inputs")
+              assert snapshot is not None, f"missing ai_inputs: {record}"
+              assert required_inputs <= snapshot.keys(), snapshot
+              for side in ("fighter", "opponent"):
+                  assert side in snapshot, snapshot
+                  assert required_state <= snapshot[side].keys(), snapshot[side]
+          print(f"validated {len(starts)} IA script-entry snapshots")
+          PY
