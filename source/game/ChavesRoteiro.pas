@@ -625,7 +625,41 @@ begin
   EscreverTraceLinha(Linha);
 end;
 
-procedure IniciarExecucaoRoteiroTrace(R: TRoteiro; Jog, Codigo: Integer);
+function EstadoLutadorIAJson(const L: TLutador): string;
+begin
+  Result := '{"character_id":' + IntToStr(L.Personagem) +
+    ',"action_id":' + IntToStr(L.Acao) +
+    ',"action_frame":' + IntToStr(L.QuadroAcao) +
+    ',"action_duration":' + IntToStr(L.DuracaoAcao) +
+    ',"distance_ai":' + IntToStr(L.DistanciaIA) +
+    ',"facing":' + IntToStr(L.Lado) +
+    ',"defending":' + BoolToStr(L.Defendendo, 'true', 'false') +
+    ',"x":' + FloatToStr(L.X, FmtPonto) +
+    ',"y":' + FloatToStr(L.Y, FmtPonto) +
+    ',"velocity_y":' + IntToStr(L.VelY) +
+    ',"in_air":' + BoolToStr(L.NoAr, 'true', 'false') +
+    ',"speed":' + FloatToStr(L.Velocidade, FmtPonto) +
+    ',"health":' + FloatToStr(L.Vida, FmtPonto) +
+    ',"body_box":[' + IntToStr(L.CorpoX1) + ',' + IntToStr(L.CorpoY1) + ',' +
+      IntToStr(L.CorpoX2) + ',' + IntToStr(L.CorpoY2) + ']}';
+end;
+
+function EntradasIATraceJson(Jog: Integer; const Valores: array of Extended): string;
+begin
+  Result := ',"ai_inputs":{"dist":' + IntToStr(Round(Valores[0])) +
+    ',"dist_proj":' + IntToStr(Round(Valores[1])) +
+    ',"opp_y":' + IntToStr(Round(Valores[2])) +
+    ',"threat":' + IntToStr(Round(Valores[3])) +
+    ',"difficulty_factor":' + FloatToStr(Valores[4], FmtPonto) +
+    ',"fighter":' + EstadoLutadorIAJson(Lutador[Jog]) +
+    ',"opponent":' + EstadoLutadorIAJson(Lutador[3 - Jog]) + '}';
+end;
+
+procedure IniciarExecucaoRoteiroTrace(
+  R: TRoteiro;
+  Jog, Codigo: Integer;
+  const Valores: array of Extended
+);
 var
   C: TTraceScriptContext;
   Linha: string;
@@ -648,7 +682,10 @@ begin
     TextoJson(TraceSessao) + ContextoTraceJson +
     ',"character_id_at_start":' + IntToStr(C.CharacterId) +
     ',"action_id_at_start":' + IntToStr(Lutador[Jog].Acao) +
-    ',"action_frame_at_start":' + IntToStr(Lutador[Jog].QuadroAcao) + '}';
+    ',"action_frame_at_start":' + IntToStr(Lutador[Jog].QuadroAcao);
+  if (Pos('[IA]', UpperCase(R.Origem)) > 0) and (Length(Valores) >= 5) then
+    Linha := Linha + EntradasIATraceJson(Jog, Valores);
+  Linha := Linha + '}';
   EscreverTraceLinha(Linha);
 end;
 
@@ -2360,7 +2397,7 @@ begin
       if not Converter(FTiposLocais[QtdPredef + I], V, X.Locais[QtdPredef + I]) then
         raise ERoteiro.Create(FOrigem + ': valor de entrada invalido');
     end;
-  IniciarExecucaoRoteiroTrace(Self, Jog, Codigo);
+  IniciarExecucaoRoteiroTrace(Self, Jog, Codigo, Valores);
   try
     Executar1(X, FRaiz);
   finally
