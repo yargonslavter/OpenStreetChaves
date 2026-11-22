@@ -439,7 +439,6 @@ end;
 function ContextoTraceJson: string;
 var
   C: TTraceScriptContext;
-  L: PLutador;
 begin
   Result := ',"tick_index":';
   if TraceTickIndex >= 0 then Result := Result + IntToStr(TraceTickIndex)
@@ -452,16 +451,15 @@ begin
     Exit;
   end;
   C := TraceScriptStack[High(TraceScriptStack)];
-  L := @Lutador[C.FighterIndex];
   Result := Result + ',"script_execution_id":' + IntToStr(C.ExecutionId) +
     ',"parent_script_execution_id":';
   if C.ParentExecutionId >= 0 then Result := Result + IntToStr(C.ParentExecutionId)
   else Result := Result + 'null';
   Result := Result + ',"script_origin":' + TextoJson(C.Origem) +
     ',"fighter_index":' + IntToStr(C.FighterIndex) +
-    ',"character_id":' + IntToStr(L^.Personagem) +
-    ',"action_id":' + IntToStr(L^.Acao) +
-    ',"action_frame":' + IntToStr(L^.QuadroAcao) +
+    ',"character_id":' + IntToStr(Lutador[C.FighterIndex].Personagem) +
+    ',"action_id":' + IntToStr(Lutador[C.FighterIndex].Acao) +
+    ',"action_frame":' + IntToStr(Lutador[C.FighterIndex].QuadroAcao) +
     ',"command_code":' + IntToStr(C.CommandCode);
 end;
 
