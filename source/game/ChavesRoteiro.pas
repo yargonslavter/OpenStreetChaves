@@ -1022,8 +1022,13 @@ begin
       Inc(I, 2);
       while (I < Length(Texto)) and not ((Texto[I] = '*') and (Texto[I + 1] = ')')) do
       begin
-        if Texto[I] = #10 then Inc(Linha);
-        Inc(I);
+        if Texto[I] = #10 then
+        begin
+          Inc(Linha);
+          Inc(I);
+          InicioLinha := I;
+        end
+        else Inc(I);
       end;
       Inc(I, 2);
       Continue;
@@ -1291,7 +1296,7 @@ end;
 function TAnalisador.Termo: Integer;
 var
   Tmp: Integer;
-  Op, N, L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Fator;
   while True do
