@@ -5,6 +5,17 @@ Repositório dedicado para engenharia reversa e melhoria do antigo jogo brasilei
 O jogo original (Delphi 5 + DelphiX, `Chaves.exe`). Este projeto o reconstrói em
 Lazarus/Free Pascal, mantendo a fidelidade ao original, e o migra para **SDL2** para ficar portável.
 
+
+
+# Pesquisa de longo prazo: reconstrução Delphi e executável reproduzível
+
+O objetivo de longo prazo inclui duas investigações relacionadas, mas independentes, sobre o **Chaves.exe original (Delphi 5 + DelphiX)**:
+
+1. **Reconstrução do código-fonte Delphi:** recuperar, tanto quanto as evidências permitirem, a organização de units, classes, forms, métodos, recursos e a semântica do programa. Trechos decompilados, declarações inferidas e código recriado devem ser identificados como tais, nunca apresentados como o fonte original recuperado.
+2. **Reprodução binária byte a byte:** investigar se uma compilação reconstruída pode gerar um arquivo idêntico ao executável original. O critério estrito será `SHA256(rebuilt.exe) == SHA256(original.exe)`. Isso pode depender da versão exata do compilador e linker Delphi, RTL/VCL/DelphiX, opções de build, recursos, ordem de linkedição, alinhamento, timestamps e metadados PE.
+
+Equivalência de comportamento, semelhança estrutural do PE, reconstrução de fonte e identidade binária são resultados diferentes. Um não comprova o outro. O objetivo está planejado como pesquisa de longo prazo e não representa uma alegação de que o fonte original ou uma compilação idêntica já tenham sido recuperados. A investigação deve preservar a proveniência do executável e dos recursos, e não é pré-requisito para a evolução normal desta reconstrução Pascal/SDL2.
+
 # Screenshots
 
 | | |
