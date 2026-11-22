@@ -625,6 +625,15 @@ begin
   EscreverTraceLinha(Linha);
 end;
 
+function FloatJson(V: Extended): string;
+var
+  F: TFormatSettings;
+begin
+  F := DefaultFormatSettings;
+  F.DecimalSeparator := '.';
+  Result := FloatToStr(V, F);
+end;
+
 function EstadoLutadorIAJson(const L: TLutador): string;
 begin
   Result := '{"character_id":' + IntToStr(L.Personagem) +
@@ -634,12 +643,12 @@ begin
     ',"distance_ai":' + IntToStr(L.DistanciaIA) +
     ',"facing":' + IntToStr(L.Lado) +
     ',"defending":' + BoolToStr(L.Defendendo, 'true', 'false') +
-    ',"x":' + FloatToStr(L.X, FmtPonto) +
-    ',"y":' + FloatToStr(L.Y, FmtPonto) +
+    ',"x":' + FloatJson(L.X) +
+    ',"y":' + FloatJson(L.Y) +
     ',"velocity_y":' + IntToStr(L.VelY) +
     ',"in_air":' + BoolToStr(L.NoAr, 'true', 'false') +
-    ',"speed":' + FloatToStr(L.Velocidade, FmtPonto) +
-    ',"health":' + FloatToStr(L.Vida, FmtPonto) +
+    ',"speed":' + FloatJson(L.Velocidade) +
+    ',"health":' + FloatJson(L.Vida) +
     ',"body_box":[' + IntToStr(L.CorpoX1) + ',' + IntToStr(L.CorpoY1) + ',' +
       IntToStr(L.CorpoX2) + ',' + IntToStr(L.CorpoY2) + ']}';
 end;
@@ -650,7 +659,7 @@ begin
     ',"dist_proj":' + IntToStr(Round(Valores[1])) +
     ',"opp_y":' + IntToStr(Round(Valores[2])) +
     ',"threat":' + IntToStr(Round(Valores[3])) +
-    ',"difficulty_factor":' + FloatToStr(Valores[4], FmtPonto) +
+    ',"difficulty_factor":' + FloatJson(Valores[4]) +
     ',"fighter":' + EstadoLutadorIAJson(Lutador[Jog]) +
     ',"opponent":' + EstadoLutadorIAJson(Lutador[3 - Jog]) + '}';
 end;
