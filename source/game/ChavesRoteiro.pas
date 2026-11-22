@@ -421,6 +421,8 @@ end;
 { Registra um draw depois de o valor ter sido obtido.
   O indice de palavra e local a SortearValor: chamadas diretas a System.Random
   fora deste wrapper nao estao incluidas nesta primeira instrumentacao. }
+{ Registra uma requisicao depois de obter seu valor. Os indices de palavras sao
+  locais a SortearValor; chamadas diretas a System.Random ficam fora deste escopo. }
 procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
   RandSeedAntes, RandSeedDepois: Int64);
@@ -441,16 +443,18 @@ begin
   end;
   if Largo then Largura := 'Int64' else Largura := 'LongInt';
 
-  Linha := '{"record_type":"session","schema_version":1,"session_id":' +
-    TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","rand_seed_initial":' +
-    IntToStr(RandSeed) +
-    ',"raw_word_index_scope":"SortearValor-only; direct System.Random calls outside this wrapper are excluded"' +
-    ',"context_status":"action/tick context not attached yet"}';
+  Linha := '{"record_type":"draw","schema_version":1,"session_id":' +
+    TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","api_call_index":' +
+    IntToStr(TraceApiCallIndex) + ',"first_mt_word_index":' + PrimeiraPalavra +
+    ',"raw_mt_words":' + PalavrasJson + ',"width":' + TextoJson(Largura) +
+    ',"range":' + IntToStr(N) + ',"result":' + IntToStr(R) +
+    ',"recorder_mode":' + TextoJson(Modo) + ',"draw_source":' + TextoJson(Fonte) +
+    ',"rand_seed_before":' + IntToStr(RandSeedAntes) +
+    ',"rand_seed_after":' + IntToStr(RandSeedDepois) + '}';
   EscreverTraceLinha(Linha);
   Inc(TraceApiCallIndex);
   if ConsumiuRng then Inc(TraceMtWordIndex, Palavras);
 end;
-
 procedure IniciarTraceSorteios(const Arquivo, Sessao: string);
 var
   Pasta, Linha: string;
