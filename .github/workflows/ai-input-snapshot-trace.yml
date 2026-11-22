@@ -83,3 +83,11 @@ jobs:
                   assert required_state <= snapshot[side].keys(), snapshot[side]
           print(f"validated {len(starts)} IA script-entry snapshots")
           PY
+
+      - name: Upload deterministic AI input snapshot trace
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-input-snapshot-trace
+          path: build/ai-input-snapshot/rng.jsonl
+          if-no-files-found: error
+          retention-days: 30
