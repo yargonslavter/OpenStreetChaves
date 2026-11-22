@@ -1235,8 +1235,7 @@ end;
 function TAnalisador.Expr: Integer;
 var
   Tmp: Integer;
-  Op, N: Integer;
-  L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Simples;
   while True do
@@ -1250,8 +1249,9 @@ begin
     else if Eh('in') then Op := opIn
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Simples;
@@ -1265,7 +1265,7 @@ end;
 function TAnalisador.Simples: Integer;
 var
   Tmp: Integer;
-  Op, N, L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Termo;
   while True do
@@ -1276,8 +1276,9 @@ begin
     else if Eh('xor') then Op := opXor
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Termo;
@@ -1303,8 +1304,9 @@ begin
     else if Eh('shr') then Op := opShr
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Fator;
@@ -1317,12 +1319,13 @@ function TAnalisador.Fator: Integer;
 var
   Tmp: Integer;
   T: TTok;
-  N, I, K, L, E: Integer;
+  N, I, K, L, C, E: Integer;
   Nome: string;
   Achou: Boolean;
 begin
   T := Atual;
   L := T.Linha;
+  C := T.Coluna;
   if Eh('(') then
   begin
     Pegar('(');
@@ -1333,7 +1336,7 @@ begin
   if Eh('-') or Eh('+') or Eh('not') then
   begin
     Inc(Pos);
-    N := R.Novo(nUn, L);
+    N := R.Novo(nUn, L, C);
     if T.Low = '-' then R.FNos[N].Op := opNeg
     else if T.Low = '+' then R.FNos[N].Op := opPos
     else R.FNos[N].Op := opNot;
@@ -1345,7 +1348,7 @@ begin
   if T.K = tkInt then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VInt(T.I, (T.I > High(LongInt)) or (T.I < Low(LongInt)));
     Result := N;
     Exit;
@@ -1353,7 +1356,7 @@ begin
   if T.K = tkReal then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VReal(T.F);
     Result := N;
     Exit;
@@ -1361,7 +1364,7 @@ begin
   if T.K = tkStr then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VStr(T.S);
     Result := N;
     Exit;
@@ -1369,14 +1372,15 @@ begin
   if Eh('[') then
   begin
     Pegar('[');
-    N := R.Novo(nConj, L);
+    N := R.Novo(nConj, L, C);
     if not Eh(']') then
       repeat
         E := Expr;
         if Eh('..') then
         begin
+          C := Atual.Coluna;
           Pegar('..');
-          K := R.Novo(nFaixa, L);
+          K := R.Novo(nFaixa, L, C);
           R.FNos[K].A := E;
           Tmp := Expr;
           R.FNos[K].B := Tmp;
@@ -1398,7 +1402,7 @@ begin
   begin
     Pegar('.');
     Nome := PegarId;
-    N := R.Novo(nCampo, L);
+    N := R.Novo(nCampo, L, C);
     if SameText(T.S, 'O') then R.FNos[N].Base := 1 else R.FNos[N].Base := 0;
     R.FNos[N].Ind := -1;
     for I := 0 to High(Campos) do
@@ -1410,7 +1414,7 @@ begin
   { funcao }
   if Eh('(') then
   begin
-    N := R.Novo(nFunc, L);
+    N := R.Novo(nFunc, L, C);
     R.FNos[N].Op := 0;
     for I := 1 to High(NomesFuncoes) do
       if SameText(NomesFuncoes[I], Nome) then R.FNos[N].Op := I;
@@ -1432,7 +1436,7 @@ begin
   { True/False }
   if SameText(Nome, 'True') or SameText(Nome, 'False') then
   begin
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VBool(SameText(Nome, 'True'));
     Result := N;
     Exit;
@@ -1441,7 +1445,7 @@ begin
   I := BuscaLocal(Nome);
   if I >= 0 then
   begin
-    N := R.Novo(nLocal, L);
+    N := R.Novo(nLocal, L, C);
     R.FNos[N].Ind := I;
     Result := N;
     Exit;
@@ -1450,7 +1454,7 @@ begin
   for I := 0 to High(Globais) do
     if SameText(Globais[I].Nome, Nome) then
     begin
-      N := R.Novo(nGlobal, L);
+      N := R.Novo(nGlobal, L, C);
       R.FNos[N].Ind := I;
       Result := N;
       Exit;
@@ -1461,7 +1465,7 @@ begin
   for I := 0 to QtdConstantes - 1 do
     if SameText(Constantes[I].N, Nome) then
     begin
-      N := R.Novo(nConst, L);
+      N := R.Novo(nConst, L, C);
       R.FNos[N].V := VInt(Constantes[I].V, False);
       Achou := True;
       Break;
