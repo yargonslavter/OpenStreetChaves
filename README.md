@@ -91,11 +91,11 @@ A captura é desativada por padrão. O schema v2 registra:
 O índice de palavras agora cobre os pontos de chamada do jogo instrumentados, incluindo os usos diretos em
 `Comum_Sprites.inc`, `Estado1_Abertura.inc`, `Estado4_Selecao.inc`, `Estado5_Adversarios.inc`,
 `Estado6_PreparaLuta.inc`, `Estado7_Golpes.inc`, `Estado7_Luta.inc` e `Estado10_Final.inc`.
-Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. Os pontos diretos em `.inc` registram
-arquivo, linha e coluna; expressões `.rot` ainda não carregam coluna da AST, então múltiplos eventos na mesma linha
-podem continuar ambíguos. O trace de ticks contém snapshots selecionados, não uma cópia integral do estado do jogo.
-A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte idêntico e `logica.txt`
-correspondente.
+Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. Os pontos diretos em `.inc` e
+as expressões RNG em `.rot` registram arquivo, linha e coluna de origem. Os 422 draws Pascal antigos sem origem
+explícita continuam sem localização de chamada. O trace de ticks contém snapshots selecionados, não uma cópia
+integral do estado do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte
+idêntico e `logica.txt` correspondente.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
