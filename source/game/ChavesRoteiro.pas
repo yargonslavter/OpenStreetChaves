@@ -125,6 +125,9 @@ function Sortear(N: LongInt): LongInt;
   @param(N limite)
   @returns(o numero sorteado (ou o gravado, em msRepetir)) }
 function Sortear64(N: Int64): Int64;
+{ Direct game-source Random calls routed into the same global trace. }
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte: Integer): LongInt; overload;
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte: Integer): Int64; overload;
 { Nome do campo de TLutador que ocupa um byte do registro (para o relatorio da conferencia).
   @param(Desl posicao do byte dentro de TLutador)
   @returns(o nome do campo que comeca nesse byte ou antes dele; '(byte N)' se nenhum) }
@@ -736,6 +739,16 @@ end;
 function Sortear64(N: Int64): Int64;
 begin
   Result := SortearValor(N, True, '', 0);
+end;
+
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte: Integer): LongInt;
+begin
+  Result := SortearValor(N, False, Origem, LinhaFonte);
+end;
+
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte: Integer): Int64;
+begin
+  Result := SortearValor(N, True, Origem, LinhaFonte);
 end;
 
 procedure ModoDeSorteio(Modo: TModoSorteio);
