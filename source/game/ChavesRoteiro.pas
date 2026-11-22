@@ -655,7 +655,7 @@ begin
   Linha := '{"record_type":"session","schema_version":2,"session_id":' +
     TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","rand_seed_initial":' +
     IntToStr(RandSeed) +
-    ',"raw_word_index_scope":"SortearValor-only; direct System.Random calls outside this wrapper are excluded"' +
+    ',"raw_word_index_scope":"all instrumented game-source System.Random calls routed through SortearValor; external RTL/library calls are not intercepted"' +
     ',"context_status":"logical_tick_and_nested_script_context_attached"' +
     ',"guard_loop_context":"concrete branch decisions and loop iteration values are emitted as control records"' +
     ',"pascal_source_revision":"e1b025c35ecbc2b14d8635564aafd23c2107d3d1"}';
