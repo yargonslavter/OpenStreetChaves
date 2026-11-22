@@ -95,10 +95,10 @@ Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. Os 
 as expressões RNG em `.rot` registram arquivo, linha e coluna de origem. Os 422 draws Pascal antigos sem origem
 explícita continuam sem localização de chamada. Expressões lógicas `and/or/xor` emitem registros estruturados por
 operando, com valor, coluna e indicação explícita de short-circuit. No cenário de 3.000 ticks foram observados
-675.222 registros de subexpressões booleanas, incluindo 309.092 skips do lado direito. O trace de ticks contém
-O cenário validado cobre 2 índices de lutador, 24 ações, 20.437 execuções de script
-(5.229 aninhadas), 67 loops com 201 iterações, além de 4.726 draws LongInt e 7.043 Int64;
-o índice simbólico contém timelines dos 15 lutadores. O snapshots selecionados, não uma cópia integral do estado do jogo.
+675.222 registros de subexpressões booleanas, incluindo 309.092 skips do lado direito. O cenário validado cobre
+2 índices de lutador, 24 ações, 20.437 execuções de script (5.229 aninhadas), 67 loops com 201 iterações, além de
+4.726 draws LongInt e 7.043 Int64; o índice simbólico contém timelines dos 15 lutadores. O trace de ticks contém
+snapshots selecionados, não uma cópia integral do estado do jogo.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
