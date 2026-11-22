@@ -84,13 +84,17 @@ A captura é desativada por padrão. O schema v2 registra:
 - início/fim de cada execução de `.rot`, com origem/seção, lutador, comando e relação pai/filho para chamadas aninhadas;
 - decisões concretas de `if` e `case`, além dos valores/índices das iterações de `for`, `while` e `repeat`;
 - cada chamada a `SortearValor`, com largura LongInt/Int64, intervalo, resultado, modo gravar/repetir,
-  snapshots de `RandSeed`, tick, execução de script, linha de origem e índice local àquela execução.
+  snapshots de `RandSeed`, tick, execução de script e linha de origem;
+- chamadas diretas de `Random` nos fontes do jogo, agora roteadas por `SortearDireto` para compartilhar o mesmo
+  índice de chamadas e de palavras MT, com arquivo e linha de origem.
 
-Os índices de palavras MT continuam locais a `SortearValor`: chamadas diretas a `System.Random` fora do wrapper
-não estão incluídas. O Pascal registra a linha, mas ainda não a coluna de origem; múltiplos eventos na mesma linha
-podem exigir reconciliação ambígua. O trace de ticks contém snapshots selecionados, não uma cópia integral do estado
-do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte idêntico e
-`logica.txt` correspondente.
+O índice de palavras agora cobre os pontos de chamada do jogo instrumentados, incluindo os usos diretos em
+`Comum_Sprites.inc`, `Estado1_Abertura.inc`, `Estado4_Selecao.inc`, `Estado5_Adversarios.inc`,
+`Estado6_PreparaLuta.inc`, `Estado7_Golpes.inc`, `Estado7_Luta.inc` e `Estado10_Final.inc`.
+Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. O Pascal registra a linha, mas ainda
+não a coluna de origem; múltiplos eventos na mesma linha podem exigir reconciliação ambígua. O trace de ticks contém
+snapshots selecionados, não uma cópia integral do estado do jogo. A captura permanece experimental até duas
+execuções fixas produzirem JSONL byte a byte idêntico e `logica.txt` correspondente.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
