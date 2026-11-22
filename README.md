@@ -68,10 +68,18 @@ Para exportar os sorteios que passam pelo wrapper `SortearValor`, acrescente
 StreetChaves.exe --gravar saida 3000 50 --rng-jsonl saida/rng.jsonl
 ```
 
-A captura é desativada por padrão. O JSONL identifica cada chamada, a sobrecarga LongInt/Int64, o intervalo, o resultado,
-o modo gravar/repetir e os snapshots de `RandSeed`. Os índices de palavras MT são locais a `SortearValor`: chamadas
-diretas a `System.Random` fora do wrapper não estão incluídas. Valores devolvidos pelo replay são marcados como replay
-e não contam consumo de palavras. O contexto concreto de ação/tick ainda será conectado em uma etapa posterior.
+A captura é desativada por padrão. O schema v2 registra:
+- início/fim de cada passo lógico em `TJogo.PassoSDL`, com estado do jogo e snapshots de ação/quadro dos dois lutadores;
+- início/fim de cada execução de `.rot`, com origem/seção, lutador, comando e relação pai/filho para chamadas aninhadas;
+- decisões concretas de `if` e `case`, além dos valores/índices das iterações de `for`, `while` e `repeat`;
+- cada chamada a `SortearValor`, com largura LongInt/Int64, intervalo, resultado, modo gravar/repetir,
+  snapshots de `RandSeed`, tick, execução de script, linha de origem e índice local àquela execução.
+
+Os índices de palavras MT continuam locais a `SortearValor`: chamadas diretas a `System.Random` fora do wrapper
+não estão incluídas. O Pascal registra a linha, mas ainda não a coluna de origem; múltiplos eventos na mesma linha
+podem exigir reconciliação ambígua. O trace de ticks contém snapshots selecionados, não uma cópia integral do estado
+do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte idêntico e
+`logica.txt` correspondente.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
