@@ -481,6 +481,43 @@ begin
   Inc(TraceControlEventIndex);
 end;
 
+function BooleanJson(Value: Boolean): string;
+begin
+  if Value then Result := 'true' else Result := 'false';
+end;
+
+{ Emite o resultado de cada operando booleano, inclusive quando o lado direito
+  foi ignorado pelo short-circuit de and/or. }
+procedure RegistrarSubexpressaoBooleanaTrace(LinhaFonte, ColunaFonte: Integer;
+  NoExpressao, NoOperando, LinhaOperando, ColunaOperando: Integer;
+  const Operador, Lado: string; Avaliada, TemValor, Valor, CurtoCircuito,
+  TemResultado, Resultado: Boolean; const Motivo: string);
+var
+  ColunaJson, LinhaOperandoJson, ColunaOperandoJson: string;
+  ValorJson, ResultadoJson, MotivoJson, Detalhes: string;
+begin
+  if TraceSorteios = nil then Exit;
+  if ColunaFonte > 0 then ColunaJson := IntToStr(ColunaFonte) else ColunaJson := 'null';
+  if LinhaOperando > 0 then LinhaOperandoJson := IntToStr(LinhaOperando) else LinhaOperandoJson := 'null';
+  if ColunaOperando > 0 then ColunaOperandoJson := IntToStr(ColunaOperando) else ColunaOperandoJson := 'null';
+  if TemValor then ValorJson := BooleanJson(Valor) else ValorJson := 'null';
+  if TemResultado then ResultadoJson := BooleanJson(Resultado) else ResultadoJson := 'null';
+  if Motivo <> '' then MotivoJson := TextoJson(Motivo) else MotivoJson := 'null';
+  Detalhes := '"source_column":' + ColunaJson +
+    ',"expression_node":' + IntToStr(NoExpressao) +
+    ',"operand_node":' + IntToStr(NoOperando) +
+    ',"operand_source_line":' + LinhaOperandoJson +
+    ',"operand_source_column":' + ColunaOperandoJson +
+    ',"operator":' + TextoJson(Operador) +
+    ',"operand":' + TextoJson(Lado) +
+    ',"evaluated":' + BooleanJson(Avaliada) +
+    ',"boolean_value":' + ValorJson +
+    ',"short_circuit":' + BooleanJson(CurtoCircuito) +
+    ',"expression_result":' + ResultadoJson +
+    ',"short_circuit_reason":' + MotivoJson;
+  RegistrarControleTrace('boolean_subexpression', LinhaFonte, Detalhes);
+end;
+
 { Registra um draw já concluído sem alterar o fluxo do RNG. O índice de palavras
   é global entre os pontos de chamada do jogo roteados por SortearValor; RTL e bibliotecas
   externas ainda não são interceptadas. }
