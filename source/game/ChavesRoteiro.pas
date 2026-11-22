@@ -483,7 +483,7 @@ procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
   RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte: Integer);
 var
-  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ScriptDrawJson: string;
+  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ScriptDrawJson, TipoOrigem: string;
   Linha: string;
 begin
   if TraceSorteios = nil then Exit;
@@ -498,7 +498,21 @@ begin
     PalavrasJson := '0';
   end;
   if Largo then Largura := 'Int64' else Largura := 'LongInt';
-  if Origem = '' then OrigemJson := 'null' else OrigemJson := TextoJson(Origem);
+  if Origem <> '' then
+  begin
+    OrigemJson := TextoJson(Origem);
+    TipoOrigem := 'rot_expression';
+  end
+  else if Length(TraceScriptStack) > 0 then
+  begin
+    OrigemJson := TextoJson(TraceScriptStack[High(TraceScriptStack)].Origem);
+    TipoOrigem := 'pascal_helper';
+  end
+  else
+  begin
+    OrigemJson := 'null';
+    TipoOrigem := 'pascal_direct';
+  end;
   if LinhaFonte > 0 then LinhaJson := IntToStr(LinhaFonte) else LinhaJson := 'null';
   if Length(TraceScriptStack) > 0 then
   begin
@@ -515,6 +529,7 @@ begin
     ',"recorder_mode":' + TextoJson(Modo) + ',"draw_source":' + TextoJson(Fonte) +
     ',"rand_seed_before":' + IntToStr(RandSeedAntes) +
     ',"rand_seed_after":' + IntToStr(RandSeedDepois) +
+    ',"source_kind":' + TextoJson(TipoOrigem) +
     ',"source_origin":' + OrigemJson + ',"source_line":' + LinhaJson +
     ',"script_draw_index":' + ScriptDrawJson + ContextoTraceJson + '}';
   EscreverTraceLinha(Linha);
