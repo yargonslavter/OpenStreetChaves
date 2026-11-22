@@ -47,9 +47,9 @@ begin
 
   // tremida ao apanhar
   Jitter := 0;
-  if (P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) then Jitter := Random(10) - 5;
-  if (P.Acao = acDerrubado) and (PausaImpacto > 0) then Jitter := Random(14) - 7;
-  if ((P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) or (P.Acao = acDerrubado)) and (PausaImpacto > 15) then Jitter := Random(20) - 10;
+  if (P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) then Jitter := SortearDireto(10, 'Comum_Sprites.inc', 50) - 5;
+  if (P.Acao = acDerrubado) and (PausaImpacto > 0) then Jitter := SortearDireto(14, 'Comum_Sprites.inc', 51) - 7;
+  if ((P.Acao = acApanhaAlto) or (P.Acao = acApanhaBaixo) or (P.Acao = acDerrubado)) and (PausaImpacto > 15) then Jitter := SortearDireto(20, 'Comum_Sprites.inc', 52) - 10;
 
   // giro (derrubado): so gira se nao estiver em pausa
   if (PausaImpacto = 0) and (FlashTela = 0) then P.Angulo := P.Angulo + P.VelAngular;
@@ -123,8 +123,8 @@ begin
     end;
     X := D.X;
     Y := D.Y;
-    if D.TremorX > 0 then X := Random(D.TremorX) + X;
-    if D.TremorY > 0 then Y := Y - D.PassoY * Random(D.TremorY);
+    if D.TremorX > 0 then X := SortearDireto(D.TremorX, 'Comum_Sprites.inc', 126) + X;
+    if D.TremorY > 0 then Y := Y - D.PassoY * SortearDireto(D.TremorY, 'Comum_Sprites.inc', 127);
     A_Desenha(D.Lista, D.Indice, X - CameraX, Y - CameraY);
   end;
 end;
@@ -143,7 +143,7 @@ begin
   { cenario 8: torcida que acompanha os lutadores }
   if Nome = 'Torcida' then
     for J := 1 to 5 do
-      A_Desenha(ImgAnimacao, 18, Random(2) + 15 * J + (Round((Lutador[1].X + Lutador[2].X) / 2) - 60) - CameraX, 269 - 4 * Random(3) - CameraY);
+      A_Desenha(ImgAnimacao, 18, SortearDireto(2, 'Comum_Sprites.inc', 146) + 15 * J + (Round((Lutador[1].X + Lutador[2].X) / 2) - 60) - CameraX, 269 - 4 * SortearDireto(3, 'Comum_Sprites.inc', 146) - CameraY);
   { cenario 12: peso do teste de forca subindo e descendo }
   if Nome = 'TesteDeForca' then
     A_Desenha(ImgIcone, ImgIcone.IndiceDe('TesteDeForca'), 225 - CameraX, 134 - CameraY - Round(-Cos((ContPisca - 11) / 5) * 70));
@@ -234,7 +234,7 @@ begin
       if E.Lado = ldDireita then E.X := E.Vel + E.X;
       if E.Lado = ldEsquerda then E.X := E.X - E.Vel;
       if E.Tipo = 19 then E.Y := E.Vel + E.Y;
-      if E.Tipo = 20 then E.Y := Random(13) + (E.Y - 7);
+      if E.Tipo = 20 then E.Y := SortearDireto(13, 'Comum_Sprites.inc', 237) + (E.Y - 7);
     end;
 
     if MostrarCaixas then
@@ -339,8 +339,8 @@ begin
           if P.X >= O.X then P.Lado := ldEsquerda;
           SomPendente := sndAcertoEspecial;
           CriaEfeito(1, '', 0, E.X, E.Y);
-          if Flash and (Random(3) = 0) then FlashVermelho := 4;
-          if (Sangue and (Random(3) = 0)) or CheatSatanas then
+          if Flash and (SortearDireto(3, 'Comum_Sprites.inc', 342) = 0) then FlashVermelho := 4;
+          if (Sangue and (SortearDireto(3, 'Comum_Sprites.inc', 343) = 0)) or CheatSatanas then
             CriaEfeito(10, '', 0, P.X, P.Y - (P.AlturaSprite - 40));
           if O.Ativo and (P.Vida > 0) then O.Pontos := O.Pontos + 10;
           if O.TempoAcertos <= 35 then O.Acertos := 0;
