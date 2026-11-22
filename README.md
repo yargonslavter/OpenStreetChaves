@@ -61,6 +61,18 @@ roteirizadas, e grava um quadro BMP a cada `intervalo` passos (padrão: 3000 pas
 da lógica (lutadores e efeitos) em `logica.txt`. Serve para conferir que uma mudança no desenho não alterou a lógica:
 duas versões com a mesma lógica gravam o mesmo `logica.txt` (e, se o desenho também for igual, os mesmos quadros).
 
+Para exportar os sorteios que passam pelo wrapper `SortearValor`, acrescente
+`--rng-jsonl <arquivo>` ao comando `--gravar`:
+
+```sh
+StreetChaves.exe --gravar saida 3000 50 --rng-jsonl saida/rng.jsonl
+```
+
+A captura é desativada por padrão. O JSONL identifica cada chamada, a sobrecarga LongInt/Int64, o intervalo, o resultado,
+o modo gravar/repetir e os snapshots de `RandSeed`. Os índices de palavras MT são locais a `SortearValor`: chamadas
+diretas a `System.Random` fora do wrapper não estão incluídas. Valores devolvidos pelo replay são marcados como replay
+e não contam consumo de palavras. O contexto concreto de ação/tick ainda será conectado em uma etapa posterior.
+
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
 # Gráficos em alta resolução (pasta `HD/`)
