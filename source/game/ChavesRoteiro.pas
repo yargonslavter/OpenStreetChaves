@@ -504,7 +504,8 @@ var
   ModoTrace: string;
   Palavras: Integer;
 begin
-  SeedAntes := RandSeed;
+  SeedAntes := 0;
+  if TraceSorteios <> nil then SeedAntes := RandSeed;
   Palavras := 0;
   if ModoSort = msRepetir then
   begin
@@ -513,8 +514,9 @@ begin
     begin
       Result := Gravados[PosGravado].R;
       Inc(PosGravado);
-      RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
-        False, 0, SeedAntes, RandSeed);
+      if TraceSorteios <> nil then
+        RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
+          False, 0, SeedAntes, RandSeed);
       Exit;
     end;
     SorteioDivergiu := True;
@@ -546,8 +548,9 @@ begin
     Inc(QtdGravados);
   end;
 
-  RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
-    True, Palavras, SeedAntes, RandSeed);
+  if TraceSorteios <> nil then
+    RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
+      True, Palavras, SeedAntes, RandSeed);
 end;
 
 function Sortear(N: LongInt): LongInt;
