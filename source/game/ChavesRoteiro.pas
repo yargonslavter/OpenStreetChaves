@@ -145,6 +145,13 @@ function ResumoLutador(const L: TLutador): string;
 procedure ModoDeSorteio(Modo: TModoSorteio);
 { @returns(em msRepetir: quantos sorteios gravados ainda nao foram usados) }
 function SorteiosRestantes: Integer;
+{ Inicia a exportacao opt-in dos sorteios roteados por SortearValor.
+  A sessao e fornecida pelo chamador para manter o arquivo reprodutivel. }
+procedure IniciarTraceSorteios(const Arquivo, Sessao: string);
+{ Fecha o arquivo JSONL sem alterar o estado do RNG ou do gravador/reprodutor. }
+procedure FinalizarTraceSorteios;
+{ Retorna eventual erro de escrita; a falha de log nao interrompe a simulacao. }
+function ErroTraceSorteios: string;
 
 var
   SorteioDivergiu: Boolean;
@@ -361,13 +368,143 @@ var
   ModoSort: TModoSorteio = msNormal;
   Gravados: array of TSorteioGravado;
   QtdGravados, PosGravado: Integer;
+  TraceSorteios: TFileStream = nil;
+  TraceSessao: string = '';
+  TraceApiCallIndex: Int64 = 0;
+  TraceMtWordIndex: Int64 = 0;
+  TraceErro: string = '';
+
+{ Escapa uma string para uso em um valor JSON. }
+function TextoJson(const S: string): string;
+var
+  I: Integer;
+begin
+  Result := '"';
+  for I := 1 to Length(S) do
+    case S[I] of
+      '"': Result := Result + '\"';
+      '\': Result := Result + '\\';
+      #8: Result := Result + '\b';
+      #9: Result := Result + '\t';
+      #10: Result := Result + '\n';
+      #12: Result := Result + '\f';
+      #13: Result := Result + '\r';
+    else
+      if Ord(S[I]) < 32 then
+        Result := Result + '\u00' + IntToHex(Ord(S[I]), 2)
+      else
+        Result := Result + S[I];
+    end;
+  Result := Result + '"';
+end;
+
+{ Escreve uma linha UTF-8. Erros sao guardados e desativam o trace, mas nunca
+  alteram o fluxo do RNG nem interrompem a execucao do jogo. }
+procedure EscreverTraceLinha(const Linha: string);
+var
+  Bytes: UTF8String;
+begin
+  if TraceSorteios = nil then Exit;
+  Bytes := UTF8Encode(Linha + LineEnding);
+  try
+    if Length(Bytes) > 0 then
+      TraceSorteios.WriteBuffer(Bytes[1], Length(Bytes));
+  except
+    on E: Exception do
+    begin
+      TraceErro := E.ClassName + ': ' + E.Message;
+      FreeAndNil(TraceSorteios);
+    end;
+  end;
+end;
+
+{ Registra um draw depois de o valor ter sido obtido.
+  O indice de palavra e local a SortearValor: chamadas diretas a System.Random
+  fora deste wrapper nao estao incluidas nesta primeira instrumentacao. }
+procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
+  const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
+  RandSeedAntes, RandSeedDepois: Int64);
+var
+  PrimeiraPalavra, PalavrasJson, Largura: string;
+  Linha: string;
+begin
+  if TraceSorteios = nil then Exit;
+  if ConsumiuRng then
+  begin
+    PrimeiraPalavra := IntToStr(TraceMtWordIndex);
+    PalavrasJson := IntToStr(Palavras);
+  end
+  else
+  begin
+    PrimeiraPalavra := 'null';
+    PalavrasJson := '0';
+  end;
+  if Largo then Largura := 'Int64' else Largura := 'LongInt';
+
+  Linha := '{"record_type":"draw","schema_version":1,"session_id":' +
+    TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","api_call_index":' +
+    IntToStr(TraceApiCallIndex) + ',"first_mt_word_index":' + PrimeiraPalavra +
+    ',"raw_mt_words":' + PalavrasJson + ',"width":' + TextoJson(Largura) +
+    ',"range":' + IntToStr(N) + ',"result":' + IntToStr(R) +
+    ',"recorder_mode":' + TextoJson(Modo) + ',"draw_source":' + TextoJson(Fonte) +
+    ',"rand_seed_before":' + IntToStr(RandSeedAntes) +
+    ',"rand_seed_after":' + IntToStr(RandSeedDepois) + '}';
+  EscreverTraceLinha(Linha);
+  Inc(TraceApiCallIndex);
+  if ConsumiuRng then Inc(TraceMtWordIndex, Palavras);
+end;
+
+procedure IniciarTraceSorteios(const Arquivo, Sessao: string);
+var
+  Pasta, Linha: string;
+begin
+  FinalizarTraceSorteios;
+  TraceErro := '';
+  if Arquivo = '' then
+    raise Exception.Create('o caminho do trace JSONL esta vazio');
+  if Sessao = '' then
+    raise Exception.Create('o identificador da sessao do trace esta vazio');
+  Pasta := ExtractFileDir(Arquivo);
+  if (Pasta <> '') and not ForceDirectories(Pasta) then
+    raise Exception.Create('nao foi possivel criar a pasta do trace: ' + Pasta);
+
+  TraceSessao := Sessao;
+  TraceApiCallIndex := 0;
+  TraceMtWordIndex := 0;
+  TraceSorteios := TFileStream.Create(Arquivo, fmCreate or fmShareDenyWrite);
+
+  Linha := '{"record_type":"session","schema_version":1,"session_id":' +
+    TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","rand_seed_initial":' +
+    IntToStr(RandSeed) +
+    ',"raw_word_index_scope":"SortearValor-only; direct System.Random calls outside this wrapper are excluded"' +
+    ',"context_status":"action/tick context not attached yet"}';
+  EscreverTraceLinha(Linha);
+  if TraceSorteios = nil then
+    raise Exception.Create('nao foi possivel iniciar o trace JSONL: ' + TraceErro);
+end;
+
+procedure FinalizarTraceSorteios;
+begin
+  FreeAndNil(TraceSorteios);
+end;
+
+function ErroTraceSorteios: string;
+begin
+  Result := TraceErro;
+end;
 
 { Todo sorteio passa por aqui: grava, repete ou sorteia normalmente conforme o modo.
   @param(N limite)
   @param(Largo True = Random de 64 bits; False = de 32 bits)
   @returns(o numero sorteado ou o gravado) }
 function SortearValor(N: Int64; Largo: Boolean): Int64;
+var
+  SeedAntes: Int64;
+  ModoTrace: string;
+  Palavras: Integer;
 begin
+  SeedAntes := RandSeed;
+  Palavras := 0;
   if ModoSort = msRepetir then
   begin
     if (PosGravado < QtdGravados) and (Gravados[PosGravado].N = N) and
@@ -375,15 +512,30 @@ begin
     begin
       Result := Gravados[PosGravado].R;
       Inc(PosGravado);
+      RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
+        False, 0, SeedAntes, RandSeed);
       Exit;
     end;
     SorteioDivergiu := True;
     ModoSort := msNormal;
-  end;
-  if Largo then
-    Result := System.Random(N)
+    ModoTrace := 'replay_mismatch_fallback';
+  end
+  else if ModoSort = msGravar then
+    ModoTrace := 'record'
   else
+    ModoTrace := 'normal';
+
+  if Largo then
+  begin
+    Result := System.Random(N);
+    Palavras := 2;
+  end
+  else
+  begin
     Result := System.Random(LongInt(N));
+    Palavras := 1;
+  end;
+
   if ModoSort = msGravar then
   begin
     if QtdGravados >= Length(Gravados) then SetLength(Gravados, QtdGravados * 2 + 16);
@@ -392,6 +544,9 @@ begin
     Gravados[QtdGravados].R := Result;
     Inc(QtdGravados);
   end;
+
+  RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
+    True, Palavras, SeedAntes, RandSeed);
 end;
 
 function Sortear(N: LongInt): LongInt;
