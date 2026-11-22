@@ -2005,7 +2005,7 @@ begin
   Result := VInt(0, False);
   case F of
     fRandom: Result := VInt(SortearValor(ComoInt(X, No, Args[0]), Args[0].Largo,
-      X.R.Origem, X.R.FNos[No].Linha), Args[0].Largo);
+      X.R.Origem, X.R.FNos[No].Linha, X.R.FNos[No].Coluna), Args[0].Largo);
     fRound: Result := VInt(Round(ComoReal(X, No, Args[0])), True);
     fTrunc: Result := VInt(Trunc(ComoReal(X, No, Args[0])), True);
     fAbs:
