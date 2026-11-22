@@ -19,7 +19,7 @@ begin
   begin
     Tent := 0;
     repeat
-      R := SortearDireto(FQtdLutadores, 'Estado4_Selecao.inc', 22) + 1;
+      R := SortearDireto(FQtdLutadores, 'Estado4_Selecao.inc', 22, 12) + 1;
       Inc(Tent);
     until ((Disp[R] <> 0) and (R <> Pers)) or (Tent > 2000);
     Lutador[Jog].Adversarios[K] := R;
