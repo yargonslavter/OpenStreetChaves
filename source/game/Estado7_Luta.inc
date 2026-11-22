@@ -126,8 +126,8 @@ begin
   if TremorTela > 0 then
   begin
     Dec(TremorTela);
-    CameraX := Random(20) + (CameraX - 10);
-    CameraY := Random(20) + (CameraY - 10);
+    CameraX := SortearDireto(20, 'Estado7_Luta.inc', 129) + (CameraX - 10);
+    CameraY := SortearDireto(20, 'Estado7_Luta.inc', 130) + (CameraY - 10);
   end;
   if CameraX < 0 then CameraX := 0;
   if CameraX > FCameraXMax then CameraX := FCameraXMax;
@@ -355,12 +355,12 @@ var
 begin
   Sup := Tela;
   if ((FVoadorModo = 1) or ((FVoadorModo = 2) and not RelogioParado)) and not Voador.Ativo and
-     (CameraX > 40) and (CameraX < 160) and (Random(Voador.Alcance) = 0) then
+     (CameraX > 40) and (CameraX < 160) and (SortearDireto(Voador.Alcance, 'Estado7_Luta.inc', 358) = 0) then
   begin
     Voador.X := CameraX - 80;
     Voador.Y := FVoadorY;
     Voador.Vel := 7;
-    Voador.Tipo := Random(2) + 1;
+    Voador.Tipo := SortearDireto(2, 'Estado7_Luta.inc', 363) + 1;
     Voador.Ativo := True;
   end;
   if Voador.Ativo then
@@ -370,7 +370,7 @@ begin
     if (FlashTela = 0) and (PausaImpacto = 0) then Voador.X := Voador.X + Voador.Vel;
     if Voador.X > CameraX + 420 then Voador.Ativo := False;
     if (Voador.Tipo <> 0) and (Voador.X > CameraX + 150) and (Voador.X < CameraX + 250) and
-       (Random(5) = 0) and (FlashTela = 0) and (PausaImpacto = 0) and not RelogioParado then
+       (SortearDireto(5, 'Estado7_Luta.inc', 373) = 0) and (FlashTela = 0) and (PausaImpacto = 0) and not RelogioParado then
     begin
       if Voador.Tipo = 1 then CriaEfeito(3, '', 0, Voador.X + 13, Voador.Y - 5);
       if Voador.Tipo = 2 then CriaEfeito(4, '', 0, Voador.X + 13, Voador.Y - 5);
@@ -404,8 +404,8 @@ begin
       SomPendente := sndAcertoEspecial;
       for K := 1 to 30 do
       begin
-        RX := Random(40);
-        RY := Random(20);
+        RX := SortearDireto(40, 'Estado7_Luta.inc', 407);
+        RY := SortearDireto(20, 'Estado7_Luta.inc', 408);
         CriaEfeito(21, '', 0, RX + (ItemBonus.X + 20), RY + (ItemBonus.Y + 20));
       end;
     end;
@@ -428,7 +428,7 @@ begin
     if Ob.Frente <> Frente then Continue;
     if Ob.Resistencia > 0 then Idx := Ob.Inteiro else Idx := Ob.Quebrado;
     DX := 0;
-    if Ob.Tremor > 0 then DX := Random(5) - 2;
+    if Ob.Tremor > 0 then DX := SortearDireto(5, 'Estado7_Luta.inc', 431) - 2;
     if (Idx >= 0) and (Idx < ImgAnimacao.Count) and (FlashTela = 0) then
       ImgAnimacao[Idx].Draw(Tela, Ob.X + DX - CameraX, Ob.Y - CameraY, 0);
   end;
@@ -485,12 +485,12 @@ begin
   begin
     { aguentou: so lasca }
     SomPendente := sndAcertoFraco;
-    for K := 1 to 3 do CriaEfeito(Ob.Pedacos, '', 0, CX + Random(20) - 10, CY + Random(20) - 10);
+    for K := 1 to 3 do CriaEfeito(Ob.Pedacos, '', 0, CX + SortearDireto(20, 'Estado7_Luta.inc', 488) - 10, CY + SortearDireto(20, 'Estado7_Luta.inc', 488) - 10);
     Exit;
   end;
   SomPendente := Ob.Som;
   for K := 1 to Ob.QtdPedacos do
-    CriaEfeito(Ob.Pedacos, '', 0, Ob.X + Ob.X1 + Random(Max(1, Ob.X2 - Ob.X1)), Ob.Y + Ob.Y1 + Random(Max(1, Ob.Y2 - Ob.Y1)));
+    CriaEfeito(Ob.Pedacos, '', 0, Ob.X + Ob.X1 + SortearDireto(Max(1, Ob.X2 - Ob.X1), 'Estado7_Luta.inc', 493), Ob.Y + Ob.Y1 + SortearDireto(Max(1, Ob.Y2 - Ob.Y1), 'Estado7_Luta.inc', 493));
   if (Jog >= 1) and (Jog <= 2) and Lutador[Jog].Ativo then
     Lutador[Jog].Pontos := Lutador[Jog].Pontos + Ob.Pontos;
 end;
@@ -519,7 +519,7 @@ begin
     if P.Acertos > 1 then
     begin
       if P.TempoAcertos > 15 then
-        texto(Random(10) + 195 + Mult * 170, 110, IntToStr(P.Acertos), ACentro, 25, Branco)
+        texto(SortearDireto(10, 'Estado7_Luta.inc', 522) + 195 + Mult * 170, 110, IntToStr(P.Acertos), ACentro, 25, Branco)
       else
         texto(Mult * 170 + 200, 110, IntToStr(P.Acertos), ACentro, 25, Branco);
       texto(Mult * 150 + 200, 145, Linha(TxtGeral, 3), ACentro, 12, VerdeBonus);
@@ -739,9 +739,9 @@ begin
         Inc(P.RoundsVencidos);
         Inc(FaseFim);
       end;
-      EfeitoCortina := Round(Random(40) / 10) + 1;
+      EfeitoCortina := Round(SortearDireto(40, 'Estado7_Luta.inc', 742) / 10) + 1;
       if EfeitoCortina > 4 then EfeitoCortina := 4;
-      P.FraseVitoria := Round(Random(30) / 10) + 1;
+      P.FraseVitoria := Round(SortearDireto(30, 'Estado7_Luta.inc', 744) / 10) + 1;
       if P.FraseVitoria > 3 then P.FraseVitoria := 3;
     end;
 
@@ -764,7 +764,7 @@ begin
         if (FaseFim < 90) or (FaseFim > 100) then FaseFim := FaseFim + 2;
       if (FaseFim = 95) and (PausaImpacto = 0) and (FlashTela = 0) then
       begin
-        K := Round(Random(200) / 200);
+        K := Round(SortearDireto(200, 'Estado7_Luta.inc', 767) / 200);
         if K < 0 then K := 0;
         if K > 1 then K := 1;
         Idx := (P.Personagem - 1) * 2 + K;
@@ -1127,15 +1127,15 @@ begin
             TremorTela := 20;
             for K := 1 to 20 do
             begin
-              RX := Random(60);
-              RY := Random(10);
+              RX := SortearDireto(60, 'Estado7_Luta.inc', 1130);
+              RY := SortearDireto(10, 'Estado7_Luta.inc', 1131);
               CriaEfeito(2, '', 0, RX + (P.X - 30), RY + P.Y);
             end;
           end;
           for K := 1 to 5 do
           begin
-            RX := Random(40);
-            RY := Random(10);
+            RX := SortearDireto(40, 'Estado7_Luta.inc', 1137);
+            RY := SortearDireto(10, 'Estado7_Luta.inc', 1138);
             CriaEfeito(2, '', 0, RX + (P.X - 20), RY + P.Y);
           end;
         end;
@@ -1145,7 +1145,7 @@ begin
       begin
         if P.Lado = ldDireita then Empurra(J, -P.Recuo);
         if P.Lado = ldEsquerda then Empurra(J, P.Recuo);
-        if (Sangue and (Random(4) = 0)) or CheatSatanas then
+        if (Sangue and (SortearDireto(4, 'Estado7_Luta.inc', 1148) = 0)) or CheatSatanas then
           if P.QuadroAcao = 5 then
           begin
             if P.Lado = ldDireita then CriaEfeito(10, '', 0, P.X - 30, P.Y - 50);
@@ -1179,8 +1179,8 @@ begin
         if P.X >= O.X then P.Lado := ldEsquerda;
         for K := 1 to 5 do
         begin
-          RX := Random(40);
-          RY := Random(10);
+          RX := SortearDireto(40, 'Estado7_Luta.inc', 1182);
+          RY := SortearDireto(10, 'Estado7_Luta.inc', 1183);
           CriaEfeito(2, '', 0, RX + (P.X - 20), RY + P.Y);
         end;
       end;
