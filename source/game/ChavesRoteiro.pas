@@ -54,6 +54,7 @@ type
     Lista: array of Integer;  // argumentos, comandos, elementos ou ramos
     V: TValor;                // valor (nConst)
     Linha: Integer;
+    Coluna: Integer;
   end;
 
   TRoteiro = class
@@ -69,7 +70,7 @@ type
       @param(T tipo do no)
       @param(Linha linha do arquivo, para as mensagens de erro)
       @returns(o indice do no em FNos) }
-    function Novo(T: TTipoNo; Linha: Integer): Integer;
+    function Novo(T: TTipoNo; Linha: Integer; Coluna: Integer = 0): Integer;
     { Erro de escrita no roteiro.
       @param(Linha linha do arquivo)
       @param(Msg descricao do erro)
@@ -125,6 +126,9 @@ function Sortear(N: LongInt): LongInt;
   @param(N limite)
   @returns(o numero sorteado (ou o gravado, em msRepetir)) }
 function Sortear64(N: Int64): Int64;
+{ Direct game-source Random calls routed into the same global trace. }
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte, ColunaFonte: Integer): LongInt; overload;
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer): Int64; overload;
 { Nome do campo de TLutador que ocupa um byte do registro (para o relatorio da conferencia).
   @param(Desl posicao do byte dentro de TLutador)
   @returns(o nome do campo que comeca nesse byte ou antes dele; '(byte N)' se nenhum) }
@@ -477,13 +481,51 @@ begin
   Inc(TraceControlEventIndex);
 end;
 
+function BooleanJson(Value: Boolean): string;
+begin
+  if Value then Result := 'true' else Result := 'false';
+end;
+
+{ Emite o resultado de cada operando booleano, inclusive quando o lado direito
+  foi ignorado pelo short-circuit de and/or. }
+procedure RegistrarSubexpressaoBooleanaTrace(LinhaFonte, ColunaFonte: Integer;
+  NoExpressao, NoOperando, LinhaOperando, ColunaOperando: Integer;
+  const Operador, Lado: string; Avaliada, TemValor, Valor, CurtoCircuito,
+  TemResultado, Resultado: Boolean; const Motivo: string);
+var
+  ColunaJson, LinhaOperandoJson, ColunaOperandoJson: string;
+  ValorJson, ResultadoJson, MotivoJson, Detalhes: string;
+begin
+  if TraceSorteios = nil then Exit;
+  if ColunaFonte > 0 then ColunaJson := IntToStr(ColunaFonte) else ColunaJson := 'null';
+  if LinhaOperando > 0 then LinhaOperandoJson := IntToStr(LinhaOperando) else LinhaOperandoJson := 'null';
+  if ColunaOperando > 0 then ColunaOperandoJson := IntToStr(ColunaOperando) else ColunaOperandoJson := 'null';
+  if TemValor then ValorJson := BooleanJson(Valor) else ValorJson := 'null';
+  if TemResultado then ResultadoJson := BooleanJson(Resultado) else ResultadoJson := 'null';
+  if Motivo <> '' then MotivoJson := TextoJson(Motivo) else MotivoJson := 'null';
+  Detalhes := '"source_column":' + ColunaJson +
+    ',"expression_node":' + IntToStr(NoExpressao) +
+    ',"operand_node":' + IntToStr(NoOperando) +
+    ',"operand_source_line":' + LinhaOperandoJson +
+    ',"operand_source_column":' + ColunaOperandoJson +
+    ',"operator":' + TextoJson(Operador) +
+    ',"operand":' + TextoJson(Lado) +
+    ',"evaluated":' + BooleanJson(Avaliada) +
+    ',"boolean_value":' + ValorJson +
+    ',"short_circuit":' + BooleanJson(CurtoCircuito) +
+    ',"expression_result":' + ResultadoJson +
+    ',"short_circuit_reason":' + MotivoJson;
+  RegistrarControleTrace('boolean_subexpression', LinhaFonte, Detalhes);
+end;
+
 { Registra um draw já concluído sem alterar o fluxo do RNG. O índice de palavras
-  continua explicitamente local a SortearValor, nunca global ao programa. }
+  é global entre os pontos de chamada do jogo roteados por SortearValor; RTL e bibliotecas
+  externas ainda não são interceptadas. }
 procedure RegistrarTraceSorteio(N: Int64; Largo: Boolean; R: Int64;
   const Modo, Fonte: string; ConsumiuRng: Boolean; Palavras: Integer;
-  RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte: Integer);
+  RandSeedAntes, RandSeedDepois: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer);
 var
-  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ScriptDrawJson, TipoOrigem: string;
+  PrimeiraPalavra, PalavrasJson, Largura, OrigemJson, LinhaJson, ColunaJson, ScriptDrawJson, TipoOrigem: string;
   Linha: string;
 begin
   if TraceSorteios = nil then Exit;
@@ -501,7 +543,12 @@ begin
   if Origem <> '' then
   begin
     OrigemJson := TextoJson(Origem);
-    TipoOrigem := 'rot_expression';
+    if Pos('.rot', LowerCase(Origem)) > 0 then
+      TipoOrigem := 'rot_expression'
+    else if Length(TraceScriptStack) > 0 then
+      TipoOrigem := 'pascal_helper'
+    else
+      TipoOrigem := 'pascal_direct';
   end
   else if Length(TraceScriptStack) > 0 then
   begin
@@ -514,6 +561,7 @@ begin
     TipoOrigem := 'pascal_direct';
   end;
   if LinhaFonte > 0 then LinhaJson := IntToStr(LinhaFonte) else LinhaJson := 'null';
+  if ColunaFonte > 0 then ColunaJson := IntToStr(ColunaFonte) else ColunaJson := 'null';
   if Length(TraceScriptStack) > 0 then
   begin
     ScriptDrawJson := IntToStr(TraceScriptStack[High(TraceScriptStack)].DrawCount);
@@ -531,6 +579,7 @@ begin
     ',"rand_seed_after":' + IntToStr(RandSeedDepois) +
     ',"source_kind":' + TextoJson(TipoOrigem) +
     ',"source_origin":' + OrigemJson + ',"source_line":' + LinhaJson +
+    ',"source_column":' + ColunaJson +
     ',"script_draw_index":' + ScriptDrawJson + ContextoTraceJson + '}';
   EscreverTraceLinha(Linha);
   Inc(TraceApiCallIndex);
@@ -647,7 +696,8 @@ begin
   Linha := '{"record_type":"session","schema_version":2,"session_id":' +
     TextoJson(TraceSessao) + ',"rng_scope":"SortearValor","rand_seed_initial":' +
     IntToStr(RandSeed) +
-    ',"raw_word_index_scope":"SortearValor-only; direct System.Random calls outside this wrapper are excluded"' +
+    ',"raw_word_index_scope":"all instrumented game-source and ROT expression System.Random calls routed through SortearValor; external RTL/library calls are not intercepted"' +
+    ',"source_column_scope":"direct_pascal_inc+rot_ast"' +
     ',"context_status":"logical_tick_and_nested_script_context_attached"' +
     ',"guard_loop_context":"concrete branch decisions and loop iteration values are emitted as control records"' +
     ',"pascal_source_revision":"e1b025c35ecbc2b14d8635564aafd23c2107d3d1"}';
@@ -673,7 +723,7 @@ end;
   @param(N limite)
   @param(Largo True = Random de 64 bits; False = de 32 bits)
   @returns(o numero sorteado ou o gravado) }
-function SortearValor(N: Int64; Largo: Boolean; const Origem: string; LinhaFonte: Integer): Int64;
+function SortearValor(N: Int64; Largo: Boolean; const Origem: string; LinhaFonte: Integer; ColunaFonte: Integer = 0): Int64;
 var
   SeedAntes: Int64;
   ModoTrace: string;
@@ -691,7 +741,7 @@ begin
       Inc(PosGravado);
       if TraceSorteios <> nil then
         RegistrarTraceSorteio(N, Largo, Result, 'replay', 'recorder_replay',
-          False, 0, SeedAntes, RandSeed, Origem, LinhaFonte);
+          False, 0, SeedAntes, RandSeed, Origem, LinhaFonte, ColunaFonte);
       Exit;
     end;
     SorteioDivergiu := True;
@@ -725,7 +775,7 @@ begin
 
   if TraceSorteios <> nil then
     RegistrarTraceSorteio(N, Largo, Result, ModoTrace, 'System.Random',
-      True, Palavras, SeedAntes, RandSeed, Origem, LinhaFonte);
+      True, Palavras, SeedAntes, RandSeed, Origem, LinhaFonte, ColunaFonte);
 end;
 
 function Sortear(N: LongInt): LongInt;
@@ -736,6 +786,16 @@ end;
 function Sortear64(N: Int64): Int64;
 begin
   Result := SortearValor(N, True, '', 0);
+end;
+
+function SortearDireto(N: LongInt; const Origem: string; LinhaFonte, ColunaFonte: Integer): LongInt;
+begin
+  Result := SortearValor(N, False, Origem, LinhaFonte, ColunaFonte);
+end;
+
+function SortearDireto(N: Int64; const Origem: string; LinhaFonte, ColunaFonte: Integer): Int64;
+begin
+  Result := SortearValor(N, True, Origem, LinhaFonte, ColunaFonte);
 end;
 
 procedure ModoDeSorteio(Modo: TModoSorteio);
@@ -874,6 +934,7 @@ type
     I: Int64;
     F: Extended;
     Linha: Integer;
+    Coluna: Integer;
   end;
 
   TAnalisador = class
@@ -938,7 +999,7 @@ var
 
 constructor TAnalisador.Create(ARoteiro: TRoteiro; const Texto: string; LinhaInicial: Integer);
 var
-  I, N, Ini, Linha: Integer;
+  I, N, Ini, Linha, InicioLinha: Integer;
   Ch: Char;
   T: TTok;
   S: string;
@@ -956,6 +1017,7 @@ begin
   N := 0;
   I := 1;
   Linha := LinhaInicial;
+  InicioLinha := 1;
   while I <= Length(Texto) do
   begin
     Ch := Texto[I];
@@ -963,6 +1025,7 @@ begin
     begin
       Inc(Linha);
       Inc(I);
+      InicioLinha := I;
       Continue;
     end;
     if Ch <= ' ' then
@@ -980,8 +1043,13 @@ begin
     begin
       while (I <= Length(Texto)) and (Texto[I] <> '}') do
       begin
-        if Texto[I] = #10 then Inc(Linha);
-        Inc(I);
+        if Texto[I] = #10 then
+        begin
+          Inc(Linha);
+          Inc(I);
+          InicioLinha := I;
+        end
+        else Inc(I);
       end;
       Inc(I);
       Continue;
@@ -991,13 +1059,19 @@ begin
       Inc(I, 2);
       while (I < Length(Texto)) and not ((Texto[I] = '*') and (Texto[I + 1] = ')')) do
       begin
-        if Texto[I] = #10 then Inc(Linha);
-        Inc(I);
+        if Texto[I] = #10 then
+        begin
+          Inc(Linha);
+          Inc(I);
+          InicioLinha := I;
+        end
+        else Inc(I);
       end;
       Inc(I, 2);
       Continue;
     end;
     T.Linha := Linha;
+    T.Coluna := I - InicioLinha + 1;
     T.S := '';
     T.Low := '';
     T.I := 0;
@@ -1101,6 +1175,7 @@ begin
   T.S := '';
   T.Low := '';
   T.Linha := Linha;
+  T.Coluna := I - InicioLinha + 1;
   Add;
   SetLength(Toks, N);
   Pos := 0;
@@ -1203,8 +1278,7 @@ end;
 function TAnalisador.Expr: Integer;
 var
   Tmp: Integer;
-  Op, N: Integer;
-  L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Simples;
   while True do
@@ -1218,8 +1292,9 @@ begin
     else if Eh('in') then Op := opIn
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Simples;
@@ -1233,7 +1308,7 @@ end;
 function TAnalisador.Simples: Integer;
 var
   Tmp: Integer;
-  Op, N, L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Termo;
   while True do
@@ -1244,8 +1319,9 @@ begin
     else if Eh('xor') then Op := opXor
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Termo;
@@ -1257,7 +1333,7 @@ end;
 function TAnalisador.Termo: Integer;
 var
   Tmp: Integer;
-  Op, N, L: Integer;
+  Op, N, L, C: Integer;
 begin
   Result := Fator;
   while True do
@@ -1271,8 +1347,9 @@ begin
     else if Eh('shr') then Op := opShr
     else Break;
     L := Atual.Linha;
+    C := Atual.Coluna;
     Inc(Pos);
-    N := R.Novo(nBin, L);
+    N := R.Novo(nBin, L, C);
     R.FNos[N].Op := Op;
     R.FNos[N].A := Result;
     Tmp := Fator;
@@ -1285,12 +1362,13 @@ function TAnalisador.Fator: Integer;
 var
   Tmp: Integer;
   T: TTok;
-  N, I, K, L, E: Integer;
+  N, I, K, L, C, E: Integer;
   Nome: string;
   Achou: Boolean;
 begin
   T := Atual;
   L := T.Linha;
+  C := T.Coluna;
   if Eh('(') then
   begin
     Pegar('(');
@@ -1301,7 +1379,7 @@ begin
   if Eh('-') or Eh('+') or Eh('not') then
   begin
     Inc(Pos);
-    N := R.Novo(nUn, L);
+    N := R.Novo(nUn, L, C);
     if T.Low = '-' then R.FNos[N].Op := opNeg
     else if T.Low = '+' then R.FNos[N].Op := opPos
     else R.FNos[N].Op := opNot;
@@ -1313,7 +1391,7 @@ begin
   if T.K = tkInt then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VInt(T.I, (T.I > High(LongInt)) or (T.I < Low(LongInt)));
     Result := N;
     Exit;
@@ -1321,7 +1399,7 @@ begin
   if T.K = tkReal then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VReal(T.F);
     Result := N;
     Exit;
@@ -1329,7 +1407,7 @@ begin
   if T.K = tkStr then
   begin
     Inc(Pos);
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VStr(T.S);
     Result := N;
     Exit;
@@ -1337,14 +1415,15 @@ begin
   if Eh('[') then
   begin
     Pegar('[');
-    N := R.Novo(nConj, L);
+    N := R.Novo(nConj, L, C);
     if not Eh(']') then
       repeat
         E := Expr;
         if Eh('..') then
         begin
+          C := Atual.Coluna;
           Pegar('..');
-          K := R.Novo(nFaixa, L);
+          K := R.Novo(nFaixa, L, C);
           R.FNos[K].A := E;
           Tmp := Expr;
           R.FNos[K].B := Tmp;
@@ -1366,7 +1445,7 @@ begin
   begin
     Pegar('.');
     Nome := PegarId;
-    N := R.Novo(nCampo, L);
+    N := R.Novo(nCampo, L, C);
     if SameText(T.S, 'O') then R.FNos[N].Base := 1 else R.FNos[N].Base := 0;
     R.FNos[N].Ind := -1;
     for I := 0 to High(Campos) do
@@ -1378,7 +1457,7 @@ begin
   { funcao }
   if Eh('(') then
   begin
-    N := R.Novo(nFunc, L);
+    N := R.Novo(nFunc, L, C);
     R.FNos[N].Op := 0;
     for I := 1 to High(NomesFuncoes) do
       if SameText(NomesFuncoes[I], Nome) then R.FNos[N].Op := I;
@@ -1400,7 +1479,7 @@ begin
   { True/False }
   if SameText(Nome, 'True') or SameText(Nome, 'False') then
   begin
-    N := R.Novo(nConst, L);
+    N := R.Novo(nConst, L, C);
     R.FNos[N].V := VBool(SameText(Nome, 'True'));
     Result := N;
     Exit;
@@ -1409,7 +1488,7 @@ begin
   I := BuscaLocal(Nome);
   if I >= 0 then
   begin
-    N := R.Novo(nLocal, L);
+    N := R.Novo(nLocal, L, C);
     R.FNos[N].Ind := I;
     Result := N;
     Exit;
@@ -1418,7 +1497,7 @@ begin
   for I := 0 to High(Globais) do
     if SameText(Globais[I].Nome, Nome) then
     begin
-      N := R.Novo(nGlobal, L);
+      N := R.Novo(nGlobal, L, C);
       R.FNos[N].Ind := I;
       Result := N;
       Exit;
@@ -1429,7 +1508,7 @@ begin
   for I := 0 to QtdConstantes - 1 do
     if SameText(Constantes[I].N, Nome) then
     begin
-      N := R.Novo(nConst, L);
+      N := R.Novo(nConst, L, C);
       R.FNos[N].V := VInt(Constantes[I].V, False);
       Achou := True;
       Break;
@@ -1617,7 +1696,7 @@ end;
 
 { ================= TRoteiro ================= }
 
-function TRoteiro.Novo(T: TTipoNo; Linha: Integer): Integer;
+function TRoteiro.Novo(T: TTipoNo; Linha: Integer; Coluna: Integer): Integer;
 begin
   Result := FQtdNos;
   if FQtdNos >= Length(FNos) then SetLength(FNos, FQtdNos * 2 + 64);
@@ -1632,6 +1711,7 @@ begin
   FNos[Result].Lista := nil;
   FNos[Result].V := VInt(0, False);
   FNos[Result].Linha := Linha;
+  FNos[Result].Coluna := Coluna;
 end;
 
 procedure TRoteiro.Falha(Linha: Integer; const Msg: string);
@@ -1873,24 +1953,45 @@ var
   Op: Integer;
   A, B: TValor;
   FA, FB: Extended;
+  OpNome: string;
+  ValorDireito, ResultadoBool: Boolean;
 begin
   Op := X.R.FNos[No].Op;
   A := Avaliar(X, X.R.FNos[No].A);
-  { and/or com condicoes: param assim que o resultado e conhecido }
+  { and/or com condicoes: registra cada operando e preserva o short-circuit }
   if (Op in [opAnd, opOr]) and (A.C = cvBool) then
   begin
+    if Op = opAnd then OpNome := 'and' else OpNome := 'or';
+    RegistrarSubexpressaoBooleanaTrace(
+      X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].A,
+      X.R.FNos[X.R.FNos[No].A].Linha, X.R.FNos[X.R.FNos[No].A].Coluna,
+      OpNome, 'left', True, True, A.I <> 0, False, False, False, '');
     if (Op = opAnd) and (A.I = 0) then
     begin
+      RegistrarSubexpressaoBooleanaTrace(
+        X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+        X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+        OpNome, 'right', False, False, False, True, True, False, 'and_false');
       Result := VBool(False);
       Exit;
     end;
     if (Op = opOr) and (A.I <> 0) then
     begin
+      RegistrarSubexpressaoBooleanaTrace(
+        X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+        X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+        OpNome, 'right', False, False, False, True, True, True, 'or_true');
       Result := VBool(True);
       Exit;
     end;
     B := Avaliar(X, X.R.FNos[No].B);
-    Result := VBool(ComoBool(X, No, B));
+    ValorDireito := ComoBool(X, No, B);
+    ResultadoBool := ValorDireito;
+    RegistrarSubexpressaoBooleanaTrace(
+      X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+      X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+      OpNome, 'right', True, True, ValorDireito, False, True, ResultadoBool, '');
+    Result := VBool(ResultadoBool);
     Exit;
   end;
   if Op = opIn then
@@ -1908,7 +2009,24 @@ begin
   begin
     if B.C = cvBool then
     begin
-      if Op = opXor then Result := VBool((A.I <> 0) xor (ComoBool(X, No, B)))
+      if Op = opXor then
+      begin
+        ValorDireito := ComoBool(X, No, B);
+        if A.C = cvBool then
+        begin
+          RegistrarSubexpressaoBooleanaTrace(
+            X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].A,
+            X.R.FNos[X.R.FNos[No].A].Linha, X.R.FNos[X.R.FNos[No].A].Coluna,
+            'xor', 'left', True, True, A.I <> 0, False, False, False, '');
+          ResultadoBool := (A.I <> 0) xor ValorDireito;
+          RegistrarSubexpressaoBooleanaTrace(
+            X.R.FNos[No].Linha, X.R.FNos[No].Coluna, No, X.R.FNos[No].B,
+            X.R.FNos[X.R.FNos[No].B].Linha, X.R.FNos[X.R.FNos[No].B].Coluna,
+            'xor', 'right', True, True, ValorDireito, False, True, ResultadoBool, '');
+          Result := VBool(ResultadoBool);
+        end
+        else Result := VBool((A.I <> 0) xor ValorDireito);
+      end
       else ErroExec(X, No, 'and/or misturando condicao e numero');
       Exit;
     end;
@@ -1968,7 +2086,7 @@ begin
   Result := VInt(0, False);
   case F of
     fRandom: Result := VInt(SortearValor(ComoInt(X, No, Args[0]), Args[0].Largo,
-      X.R.Origem, X.R.FNos[No].Linha), Args[0].Largo);
+      X.R.Origem, X.R.FNos[No].Linha, X.R.FNos[No].Coluna), Args[0].Largo);
     fRound: Result := VInt(Round(ComoReal(X, No, Args[0])), True);
     fTrunc: Result := VInt(Trunc(ComoReal(X, No, Args[0])), True);
     fAbs:

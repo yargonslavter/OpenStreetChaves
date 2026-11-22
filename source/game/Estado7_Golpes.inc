@@ -195,7 +195,7 @@ var
     P.Defendendo := False;
     if P.Lado = ldDireita then P.DirPulo := puloDireita;
     if P.Lado = ldEsquerda then P.DirPulo := puloEsquerda;
-    if Random(8) = 0 then P.DirPulo := puloReto;
+    if SortearDireto(8, 'Estado7_Golpes.inc', 198, 8) = 0 then P.DirPulo := puloReto;
   end;
 
 begin
@@ -234,24 +234,24 @@ begin
     if O.GolpeAtivo and (Dist <= 160) then
     begin
       if (ChaoY - 30) >= O.Y then
-        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefender);
+        if SortearDireto(Round(0.5 * Fator), 'Estado7_Golpes.inc', 237, 12) = 0 then AcaoJogador(Jog, cmDefender);
       if (ChaoY - 30) <= O.Y then
-        if Random(Round(0.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
+        if SortearDireto(Round(0.5 * Fator), 'Estado7_Golpes.inc', 239, 12) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
       if P.Acao = acDefesa then AcaoJogador(Jog, cmDefender);
       if P.Acao = acDefesaBaixa then AcaoJogador(Jog, cmDefenderBaixo);
     end;
     // pulo (parado ou andando)
     if (P.Acao = acParado) or (P.Acao = acAndando) then
     begin
-      if (Ameaca = 1) and (DistProj <= 130) and ((P.Y - 120) < ProjY) and (Random(Round(5 * Fator)) <= 3) then
+      if (Ameaca = 1) and (DistProj <= 130) and ((P.Y - 120) < ProjY) and (SortearDireto(Round(5 * Fator), 'Estado7_Golpes.inc', 246, 76) <= 3) then
         Pular
-      else if (Ameaca = 0) and (Random(Round(45 * Fator)) = 0) and not P.NoAr and not Terminando then
+      else if (Ameaca = 0) and (SortearDireto(Round(45 * Fator), 'Estado7_Golpes.inc', 248, 33) = 0) and not P.NoAr and not Terminando then
         Pular;
     end;
     // projetil chegando
     if (Ameaca = 1) and (DistProj <= 120) and ((P.Y - 120) < ProjY) then
-      if Random(Round(0.4 * Fator)) = 0 then AcaoJogador(Jog, cmDefender);
+      if SortearDireto(Round(0.4 * Fator), 'Estado7_Golpes.inc', 253, 10) = 0 then AcaoJogador(Jog, cmDefender);
     if (Ameaca = 1) and (DistProj <= 100) and ((P.Y - 120) >= ProjY) then
-      if Random(Round(2.5 * Fator)) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
+      if SortearDireto(Round(2.5 * Fator), 'Estado7_Golpes.inc', 255, 10) = 0 then AcaoJogador(Jog, cmDefenderBaixo);
   end;
 end;

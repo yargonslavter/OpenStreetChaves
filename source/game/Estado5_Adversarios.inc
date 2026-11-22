@@ -88,9 +88,9 @@ begin
         begin
           { cenarios do adversario (Dados/Lutadores/Cnn.ini) }
           CenarioAtual := FLutadores[Ch].Cenario;
-          if (Random(5) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioAlternativo <> 0) then
+          if (SortearDireto(5, 'Estado5_Adversarios.inc', 91, 15) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioAlternativo <> 0) then
             CenarioAtual := FLutadores[Ch].CenarioAlternativo;
-          if (Random(6) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioRaro <> 0) then
+          if (SortearDireto(6, 'Estado5_Adversarios.inc', 93, 15) <= 1) and (Fase < 8) and (FLutadores[Ch].CenarioRaro <> 0) then
             CenarioAtual := FLutadores[Ch].CenarioRaro;
           if (CenarioSecreto <> 0) and (Fase < 8) then
           begin

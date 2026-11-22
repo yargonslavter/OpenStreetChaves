@@ -39,7 +39,7 @@ begin
       carregarlutador(ArquivoNN(FPadraoLutador, Lutador[J].Personagem), Lutador[J].Personagem, J);
   if Lutador[1].Ativo and Lutador[2].Ativo then
   begin
-    L := Round(Random(FQtdCenarios * 10) / 10) + 1;
+    L := Round(SortearDireto(FQtdCenarios * 10, 'Estado6_PreparaLuta.inc', 42, 16) / 10) + 1;
     if L < 1 then L := 1;
     if L > FQtdCenarios then L := FQtdCenarios;
     CenarioAtual := L;
@@ -61,7 +61,7 @@ begin
     if (CenarioAtual >= 1) and (CenarioAtual <= FQtdCenarios) and (FMusicaCenario[CenarioAtual] <> 0) then
       MusicaAtual := FMusicaCenario[CenarioAtual];
   end;
-  if MusicaAtual = 0 then MusicaAtual := Round(Random(QtdMusicas * 10) / 10) + 1;
+  if MusicaAtual = 0 then MusicaAtual := Round(SortearDireto(QtdMusicas * 10, 'Estado6_PreparaLuta.inc', 64, 48) / 10) + 1;
   if MusicaAtual < 1 then MusicaAtual := 1;
   if MusicaAtual > QtdMusicas then MusicaAtual := QtdMusicas;
   { a musica propria de um cenario so toca nele }

@@ -146,14 +146,14 @@ begin
     DeslocHudBase := 60;
     CameraX := 100;
     PrimeiroAtaque := True;
-    L := Round(Random(FQtdCenarios * 10) / 10) + 1;
+    L := Round(SortearDireto(FQtdCenarios * 10, 'Estado1_Abertura.inc', 149, 16) / 10) + 1;
     if L < 1 then L := 1;
     if L > FQtdCenarios then L := FQtdCenarios;
     CenarioAtual := L;
     carregarcenario(CenarioAtual);
     for L := 1 to 2 do
     begin
-      I := Round(Random(FQtdLutadores * 10) / 10) + 1;
+      I := Round(SortearDireto(FQtdLutadores * 10, 'Estado1_Abertura.inc', 156, 18) / 10) + 1;
       if I < 1 then I := 1;
       if I > FQtdLutadores then I := FQtdLutadores;
       Lutador[L].Personagem := I;

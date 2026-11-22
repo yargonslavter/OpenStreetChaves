@@ -115,7 +115,7 @@ var
   begin
     P := Pos('+R', Arg(K));
     if P = 0 then Exit(N(K));
-    Result := StrToIntDef(Copy(Arg(K), 1, P - 1), 0) + Random(StrToIntDef(Copy(Arg(K), P + 2, MaxInt), 1));
+    Result := StrToIntDef(Copy(Arg(K), 1, P - 1), 0) + SortearDireto(StrToIntDef(Copy(Arg(K), P + 2, MaxInt), 1), 'Estado10_Final.inc', 118, 56);
   end;
 
 begin
@@ -129,7 +129,7 @@ begin
       for J := 0 to High(F.Comandos[I].Grupos[G]) do
       begin
         with F.Comandos[I].Grupos[G][J] do
-          if Tipo = 'R' then Grupo := Random(K) = 0
+          if Tipo = 'R' then Grupo := SortearDireto(K, 'Estado10_Final.inc', 132, 39) = 0
           else Grupo := CompararInt(T, Op, K);
         if not Grupo then Break;
       end;
@@ -171,9 +171,9 @@ end;
 { Tela cheia de cor aleatoria com duas fagulhas (explosao). }
 procedure TJogo.F10_Explosao;
 begin
-  barra(50, 50, 350, 220, RGB(255, Random(255), Random(255)));
-  CriaEfeito(1, '', 0, Random(150) + 130, Random(100) + 100);
-  CriaEfeito(1, '', 0, Random(150) + 130, Random(100) + 100);
+  barra(50, 50, 350, 220, RGB(255, SortearDireto(255, 'Estado10_Final.inc', 174, 36), SortearDireto(255, 'Estado10_Final.inc', 174, 49)));
+  CriaEfeito(1, '', 0, SortearDireto(150, 'Estado10_Final.inc', 175, 24) + 130, SortearDireto(100, 'Estado10_Final.inc', 175, 43) + 100);
+  CriaEfeito(1, '', 0, SortearDireto(150, 'Estado10_Final.inc', 176, 24) + 130, SortearDireto(100, 'Estado10_Final.inc', 176, 43) + 100);
 end;
 
 procedure TJogo.Estado10_Final;

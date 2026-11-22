@@ -84,13 +84,21 @@ A captura é desativada por padrão. O schema v2 registra:
 - início/fim de cada execução de `.rot`, com origem/seção, lutador, comando e relação pai/filho para chamadas aninhadas;
 - decisões concretas de `if` e `case`, além dos valores/índices das iterações de `for`, `while` e `repeat`;
 - cada chamada a `SortearValor`, com largura LongInt/Int64, intervalo, resultado, modo gravar/repetir,
-  snapshots de `RandSeed`, tick, execução de script, linha de origem e índice local àquela execução.
+  snapshots de `RandSeed`, tick, execução de script e linha de origem;
+- chamadas diretas de `Random` nos fontes do jogo, agora roteadas por `SortearDireto` para compartilhar o mesmo
+  índice de chamadas e de palavras MT, com arquivo e linha de origem.
 
-Os índices de palavras MT continuam locais a `SortearValor`: chamadas diretas a `System.Random` fora do wrapper
-não estão incluídas. O Pascal registra a linha, mas ainda não a coluna de origem; múltiplos eventos na mesma linha
-podem exigir reconciliação ambígua. O trace de ticks contém snapshots selecionados, não uma cópia integral do estado
-do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte idêntico e
-`logica.txt` correspondente.
+O índice de palavras agora cobre os pontos de chamada do jogo instrumentados, incluindo os usos diretos em
+`Comum_Sprites.inc`, `Estado1_Abertura.inc`, `Estado4_Selecao.inc`, `Estado5_Adversarios.inc`,
+`Estado6_PreparaLuta.inc`, `Estado7_Golpes.inc`, `Estado7_Luta.inc` e `Estado10_Final.inc`.
+Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. Os pontos diretos em `.inc` e
+as expressões RNG em `.rot` registram arquivo, linha e coluna de origem. Os 422 draws Pascal antigos sem origem
+explícita continuam sem localização de chamada. Expressões lógicas `and/or/xor` emitem registros estruturados por
+operando, com valor, coluna e indicação explícita de short-circuit. No cenário de 3.000 ticks foram observados
+675.222 registros de subexpressões booleanas, incluindo 309.092 skips do lado direito. O cenário validado cobre
+2 índices de lutador, 24 ações, 20.437 execuções de script (5.229 aninhadas), 67 loops com 201 iterações, além de
+4.726 draws LongInt e 7.043 Int64; o índice simbólico contém timelines dos 15 lutadores. O trace de ticks contém
+snapshots selecionados, não uma cópia integral do estado do jogo.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
