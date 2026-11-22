@@ -2074,10 +2074,18 @@ begin
         K := Ini;
         I := 0;
         if TraceSorteios <> nil then
-          RegistrarControleTrace('for_start', X.R.FNos[No].Linha,
-            '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
-            ',"start_value":' + IntToStr(Ini) + ',"end_value":' + IntToStr(Fim) +
-            ',"direction":' + TextoJson(IfThen(X.R.FNos[No].Op > 0, 'to', 'downto')));
+        begin
+          if X.R.FNos[No].Op > 0 then
+            RegistrarControleTrace('for_start', X.R.FNos[No].Linha,
+              '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
+              ',"start_value":' + IntToStr(Ini) + ',"end_value":' + IntToStr(Fim) +
+              ',"direction":"to"')
+          else
+            RegistrarControleTrace('for_start', X.R.FNos[No].Linha,
+              '"variable":' + TextoJson(X.R.FNomesLocais[X.R.FNos[No].Ind]) +
+              ',"start_value":' + IntToStr(Ini) + ',"end_value":' + IntToStr(Fim) +
+              ',"direction":"downto"');
+        end;
         if X.R.FNos[No].Op > 0 then
         begin
           while K <= Fim do
