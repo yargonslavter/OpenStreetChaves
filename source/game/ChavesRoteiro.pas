@@ -504,7 +504,12 @@ begin
   if Origem <> '' then
   begin
     OrigemJson := TextoJson(Origem);
-    TipoOrigem := 'rot_expression';
+    if Pos('.rot', LowerCase(Origem)) > 0 then
+      TipoOrigem := 'rot_expression'
+    else if Length(TraceScriptStack) > 0 then
+      TipoOrigem := 'pascal_helper'
+    else
+      TipoOrigem := 'pascal_direct';
   end
   else if Length(TraceScriptStack) > 0 then
   begin
