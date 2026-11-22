@@ -448,7 +448,8 @@ begin
     ',"range":' + IntToStr(N) + ',"result":' + IntToStr(R) +
     ',"recorder_mode":' + TextoJson(Modo) + ',"draw_source":' + TextoJson(Fonte) +
     ',"rand_seed_before":' + IntToStr(RandSeedAntes) +
-    ',"rand_seed_after":' + IntToStr(RandSeedDepois) + '}';  Inc(TraceApiCallIndex);
+    ',"rand_seed_after":' + IntToStr(RandSeedDepois) + '}';
+  Inc(TraceApiCallIndex);
   if ConsumiuRng then Inc(TraceMtWordIndex, Palavras);
 end;
 
