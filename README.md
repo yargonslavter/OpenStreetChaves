@@ -93,9 +93,10 @@ O índice de palavras agora cobre os pontos de chamada do jogo instrumentados, i
 `Estado6_PreparaLuta.inc`, `Estado7_Golpes.inc`, `Estado7_Luta.inc` e `Estado10_Final.inc`.
 Chamadas internas de RTL/bibliotecas externas ainda não são interceptadas. Os pontos diretos em `.inc` e
 as expressões RNG em `.rot` registram arquivo, linha e coluna de origem. Os 422 draws Pascal antigos sem origem
-explícita continuam sem localização de chamada. O trace de ticks contém snapshots selecionados, não uma cópia
-integral do estado do jogo. A captura permanece experimental até duas execuções fixas produzirem JSONL byte a byte
-idêntico e `logica.txt` correspondente.
+explícita continuam sem localização de chamada. Expressões lógicas `and/or/xor` emitem registros estruturados por
+operando, com valor, coluna e indicação explícita de short-circuit. No cenário de 3.000 ticks foram observados
+675.222 registros de subexpressões booleanas, incluindo 309.092 skips do lado direito. O trace de ticks contém
+snapshots selecionados, não uma cópia integral do estado do jogo.
 
 `--sem-hd` (em qualquer posição; com `--gravar`, por último) ignora as imagens em alta resolução da pasta `HD/`.
 
